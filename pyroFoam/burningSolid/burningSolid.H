@@ -1,0 +1,121 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::burningSolid
+
+Description
+    
+
+SourceFiles
+    burningSolid.C
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef burningSolid_H
+#define burningSolid_H
+
+#include "volFields.H"
+#include "dictionaryEntry.H"
+#include "fvCFD.H"
+#include "dimensionedScalar.H"
+#include "dimensionedScalarFwd.H"
+#include "hsCombustionThermo.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+
+/*---------------------------------------------------------------------------*\
+                           Class phase Declaration
+\*---------------------------------------------------------------------------*/
+
+class burningSolid
+{
+    // Private data
+
+        // Field references to the outside world
+        const fvMesh& mesh_;
+        const volVectorField& U_;
+        surfaceScalarField& phi_;
+        const hsCombustionThermo& thermo_;
+
+        // Fields owned by this class
+        volScalarField alpha_;      // alpha is the volume fraction of GAS
+        surfaceScalarField alphaf_;
+        volScalarField m_pyro_;
+
+    // Private member functions
+        void calcAlphaf();
+
+public:
+
+    // Constructors
+
+        //- Construct from components
+        burningSolid
+        (
+            const volVectorField& U,
+            surfaceScalarField& phi,
+            const hsCombustionThermo& thermo
+        );
+
+        //- Return clone
+        autoPtr<burningSolid> clone() const;
+
+
+
+    // Public Member Functions
+
+        const surfaceScalarField& alphaf() const
+        {
+            return alphaf_;
+        }
+
+        const volScalarField& alpha() const
+        {
+            return alpha_;
+        }
+
+        const volScalarField& m_pyro() const
+        {
+            return m_pyro_;
+        }
+
+        tmp<volScalarField> Sh() const;
+
+        void correct();
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //
