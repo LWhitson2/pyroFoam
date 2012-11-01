@@ -124,7 +124,7 @@ void Foam::burningSolid::correct()
     // First term 1 for intermediates, 0 otherwise
     // Second term 1 for alpha == 0 and sum(alphaf) /= 0, 0 otherwise
     isBurning_ = pos(alpha_-SMALL)*pos(1-SMALL-alpha_)
-                + neg(alpha_-SMALL)*pos(surfaceSum(alphaf_)-SMALL);
+                + neg(alpha_-SMALL)*pos(fvc::surfaceSum(alphaf_)-SMALL);
     
     // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
     m_pyro_ = isBurning_*dimensionedScalar("a",dimDensity/dimTime,1.0);
