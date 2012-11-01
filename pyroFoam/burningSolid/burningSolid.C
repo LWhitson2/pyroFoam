@@ -79,7 +79,7 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedScalar("m_pyro", dimDensity/dimTime, 0.0),
         zeroGradientFvPatchScalarField::typeName
-    )
+    ),
     
     isBurning_
     (
