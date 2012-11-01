@@ -80,6 +80,20 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("m_pyro", dimDensity/dimTime, 0.0),
         zeroGradientFvPatchScalarField::typeName
     )
+    
+    isBurning_
+    (
+        IOobject
+        (
+            "isBurning",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("isBurning", dimless, 0.0)
+    )
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
     alpha_.oldTime();
@@ -105,9 +119,15 @@ Foam::autoPtr<Foam::burningSolid> Foam::burningSolid::clone() const
 void Foam::burningSolid::correct()
 {
     Foam::Info << "Correcting solid interface" << Foam::endl;
-
+    
+    // Determine the burning faces
+    // First term 1 for intermediates, 0 otherwise
+    // Second term 1 for alpha == 0 and sum(alphaf) /= 0, 0 otherwise
+    isBurning_ = pos(alpha_-SMALL)*pos(1-SMALL-alpha_)
+                + neg(alpha_-SMALL)*pos(surfaceSum(alphaf_)-SMALL);
+    
     // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
-
+    m_pyro_ = isBurning_*dimensionedScalar("a",dimDensity/dimTime,1.0);
 
     // Update alpha_
     solve(fvm::ddt(alpha_));
