@@ -68,6 +68,7 @@ class burningSolid
         volScalarField m_pyro_;       // Solid burning rate
         volScalarField isBurning_;    // Flag for burning cells
         dimensionedScalar rhoS_;      // Density of energetic material
+        volScalarField a_burn_;       // Burning area
 
     // Private member functions
         void calcAlphaf();            // Calculate gas face fraction
@@ -114,6 +115,11 @@ public:
         const dimensionedScalar& rhoS() const
         {
             return rhoS_;
+        }
+        
+        const volScalarField& a_burn() const
+        {
+            return a_burn_;
         }
 
         tmp<volScalarField> Sh() const;

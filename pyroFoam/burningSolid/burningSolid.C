@@ -98,6 +98,20 @@ Foam::burningSolid::burningSolid
     rhoS_
     (
         dimensionedScalar("rhoS",dimDensity,6000.0)
+    ),
+    
+    a_burn_
+    (
+        IOobject
+        (
+            "a_burn",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("a_burn_",dimArea, 0.0)
     )
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
@@ -131,8 +145,13 @@ void Foam::burningSolid::correct()
     isBurning_ = pos(alpha_-SMALL)*pos(1-SMALL-alpha_)
                 + neg(alpha_-SMALL)*pos(fvc::surfaceSum(alphaf_)-SMALL);
     
+    // Calculate burning face area
+    // Still needs to be finished
+    a_burn_ = isBurning_*dimensionedScalar("temp",dimArea,1.0);
+    
     // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
-    m_pyro_ = isBurning_*dimensionedScalar("a",dimDensity/dimTime,600.0E6);
+    // Still needs to be finished
+    m_pyro_ = a_burn_*dimensionedScalar("temp",dimDensity/dimArea/dimTime,600.0E6);
 
     // Update alpha_
     solve(fvm::ddt(alpha_)==m_pyro_/rhoS_);
