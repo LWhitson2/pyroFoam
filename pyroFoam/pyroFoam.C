@@ -67,8 +67,6 @@ int main(int argc, char *argv[])
 
         #include "rhoEqn.H"
 
-        dimensionedScalar rhoS("rhoS",dimDensity,6000);
-
         while (pimple.loop())
         {
             //Evolve the solid surface and update burning rate            //<--

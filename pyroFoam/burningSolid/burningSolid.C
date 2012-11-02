@@ -93,6 +93,11 @@ Foam::burningSolid::burningSolid
         ),
         mesh_,
         dimensionedScalar("isBurning", dimless, 0.0)
+    ),
+    
+    rhoS_
+    (
+        dimensionedScalar("rhoS",dimDensity,6000.0)
     )
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
@@ -127,10 +132,10 @@ void Foam::burningSolid::correct()
                 + neg(alpha_-SMALL)*pos(fvc::surfaceSum(alphaf_)-SMALL);
     
     // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
-    m_pyro_ = isBurning_*dimensionedScalar("a",dimDensity/dimTime,1.0);
+    m_pyro_ = isBurning_*dimensionedScalar("a",dimDensity/dimTime,600.0E6);
 
     // Update alpha_
-    solve(fvm::ddt(alpha_));
+    solve(fvm::ddt(alpha_)==m_pyro_/rhoS_);
 /*
     fvVectorMatrix alphaEqn
     (
@@ -156,7 +161,30 @@ void Foam::burningSolid::correct()
 // Calculate the gas area fraction on mesh faces
 void Foam::burningSolid::calcAlphaf()
 {
+    Info<< "Calculating alphaf" << endl;
+
+    //Normal definition applied first, applicable away from interfaces
     alphaf_ = fvc::interpolate(alpha_);
+
+    //Then adjust at the interface regions   
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbor = mesh_.neighbour();
+
+    //Loop through internal faces (internal to this processor)
+    forAll(owner, faceI)
+    {
+        label own = owner[faceI];
+        label nei = neighbor[faceI];
+
+        if (alpha_[nei] > 1.0-SMALL || alpha_[own] > 1.0-SMALL)
+        {
+            alphaf_[faceI] = 1.0;
+        }
+        else if (alpha_[nei] * alpha_[own] < SMALL)
+        {
+            alphaf_[faceI] = 0.0;
+        }
+    }
 }
 
 

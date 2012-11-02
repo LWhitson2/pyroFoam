@@ -6,7 +6,7 @@
     // only. In cells which are more then 99.99% solid, the solid can act as a
     // momentum sink with its large mass. Momentum flux, however, always uses
     // the gas density.
-    volScalarField rhoM = rho*solid.alpha() + (rhoS - rho)*pos(1e-5 - solid.alpha());
+    volScalarField rhoM = rho*solid.alpha() + (solid.rhoS() - rho)*pos(1e-5 - solid.alpha());
 
     fvVectorMatrix UEqn
     (
