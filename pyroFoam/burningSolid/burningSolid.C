@@ -137,8 +137,8 @@ void Foam::burningSolid::correct()
     // Determine the burning faces
     // First term 1 for intermediates, 0 otherwise
     // Second term 1 for alpha == 0 and sum(alphaf) /= 0, 0 otherwise
-    isBurning_ = pos(alpha_-SMALL)*pos(1-SMALL-alpha_)
-                + neg(alpha_-SMALL)*pos(fvc::surfaceSum(alphaf_)-SMALL);
+    isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
+                + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
     
     // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
     dimensionedScalar burnAreaPerCell("area",dimArea,2e-6); //TODO: Read from mesh
