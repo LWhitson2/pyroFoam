@@ -10,3 +10,8 @@
 *.lai
 *.la
 *.a
+
+# OpenFOAM wmake Files
+*.dep
+lnInclude/
+linux64GccDPOpt/
