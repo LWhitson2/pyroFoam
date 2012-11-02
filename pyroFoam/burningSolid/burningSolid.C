@@ -35,6 +35,17 @@ Foam::burningSolid::burningSolid
 )
 :
     mesh_(U.mesh()),
+    pyroDict_
+    (
+        IOobject
+        (
+            "pyrolysisProperties",
+            mesh_.time().constant(),
+            mesh_,
+            IOobject::MUST_READ_IF_MODIFIED,
+            IOobject::NO_WRITE
+        )
+    ),
     U_(U),
     phi_(phi),
     thermo_(thermo),
@@ -95,10 +106,8 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("isBurning", dimless, 0.0)
     ),
     
-    rhoS_
-    (
-        dimensionedScalar("rhoS",dimDensity,6000.0)
-    )
+    rhoS_(pyroDict_.lookup("rhoS")),
+    m0_(pyroDict_.lookup("m0"))
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
     alpha_.oldTime();
@@ -132,22 +141,13 @@ void Foam::burningSolid::correct()
                 + neg(alpha_-SMALL)*pos(fvc::surfaceSum(alphaf_)-SMALL);
     
     // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
-    m_pyro_ = isBurning_*dimensionedScalar("a",dimDensity/dimTime,600.0E6);
+    dimensionedScalar burnAreaPerCell("area",dimArea,2e-6); //TODO: Read from mesh
+
+    m_pyro_.internalField() = isBurning_ * burnAreaPerCell * m0_ / mesh_.V();
+    m_pyro_.correctBoundaryConditions();
 
     // Update alpha_
-    solve(fvm::ddt(alpha_)==m_pyro_/rhoS_);
-/*
-    fvVectorMatrix alphaEqn
-    (
-        fvm::ddt(alpha_)
-      + fvm::Sp(fvc::ddt(thermo_.p())/thermo_.p(), alpha_)
-      + fvc::div(phi_)/thermo_.rho()
-     ==
-        m_pyro_/thermo_.rho()
-    );
-
-    alphaEqn.solve();
-*/
+    solve(fvm::ddt(alpha_) == m_pyro_/rhoS_);
 
     // Update alphaf_
     calcAlphaf();
