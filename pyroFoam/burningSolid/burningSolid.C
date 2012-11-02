@@ -117,7 +117,7 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedScalar("a_burn_",dimArea, 0.0)
+        dimensionedScalar("a_burn_",dimArea, 2e-6) //TODO: Read from  mesh, constant for now
     ),
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0"))
@@ -155,16 +155,7 @@ void Foam::burningSolid::correct()
                 + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
     
     // Calculate burning face area
-    // Still needs to be finished
-    a_burn_ = isBurning_*dimensionedScalar("temp",dimArea,1.0);
-    
-    // Calculate m_pyro_ using A = mag(fvc::grad(alpha_))
-    // Still needs to be finished
-    m_pyro_ = a_burn_*dimensionedScalar("temp",dimDensity/dimArea/dimTime,600.0E6);
-
-    dimensionedScalar burnAreaPerCell("area",dimArea,2e-6); //TODO: Read from mesh
-
-    m_pyro_.internalField() = isBurning_ * burnAreaPerCell * m0_ / mesh_.V();
+    m_pyro_.internalField() = isBurning_ * a_burn_ * m0_ / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
     // Update alpha_
