@@ -55,21 +55,26 @@ namespace Foam
 class burningSolid
 {
     // Private data
+    
+        // Defining mesh and dictionary
+        const fvMesh& mesh_;                // Read-Only mesh
+        IOdictionary pyroDict_;             // Input dictionary
 
         // Field references to the outside world
-        const fvMesh& mesh_;                // Read-Only mesh
+
         const volVectorField& U_;           // Read-Only velocity vector
         surfaceScalarField& phi_;           // Read-Write face flux
         const hsCombustionThermo& thermo_;  // Read-Only thermo properties
 
         // Fields owned by this class
         volScalarField alpha_;        // Volume fraction of GAS
-        surfaceScalarField alphaf_;   // Face fraction of gas
+        surfaceScalarField alphaf_;   // Face area fraction of gas
         volScalarField m_pyro_;       // Solid burning rate
         volScalarField isBurning_;    // Flag for burning cells
         dimensionedScalar rhoS_;      // Density of energetic material
         volScalarField a_burn_;       // Burning area
-
+        dimensionedScalar m0_;        // Constant burning rate (for now)
+        
     // Private member functions
         void calcAlphaf();            // Calculate gas face fraction
 
