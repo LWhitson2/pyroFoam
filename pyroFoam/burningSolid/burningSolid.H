@@ -71,9 +71,10 @@ class burningSolid
         surfaceScalarField alphaf_;   // Face area fraction of gas
         volScalarField m_pyro_;       // Solid burning rate
         volScalarField isBurning_;    // Flag for burning cells
-        dimensionedScalar rhoS_;      // Density of energetic material
         volScalarField a_burn_;       // Burning area
-        dimensionedScalar m0_;        // Constant burning rate (for now)
+        
+        dimensionedScalar rhoS_;      // Density of energetic material
+        dimensionedScalar m0_;        // Constant burning rate (for now, kg/m2/s)
         
     // Private member functions
         void calcAlphaf();            // Calculate gas face fraction
@@ -128,7 +129,9 @@ public:
         }
 
         tmp<volScalarField> Sh() const;
-
+        
+        tmp<volScalarField> kappa() const;
+        
         void correct();
 };
 

@@ -21,10 +21,9 @@ internalField   uniform (0 0 0);
 
 boundaryField
 {
-    top
+    sides
     {
-        type            fixedValue;
-        value           uniform (0 -0.1 0);        
+        type            symmetryPlane;        
     }
 
     bottom
@@ -33,7 +32,7 @@ boundaryField
         value           uniform (0 0 0);
     }
 
-    sides
+    top
     {
         type            fluxCorrectedVelocity;
         value           uniform (0 0 0);

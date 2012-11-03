@@ -221,5 +221,31 @@ Foam::tmp<Foam::volScalarField> Foam::burningSolid::Sh() const
     return tSh;
 }
 
+// Return the permeability field (m^2)
+Foam::tmp<Foam::volScalarField> Foam::burningSolid::kappa() const
+{
+    tmp<volScalarField> tkappa
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tkappa",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("tkappa", dimArea, 0.0)
+        )
+    );
+    
+    dimensionedScalar kappaS("kappaS", dimArea, SMALL);
+    dimensionedScalar kappaG("kappaG", dimArea, GREAT);
+
+    tkappa() = (1-alpha_)*kappaS + alpha_*kappaG;
+
+    return tkappa;
+}
+
 
 // ************************************************************************* //

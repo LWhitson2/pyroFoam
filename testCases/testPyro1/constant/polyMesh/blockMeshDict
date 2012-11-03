@@ -49,7 +49,7 @@ boundary
     }
     sides
     {
-        type patch;
+        type symmetryPlane;
         faces
         (
             (0 4 7 3)

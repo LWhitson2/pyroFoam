@@ -22,12 +22,12 @@ internalField   uniform 1e5;
 
 boundaryField
 {
-    top
+    sides
     {
-        type            zeroGradient;
+        type            symmetryPlane;
     }
 
-    sides
+    top
     {
         type            totalPressure;
         p0              uniform 1e5;

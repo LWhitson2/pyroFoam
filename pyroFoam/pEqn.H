@@ -59,10 +59,10 @@ else*/
         (
             fvm::ddt(psiS+solid.alpha()*(psi-psiS), p)
           + fvc::div(phiEst)
-          - fvm::laplacian(rho*rAU*solid.alpha(), p)
+          - fvm::laplacian(fvc::interpolate(rho*rAU)*solid.alphaf(), p)
          == 
             solid.m_pyro()
-          - fvm::Sp(psi*fvc::ddt(solid.alpha()), p)
+          - fvm::Sp(psi*solid.m_pyro()/solid.rhoS(), p)
         );
 
         pEqn.solve(mesh.solver(p.select(pimple.finalInnerIter())));
@@ -80,7 +80,7 @@ Info<< "Min,max p = " << Foam::min(p).value()
 #include "rhoEqn.H"
 #include "compressibleContinuityErrs.H"
 
-U -= rAU*fvc::grad(p)*solid.alpha();
+U -= rAU*fvc::grad(p)*solid.alpha(); //?
 U.correctBoundaryConditions();
 
 Info<< "Min,max U = " << Foam::min(Foam::mag(U)).value() 

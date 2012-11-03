@@ -27,7 +27,7 @@ boundaryField
     }
     sides
     {
-        type            zeroGradient;
+        type            symmetryPlane;
     }
     frontAndBack
     {

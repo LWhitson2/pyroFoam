@@ -34,8 +34,7 @@ boundaryField
     
     sides
     {
-        type            fixedValue;
-        value           uniform 298;
+        type            symmetryPlane;
     }
 
     frontAndBack
