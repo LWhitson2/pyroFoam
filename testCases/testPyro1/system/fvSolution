@@ -43,7 +43,7 @@ solvers
     alphaGasFinal
     {
         $alphaGas;
-        tolerance       1e-06;
+        tolerance       1e-09;
         relTol          0;
     }
 
@@ -51,14 +51,14 @@ solvers
     {
         solver           PCG;
         preconditioner   DIC;
-        tolerance        1e-6;
-        relTol           0.1;
+        tolerance        1e-9;
+        relTol           0.0;
     }
 
     pFinal
     {
         $p;
-        tolerance        1e-6;
+        tolerance        1e-9;
         relTol           0.0;
     }
 

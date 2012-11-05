@@ -1,26 +1,24 @@
 
     Info<< "Solving UEqn" << endl;
     
-    // The continuous forcing approach is used for the immersed boundary
-    // through the solid permeability model.
-    // This method becomes instable for high Re, so a discrete forcing
-    // approach should be considered for future development.
-       
     fvVectorMatrix UEqn
     (
-        fvm::ddt(rho*solid.alpha(), U)                   //<--
+        fvm::ddt(rho*solid.alpha(), U)
       + fvm::div(phi, U)
-      //+ turbulence->divDevRhoReff(U)                   //<--
-     ==
-        rho*solid.alpha()*g                              //<--
-      - fvm::Sp(turbulence->muEff()/solid.kappa(), U)
+      //+ turbulence->divDevRhoReff(U)
+      - solid.m_pyro()*solid.burnU()
+      - rho*solid.alpha()*g
+      + fvm::Sp(solid.setDiag(), U) //switch to set U = 0 in the solid
     );
 
     UEqn.relax();
 
     if (pimple.momentumPredictor())
     {
-        solve(UEqn == -fvc::grad(p));
+        solve
+        (
+           UEqn == fvc::reconstruct(-fvc::snGrad(p)*mesh.magSf()*solid.alphaf()) 
+        );
         K = 0.5*magSqr(U); // scale this by solid.alpha() ?
     }
 

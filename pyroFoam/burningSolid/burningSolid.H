@@ -78,7 +78,8 @@ class burningSolid
         
     // Private member functions
         void calcAlphaf();            // Calculate gas face fraction
-
+        void calcBurningArea();       // Calculate burning face areas
+        
 public:
 
     // Constructors
@@ -130,7 +131,9 @@ public:
 
         tmp<volScalarField> Sh() const;
         
-        tmp<volScalarField> kappa() const;
+        tmp<volScalarField> setDiag() const;
+        
+        tmp<volVectorField> burnU() const;
         
         void correct();
 };

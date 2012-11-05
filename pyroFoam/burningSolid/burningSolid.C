@@ -117,7 +117,7 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedScalar("a_burn_",dimArea, 2e-6) //TODO: Read from  mesh, constant for now
+        dimensionedScalar("a_burn_",dimArea, 0.0)
     ),
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0"))
@@ -125,10 +125,11 @@ Foam::burningSolid::burningSolid
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
     alpha_.oldTime();
-
+    alphaf_.oldTime();
+    
     //Clip phi by alphaf
     calcAlphaf();
-    phi_ *= alphaf_;
+    phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
 
 
@@ -153,9 +154,12 @@ void Foam::burningSolid::correct()
     // Second term 1 for alpha == 0 and sum(alphaf) /= 0, 0 otherwise
     isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
                 + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
+                
+    // Calculate burning face area
+    calcBurningArea();
     
     // Calculate burning face area
-    m_pyro_.internalField() = isBurning_ * a_burn_ * m0_ / mesh_.V();
+    m_pyro_.internalField() = a_burn_ * m0_ / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
     // Update alpha_
@@ -165,8 +169,7 @@ void Foam::burningSolid::correct()
     calcAlphaf();
 
     // Include alphaf into phi
-    phi_ *= alphaf_;
-
+    phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
 
 
@@ -221,30 +224,80 @@ Foam::tmp<Foam::volScalarField> Foam::burningSolid::Sh() const
     return tSh;
 }
 
-// Return the permeability field (m^2)
-Foam::tmp<Foam::volScalarField> Foam::burningSolid::kappa() const
+// Set the A matrix diagonal to 1/dt in fully solid cells
+Foam::tmp<Foam::volScalarField> Foam::burningSolid::setDiag() const
 {
-    tmp<volScalarField> tkappa
+    tmp<volScalarField> tSD
     (
         new volScalarField
         (
             IOobject
             (
-                "tkappa",
+                "tSD",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            thermo_.rho()/mesh_.time().deltaT()
+        )
+    );
+    
+    tSD() *= neg(alpha_ - SMALL);
+    return tSD;
+}
+
+// Calculate the burning area
+void Foam::burningSolid::calcBurningArea()
+{
+    // Code to get the cell area in the (0 1 0) direction
+
+    const pointField& pf = mesh_.points(); //list of all points in the mesh
+    vector dir(0,1,0);
+    a_burn_ = dimensionedScalar("zero",dimArea,0.0);
+
+    forAll(mesh_.cells(), cellI)
+    {
+        if (isBurning_[cellI])
+        {
+            // a cell is just a list of faces
+            const labelList& faces = mesh_.cells()[cellI];
+            forAll(faces, faceI)
+            {
+                const face& f = mesh_.faces()[faces[faceI]];
+               
+                //This will catch either the face in direction dir, or -dir, but
+                // for a blockMesh the area will be the same either way
+                if ((dir & (f.normal(pf)/f.mag(pf))) > 0.9)
+                {
+                    a_burn_[cellI] = f.mag(pf);
+                    break;
+                }
+            }
+        }
+    }
+
+    a_burn_.correctBoundaryConditions();
+} 
+
+// Calculate the burn gas velocity
+Foam::tmp<Foam::volVectorField> Foam::burningSolid::burnU() const
+{
+    tmp<volVectorField> tBurnU
+    (
+        new volVectorField
+        (
+            IOobject
+            (
+                "tBurnU",
                 mesh_.time().timeName(),
                 mesh_
             ),
             mesh_,
-            dimensionedScalar("tkappa", dimArea, 0.0)
+            dimensionedVector("tBurnU", dimVelocity, vector::zero)
         )
     );
     
-    dimensionedScalar kappaS("kappaS", dimArea, SMALL);
-    dimensionedScalar kappaG("kappaG", dimArea, GREAT);
-
-    tkappa() = (1-alpha_)*kappaS + alpha_*kappaG;
-
-    return tkappa;
+    tBurnU() = m0_ / thermo_.rho() * vector(0,1,0) * isBurning_;
+    return tBurnU;
 }
 
 

@@ -16,9 +16,9 @@ FoamFile
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 //solid density
-rhoS    rhoS [ 1 -3 0 0 0 0 0 ] 6000;
+rhoS    rhoS [ 1 -3 0 0 0 0 0 ] 1800;
 
-//constant burning rate
-m0      m0   [ 1 -2 -1 0 0 0 0] 0.1;
+//constant burning rate (kg/m2/s) - 6.8 WSB paper, matching order of magnitude
+m0      m0   [ 1 -2 -1 0 0 0 0] 10;
 
 // ************************************************************************* //
