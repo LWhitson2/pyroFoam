@@ -25,7 +25,7 @@ Class
     Foam::burningSolid
 
 Description
-    
+
 
 SourceFiles
     burningSolid.C
@@ -55,7 +55,7 @@ namespace Foam
 class burningSolid
 {
     // Private data
-    
+
         // Defining mesh and dictionary
         const fvMesh& mesh_;                // Read-Only mesh
         IOdictionary pyroDict_;             // Input dictionary
@@ -72,14 +72,25 @@ class burningSolid
         volScalarField m_pyro_;       // Solid burning rate
         volScalarField isBurning_;    // Flag for burning cells
         volScalarField a_burn_;       // Burning area
-        
+        volVectorField burnU_;        // Burning gas velocity
+
+        volVectorField mU_;           // Burning gas small cell momentum
+        volScalarField USp_;
+        volVectorField USu_;
+        volScalarField pSp_;
+        volScalarField pSu_;
+        volScalarField alphaUsed_;    // Modified alpha value for small cells
+
         dimensionedScalar rhoS_;      // Density of energetic material
         dimensionedScalar m0_;        // Constant burning rate (for now, kg/m2/s)
-        
+        dimensionedScalar alphaMin_;  // Minimum alpha for full cell
+
     // Private member functions
         void calcAlphaf();            // Calculate gas face fraction
         void calcBurningArea();       // Calculate burning face areas
-        
+        void calcBurnU();             // Calculate burning gas velocity
+        void fixSmallCells();         // Fix small cells
+
 public:
 
     // Constructors
@@ -94,8 +105,6 @@ public:
 
         //- Return clone
         autoPtr<burningSolid> clone() const;
-
-
 
     // Public Member Functions
 
@@ -113,28 +122,61 @@ public:
         {
             return m_pyro_;
         }
-        
+
         const volScalarField& isBurning() const
         {
             return isBurning_;
         }
-        
+
         const dimensionedScalar& rhoS() const
         {
             return rhoS_;
         }
-        
+
         const volScalarField& a_burn() const
         {
             return a_burn_;
         }
 
+        const volVectorField& burnU() const
+        {
+            return burnU_;
+        }
+
+        const volVectorField& USp() const
+        {
+            return USp_;
+        }
+
+        const volVectorField& USu() const
+        {
+            return USu_;
+        }
+
+        const volScalarField& pSp() const
+        {
+            return pSp_;
+        }
+
+        const volScalarField& pSu() const
+        {
+            return pSu_;
+        }
+
+        const volVectorField& mU() const
+        {
+            return mU_;
+        }
+
+        const volScalarField& alphaUsed() const
+        {
+            return alphaUsed_;
+        }
+
         tmp<volScalarField> Sh() const;
-        
+
         tmp<volScalarField> setDiag() const;
-        
-        tmp<volVectorField> burnU() const;
-        
+
         void correct();
 };
 
