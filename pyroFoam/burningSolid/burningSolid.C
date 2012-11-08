@@ -134,18 +134,74 @@ Foam::burningSolid::burningSolid
         dimensionedVector("burnU", dimVelocity, vector::zero)
     ),
 
-    a_burn_norm_
+    mU_
     (
         IOobject
         (
-            "a_burn_norm",
+            "mU",
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedVector("a_burn_norm", dimless, vector::zero)
+        dimensionedVector("mU", dimDensity*dimVelocity/dimTime, vector::zero)
+    ),
+
+    USp_
+    (
+        IOobject
+        (
+            "USp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("USp", dimDensity*dimVelocity/dimTime, vector::zero)
+    ),
+
+    USu_
+    (
+        IOobject
+        (
+            "USu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("USu", dimDensity*dimVelocity/dimTime, vector::zero)
+    ),
+
+    pSp_
+    (
+        IOobject
+        (
+            "pSp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("pSp", dimDensity/dimTime, vector::zero)
+    ),
+
+    pSu_
+    (
+        IOobject
+        (
+            "pSu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("pSu", dimDensity/dimTime, vector::zero)
     ),
 
     rhoS_(pyroDict_.lookup("rhoS")),
@@ -280,8 +336,8 @@ void Foam::burningSolid::calcBurningArea()
     // Code to get the cell area in the (0 1 0) direction
 
     const pointField& pf = mesh_.points(); //list of all points in the mesh
+    vector dir(0,1,0);
     a_burn_ = dimensionedScalar("zero",dimArea,0.0);
-    vector a_burn_norm_(0,1,0);
 
     forAll(mesh_.cells(), cellI)
     {
@@ -295,7 +351,7 @@ void Foam::burningSolid::calcBurningArea()
 
                 //This will catch either the face in direction dir, or -dir, but
                 // for a blockMesh the area will be the same either way
-                if ((a_burn_norm_ & (f.normal(pf)/f.mag(pf))) > 0.9)
+                if ((dir & (f.normal(pf)/f.mag(pf))) > 0.9)
                 {
                     a_burn_[cellI] = f.mag(pf);
                     break;
@@ -310,7 +366,7 @@ void Foam::burningSolid::calcBurningArea()
 // Calculate the burn gas velocity
 void Foam::burningSolid::calcBurnU()
 {
-    burnU_ = m_pyro_ / thermo_.rho() * a_burn_norm_ * isBurning_;
+    burnU_ = m_pyro_ / thermo_.rho() * vector(0,1,0) * isBurning_;
 }
 
 // Notes:

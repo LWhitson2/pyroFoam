@@ -74,7 +74,6 @@ class burningSolid
         volScalarField a_burn_;       // Burning area
         volVectorField burnU_;        // Burning gas velocity
 
-        volVectorField a_burn_norm_;  // Burning area normal vector
         volVectorField mU_;           // Burning gas small cell momentum
         volVectorField USp_;
         volVectorField USu_;
@@ -104,8 +103,6 @@ public:
 
         //- Return clone
         autoPtr<burningSolid> clone() const;
-
-
 
     // Public Member Functions
 
