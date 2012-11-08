@@ -374,8 +374,12 @@ void Foam::burningSolid::calcBurnU()
 
 void Foam::burningSolid::fixSmallCells()
 {
-    scalarField m_transferred =
-        m_pyro_*(alpha_ - thermo_.rho()/rhoS_)*mesh_.V();
+    //scalarField m_generated = m_pyro_*mesh_.V(); //a_burn_ * m0_;     // (kg_gas/s)
+    //scalarField m_stored = fvc::ddt(alpha_)*thermo_.rho()*mesh_.V();  // (kg_gas/s)
+    
+    // ddt(alpha_) = m_pyro_/rhoS, which can be substituted into the expression above
+    
+    scalarField m_transferred = m_pyro_*mesh_.V()*(1.0 - thermo_.rho()/rhoS_);
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
@@ -460,11 +464,12 @@ void Foam::burningSolid::fixSmallCells()
             label sc = (alphaShift[own] < 0.0) ? own : nei; //Small Cell
             label rc = (alphaShift[own] < 0.0) ? nei : own; //Receiving Cell
 
-            m_pyro_[rc] += w[faceI]/wtot[sc] * m_transferred[sc];
-            mU_[rc] += w[faceI]/wtot[sc] * m_transferred[sc] * burnU_[sc];
+            m_pyro_[rc] += w[faceI]/wtot[sc] * m_transferred[sc] / mesh_.V()[sc];
+            mU_[rc] += w[faceI]/wtot[sc] * m_transferred[sc] * burnU_[sc] / mesh_.V()[sc];
             alphaf_[faceI] = 0.0;
 
             m_pyro_[sc] = 0.0;
+            mU_[sc] = vector::zero;
             USu_[sc] = burnU_[sc] * rhordT.value();
             pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
         }
