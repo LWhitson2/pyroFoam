@@ -22,6 +22,6 @@ rhoS    rhoS [ 1 -3 0 0 0 0 0 ] 1800;
 m0      m0   [ 1 -2 -1 0 0 0 0] 10;
 
 // Minimum alpha for full cell treatment
-alphaMin  alphaMin  [ 0 0 0 0 0 0 0 ] 0.01;
+alphaMin  alphaMin  [ 0 0 0 0 0 0 0 ] 0.1;
 
 // ************************************************************************* //

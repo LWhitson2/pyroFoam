@@ -100,7 +100,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("isBurning", dimless, 0.0)
@@ -114,7 +114,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("a_burn",dimArea, 0.0)
@@ -128,7 +128,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedVector("burnU", dimVelocity, vector::zero)
@@ -142,7 +142,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedVector("mU", dimDensity*dimVelocity/dimTime, vector::zero)
@@ -156,7 +156,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("USp", dimDensity/dimTime, 0.0)
@@ -170,7 +170,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedVector("USu", dimDensity*dimVelocity/dimTime, vector::zero)
@@ -184,10 +184,10 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
-        dimensionedScalar("pSp", dimDensity/dimTime, 0.0)
+        dimensionedScalar("pSp", dimDensity/dimTime/dimPressure, 0.0)
     ),
 
     pSu_
@@ -198,7 +198,7 @@ Foam::burningSolid::burningSolid
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("pSu", dimDensity/dimTime, 0.0)
@@ -250,6 +250,9 @@ void Foam::burningSolid::correct()
 
     // Update alpha_
     solve(fvm::ddt(alpha_) == m_pyro_/rhoS_);
+    
+    // Calculate burn gas velocity
+    calcBurnU();
 
     // Update alphaf_
     calcAlphaf();
@@ -360,7 +363,7 @@ void Foam::burningSolid::calcBurningArea()
 void Foam::burningSolid::calcBurnU()
 {
     //TODO: Locate "HMXGas" in species list and get its rho here
-    burnU_ = m_pyro_ / thermo_.rho() * vector(0,1,0) * isBurning_;
+    burnU_ = m0_ / thermo_.rho() * vector(0,1,0) * isBurning_;
 }
 
 
@@ -413,6 +416,7 @@ void Foam::burningSolid::fixSmallCells()
     const labelUList& neighbor = mesh_.neighbour();
 
     // Calculate transfer weights
+    Info<< "Calculating transfer weights" << endl;
     forAll(w, faceI)
     {
         label own = owner[faceI];
@@ -425,8 +429,7 @@ void Foam::burningSolid::fixSmallCells()
 
             w[faceI] = mag
             (
-                (burnU_[sc] / mag(burnU_[sc]))
-              & (mesh_.Sf()[faceI] / mesh_.magSf()[faceI])
+                burnU_[sc] & mesh_.Sf()[faceI]
             ) * alphaf_[faceI];
         }
     }
@@ -446,6 +449,7 @@ void Foam::burningSolid::fixSmallCells()
     
 
     // Do mass transfers and "de-activate" small cells
+    Info<< "Doing transfers" << endl;
     forAll(w, faceI)
     {
         if (w[faceI] > 0.0)
