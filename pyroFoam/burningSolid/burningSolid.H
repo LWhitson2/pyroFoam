@@ -88,6 +88,7 @@ class burningSolid
         void calcAlphaf();            // Calculate gas face fraction
         void calcBurningArea();       // Calculate burning face areas
         void calcBurnU();             // Calculate burning gas velocity
+        void fixSmallCells(scalar smallCellTol); // Fix small cells
 
 public:
 
@@ -141,11 +142,6 @@ public:
         const volVectorField& burnU() const
         {
             return burnU_;
-        }
-
-        const volVectorField& a_burn_norm() const
-        {
-            return a_burn_norm_;
         }
 
         tmp<volScalarField> Sh() const;

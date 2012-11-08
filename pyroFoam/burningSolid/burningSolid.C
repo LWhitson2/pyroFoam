@@ -131,7 +131,7 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedVector("burnU", dimVelocity, (0.0 0.0 0.0))
+        dimensionedVector("burnU", dimVelocity, vector::zero)
     ),
 
     a_burn_norm_
@@ -145,7 +145,7 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedVector("a_burn_norm", dimless, (0.0 0.0 0.0))
+        dimensionedVector("a_burn_norm", dimless, vector::zero)
     ),
 
     rhoS_(pyroDict_.lookup("rhoS")),
@@ -281,7 +281,7 @@ void Foam::burningSolid::calcBurningArea()
 
     const pointField& pf = mesh_.points(); //list of all points in the mesh
     a_burn_ = dimensionedScalar("zero",dimArea,0.0);
-    a_burn_norm_ = grad(alpha_)/mag(grad(alpha));
+    vector a_burn_norm_(0,1,0);
 
     forAll(mesh_.cells(), cellI)
     {
@@ -319,7 +319,7 @@ void Foam::burningSolid::calcBurnU()
 // call this after calcAlphaf but before setting phi_ (?)
 
 // Transfer mass and momentum from small cells to larger neighbour cells
-void fixSmallCells(scalar smallCellTol)
+void Foam::burningSolid::fixSmallCells(scalar smallCellTol)
 {
     scalarField m_transferred =
         m_pyro_*(alpha_ - thermo_.rho()/rhoS_)*mesh_.V();
