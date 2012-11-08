@@ -174,6 +174,7 @@ void Foam::burningSolid::correct()
 
 
 // Calculate the gas area fraction on mesh faces
+// LIMITATIONS: This is only valid for 1D serial cases
 void Foam::burningSolid::calcAlphaf()
 {
     Info<< "Calculating alphaf" << endl;
@@ -204,6 +205,7 @@ void Foam::burningSolid::calcAlphaf()
 
 
 // Return the heat generation rate (W/m3)
+// LIMITATIONS: NOT IMPLEMENTED
 Foam::tmp<Foam::volScalarField> Foam::burningSolid::Sh() const
 {
     tmp<volScalarField> tSh
@@ -246,6 +248,7 @@ Foam::tmp<Foam::volScalarField> Foam::burningSolid::setDiag() const
 }
 
 // Calculate the burning area
+// LIMITATIONS: This is only valid for 1D serial cases
 void Foam::burningSolid::calcBurningArea()
 {
     // Code to get the cell area in the (0 1 0) direction
@@ -279,6 +282,7 @@ void Foam::burningSolid::calcBurningArea()
 } 
 
 // Calculate the burn gas velocity
+// LIMITATIONS: This is only valid for 1D serial cases
 Foam::tmp<Foam::volVectorField> Foam::burningSolid::burnU() const
 {
     tmp<volVectorField> tBurnU
@@ -296,6 +300,7 @@ Foam::tmp<Foam::volVectorField> Foam::burningSolid::burnU() const
         )
     );
     
+    //TODO: Locate "HMXGas" in species list and get its rho here
     tBurnU() = m0_ / thermo_.rho() * vector(0,1,0) * isBurning_;
     return tBurnU;
 }
