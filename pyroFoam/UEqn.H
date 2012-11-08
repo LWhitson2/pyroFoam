@@ -8,8 +8,8 @@
       //+ turbulence->divDevRhoReff(U)
       - solid.mU()
       - rho*solid.alpha()*g
-      + fvm::Sp(solid.USp(), U) //switch to set U = 0 in the solid
-      + solid.USu()
+      + fvm::Sp(solid.USp(), U) //switch to set U = 0 in the solid and Uburn in small cells
+      - solid.USu()
     );
 
     UEqn.relax();

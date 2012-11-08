@@ -74,12 +74,11 @@ class burningSolid
         volScalarField a_burn_;       // Burning area
         volVectorField burnU_;        // Burning gas velocity
 
-        volVectorField mU_;           // Burning gas small cell momentum
+        volVectorField mU_;           // Burning gas momentum
         volScalarField USp_;
         volVectorField USu_;
         volScalarField pSp_;
         volScalarField pSu_;
-        volScalarField alphaUsed_;    // Modified alpha value for small cells
 
         dimensionedScalar rhoS_;      // Density of energetic material
         dimensionedScalar m0_;        // Constant burning rate (for now, kg/m2/s)
@@ -143,7 +142,7 @@ public:
             return burnU_;
         }
 
-        const volVectorField& USp() const
+        const volScalarField& USp() const
         {
             return USp_;
         }
@@ -168,14 +167,9 @@ public:
             return mU_;
         }
 
-        const volScalarField& alphaUsed() const
-        {
-            return alphaUsed_;
-        }
-
+        tmp<volScalarField> alphaUsed() const;
+        
         tmp<volScalarField> Sh() const;
-
-        tmp<volScalarField> setDiag() const;
 
         void correct();
 };

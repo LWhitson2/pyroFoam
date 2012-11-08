@@ -204,20 +204,6 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("pSu", dimDensity/dimTime, 0.0)
     ),
 
-    alphaUsed_
-    (
-        IOobject
-        (
-            "alphaUsed",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("alphaUsed", dimless, 0.0)
-    ),
-
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0")),
     alphaMin_(pyroDict_.lookup("alphaMin"))
@@ -264,11 +250,13 @@ void Foam::burningSolid::correct()
 
     // Update alpha_
     solve(fvm::ddt(alpha_) == m_pyro_/rhoS_);
-    alphaUsed_ = alpha_ * pos(alpha_ - alphaMin_);
 
     // Update alphaf_
     calcAlphaf();
-
+    
+    // Fix small cells
+    fixSmallCells();
+    
     // Include alphaf into phi
     phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
@@ -327,25 +315,10 @@ Foam::tmp<Foam::volScalarField> Foam::burningSolid::Sh() const
     return tSh;
 }
 
-// Set the A matrix diagonal to 1/dt in fully solid cells
-Foam::tmp<Foam::volScalarField> Foam::burningSolid::setDiag() const
+// Calculate alpha that excludes small cells
+Foam::tmp<Foam::volScalarField> Foam::burningSolid::alphaUsed() const
 {
-    tmp<volScalarField> tSD
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "tSD",
-                mesh_.time().timeName(),
-                mesh_
-            ),
-            thermo_.rho()/mesh_.time().deltaT()
-        )
-    );
-
-    tSD() *= neg(alpha_ - SMALL);
-    return tSD;
+    return alpha_ * pos(alpha_ - alphaMin_);
 }
 
 // Calculate the burning area
@@ -383,25 +356,25 @@ void Foam::burningSolid::calcBurningArea()
 }
 
 // Calculate the burn gas velocity
-// LIMITATIONS: This is only valid for 1D serial cases
+// LIMITATIONS: This is only valid for 1D cases
 void Foam::burningSolid::calcBurnU()
 {
     //TODO: Locate "HMXGas" in species list and get its rho here
     burnU_ = m_pyro_ / thermo_.rho() * vector(0,1,0) * isBurning_;
 }
 
-// Notes:
-// alphaUsed = alpha_ * pos(alpha_ - alphaMin_);
-// need to store mU_, USp_, USu_, pSp_, pSu_, burnU_ in solid class
-// call this after calcAlphaf but before setting phi_ (?)
 
-// Transfer mass and momentum from small cells to larger neighbour cells
+// Transfer mass and momentum from small cells to larger neighbour cells and
+// fix the values in the small cells to:
+//   U = Uburn
+//   p = weighted average of p in neighbouring gas cells
+
 void Foam::burningSolid::fixSmallCells()
 {
     scalarField m_transferred =
         m_pyro_*(alpha_ - thermo_.rho()/rhoS_)*mesh_.V();
 
-    // Value to force small cells to zero velocity
+    // Value to force small cells to designated velocity
     dimensionedScalar rhordT
     (
         "rhordT",
@@ -409,7 +382,7 @@ void Foam::burningSolid::fixSmallCells()
         1.0/mesh_.time().deltaTValue()
     );
 
-    // Value to force small cells to zero velocity
+    // Value to force small cells to designated pressure
     dimensionedScalar psirdT
     (
         "psirdT",
@@ -422,12 +395,6 @@ void Foam::burningSolid::fixSmallCells()
 
     // Momentum being generated in current cell
     mU_ = m_pyro_ * burnU_;
-
-    // Sets diagonal terms for smal cell
-    USp_ = neg(alphaShift)*rhordT;
-    USu_ = dimensionedVector("zero",dimVelocity*dimDensity/dimTime,vector::zero);
-    pSp_ = neg(alphaShift)*psirdT;
-    pSu_ = dimensionedScalar("zero",dimDensity/dimTime,0.0);
 
     // Intra-cell transfer weights
     surfaceScalarField w
@@ -465,6 +432,18 @@ void Foam::burningSolid::fixSmallCells()
     }
 
     volScalarField wtot = fvc::surfaceSum(w);
+    
+    // Sets diagonal terms for SMALL and SOLID cells
+    USp_ = neg(alphaShift)*rhordT;
+    USu_ = dimensionedVector("zero",dimVelocity*dimDensity/dimTime,vector::zero);
+    
+    // pSp set in SMALL and SOLID cells
+    pSp_ = neg(alphaShift)*psirdT;
+    
+    // Only set pSu in SOLID cells, not SMALL cells. SMALL cells are set in the
+    // loop below
+    pSu_ = neg(alpha_ - SMALL)*thermo_.p()*psirdT; 
+    
 
     // Do mass transfers and "de-activate" small cells
     forAll(w, faceI)

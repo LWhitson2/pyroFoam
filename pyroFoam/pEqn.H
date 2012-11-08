@@ -10,7 +10,7 @@ U = rAU*UEqn.H();
 Info<< "Min,max Uest = " << Foam::min(Foam::mag(U)).value()
     << ", " << Foam::max(Foam::mag(U)).value() << endl;
 
-if (pimple.transonic())
+/*if (pimple.transonic())
 {
     surfaceScalarField phid
     (
@@ -46,7 +46,7 @@ if (pimple.transonic())
         }
     }
 }
-else
+else*/
 {
     surfaceScalarField phiEst
     (
@@ -65,13 +65,13 @@ else
     {
         fvScalarMatrix pEqn
         (
-            fvm::ddt(psiEff, p)
+            fvm::ddt(psi*solid.alphaUsed(), p)
           + fvc::div(phiEst)
           - fvm::laplacian(rhorAUf*solid.alphaf(), p)
-          + fvm::Sp(solid.pSp())
+          + fvm::Sp(solid.pSp(), p)
          ==
             solid.m_pyro()
-          - solid.pSu()
+          + solid.pSu()
         );
 
         pEqn.solve(mesh.solver(p.select(pimple.finalInnerIter())));
