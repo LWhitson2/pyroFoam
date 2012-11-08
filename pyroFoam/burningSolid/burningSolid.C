@@ -159,7 +159,7 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedVector("USp", dimDensity*dimVelocity/dimTime, vector::zero)
+        dimensionedScalar("USp", dimDensity/dimTime, 0.0)
     ),
 
     USu_
@@ -187,7 +187,7 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedVector("pSp", dimDensity/dimTime, vector::zero)
+        dimensionedScalar("pSp", dimDensity/dimTime, 0.0)
     ),
 
     pSu_
@@ -201,11 +201,26 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedVector("pSu", dimDensity/dimTime, vector::zero)
+        dimensionedScalar("pSu", dimDensity/dimTime, 0.0)
+    ),
+
+    alphaUsed_
+    (
+        IOobject
+        (
+            "alphaUsed",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphaUsed", dimless, 0.0)
     ),
 
     rhoS_(pyroDict_.lookup("rhoS")),
-    m0_(pyroDict_.lookup("m0"))
+    m0_(pyroDict_.lookup("m0")),
+    alphaMin_(pyroDict_.lookup("alphaMin"))
 
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
@@ -243,12 +258,13 @@ void Foam::burningSolid::correct()
     // Calculate burning face area
     calcBurningArea();
 
-    // Calculate burning face area
+    // Calculate propellant burning rate
     m_pyro_.internalField() = a_burn_ * m0_ / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
     // Update alpha_
     solve(fvm::ddt(alpha_) == m_pyro_/rhoS_);
+    alphaUsed_ = alpha_ * pos(alpha_ - alphaMin_);
 
     // Update alphaf_
     calcAlphaf();
@@ -370,12 +386,12 @@ void Foam::burningSolid::calcBurnU()
 }
 
 // Notes:
-// alphaUsed = alpha_ * pos(alpha_ - smallCellTol);
+// alphaUsed = alpha_ * pos(alpha_ - alphaMin_);
 // need to store mU_, USp_, USu_, pSp_, pSu_, burnU_ in solid class
 // call this after calcAlphaf but before setting phi_ (?)
 
 // Transfer mass and momentum from small cells to larger neighbour cells
-void Foam::burningSolid::fixSmallCells(scalar smallCellTol)
+void Foam::burningSolid::fixSmallCells()
 {
     scalarField m_transferred =
         m_pyro_*(alpha_ - thermo_.rho()/rhoS_)*mesh_.V();
@@ -397,7 +413,7 @@ void Foam::burningSolid::fixSmallCells(scalar smallCellTol)
     );
 
     // If negative, alpha is a small cell
-    volScalarField alphaShift = alpha_ - smallCellTol;
+    volScalarField alphaShift = alpha_ - alphaMin_;
 
     // Momentum being generated in current cell
     mU_ = m_pyro_ * burnU_;
@@ -457,12 +473,12 @@ void Foam::burningSolid::fixSmallCells(scalar smallCellTol)
             label rc = (alphaShift[own] < 0.0) ? nei : own; //Receiving Cell
 
             m_pyro_[rc] += w[faceI]/wtot[sc] * m_transferred[sc];
-            mU[rc] += w[faceI]/wtot[sc] * m_transferred[sc] * burnU_[sc];
+            mU_[rc] += w[faceI]/wtot[sc] * m_transferred[sc] * burnU_[sc];
             alphaf_[faceI] = 0.0;
 
             m_pyro_[sc] = 0.0;
-            USu_[sc] = burnU[sc] * rhordT;
-            pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT;
+            USu_[sc] = burnU_[sc] * rhordT.value();
+            pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
         }
     }
 }
