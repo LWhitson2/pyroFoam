@@ -91,7 +91,7 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("m_pyro", dimDensity/dimTime, 0.0),
         zeroGradientFvPatchScalarField::typeName
     ),
-    
+
     isBurning_
     (
         IOobject
@@ -105,7 +105,7 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedScalar("isBurning", dimless, 0.0)
     ),
-    
+
     a_burn_
     (
         IOobject
@@ -117,8 +117,37 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         ),
         mesh_,
-        dimensionedScalar("a_burn_",dimArea, 0.0)
+        dimensionedScalar("a_burn",dimArea, 0.0)
     ),
+
+    burnU_
+    (
+        IOobject
+        (
+            "burnU",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("burnU", dimVelocity, (0.0 0.0 0.0))
+    ),
+
+    a_burn_norm_
+    (
+        IOobject
+        (
+            "a_burn_norm",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("a_burn_norm", dimless, (0.0 0.0 0.0))
+    ),
+
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0"))
 
@@ -126,7 +155,7 @@ Foam::burningSolid::burningSolid
     Foam::Info << "Created burning solid class" << Foam::endl;
     alpha_.oldTime();
     alphaf_.oldTime();
-    
+
     //Clip phi by alphaf
     calcAlphaf();
     phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
@@ -148,16 +177,16 @@ Foam::autoPtr<Foam::burningSolid> Foam::burningSolid::clone() const
 void Foam::burningSolid::correct()
 {
     Foam::Info << "Correcting solid interface" << Foam::endl;
-    
+
     // Determine the burning faces
     // First term 1 for intermediates, 0 otherwise
     // Second term 1 for alpha == 0 and sum(alphaf) /= 0, 0 otherwise
     isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
                 + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
-                
+
     // Calculate burning face area
     calcBurningArea();
-    
+
     // Calculate burning face area
     m_pyro_.internalField() = a_burn_ * m0_ / mesh_.V();
     m_pyro_.correctBoundaryConditions();
@@ -181,7 +210,7 @@ void Foam::burningSolid::calcAlphaf()
     //Normal definition applied first, applicable away from interfaces
     alphaf_ = fvc::interpolate(alpha_);
 
-    //Then adjust at the interface regions   
+    //Then adjust at the interface regions
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
 
@@ -240,7 +269,7 @@ Foam::tmp<Foam::volScalarField> Foam::burningSolid::setDiag() const
             thermo_.rho()/mesh_.time().deltaT()
         )
     );
-    
+
     tSD() *= neg(alpha_ - SMALL);
     return tSD;
 }
@@ -251,8 +280,8 @@ void Foam::burningSolid::calcBurningArea()
     // Code to get the cell area in the (0 1 0) direction
 
     const pointField& pf = mesh_.points(); //list of all points in the mesh
-    vector dir(0,1,0);
     a_burn_ = dimensionedScalar("zero",dimArea,0.0);
+    a_burn_norm_ = grad(alpha_)/mag(grad(alpha));
 
     forAll(mesh_.cells(), cellI)
     {
@@ -263,10 +292,10 @@ void Foam::burningSolid::calcBurningArea()
             forAll(faces, faceI)
             {
                 const face& f = mesh_.faces()[faces[faceI]];
-               
+
                 //This will catch either the face in direction dir, or -dir, but
                 // for a blockMesh the area will be the same either way
-                if ((dir & (f.normal(pf)/f.mag(pf))) > 0.9)
+                if ((a_burn_norm_ & (f.normal(pf)/f.mag(pf))) > 0.9)
                 {
                     a_burn_[cellI] = f.mag(pf);
                     break;
@@ -276,29 +305,110 @@ void Foam::burningSolid::calcBurningArea()
     }
 
     a_burn_.correctBoundaryConditions();
-} 
-
-// Calculate the burn gas velocity
-Foam::tmp<Foam::volVectorField> Foam::burningSolid::burnU() const
-{
-    tmp<volVectorField> tBurnU
-    (
-        new volVectorField
-        (
-            IOobject
-            (
-                "tBurnU",
-                mesh_.time().timeName(),
-                mesh_
-            ),
-            mesh_,
-            dimensionedVector("tBurnU", dimVelocity, vector::zero)
-        )
-    );
-    
-    tBurnU() = m0_ / thermo_.rho() * vector(0,1,0) * isBurning_;
-    return tBurnU;
 }
 
+// Calculate the burn gas velocity
+void Foam::burningSolid::calcBurnU()
+{
+    burnU_ = m_pyro_ / thermo_.rho() * a_burn_norm_ * isBurning_;
+}
+
+// Notes:
+// alphaUsed = alpha_ * pos(alpha_ - smallCellTol);
+// need to store mU_, USp_, USu_, pSp_, pSu_, burnU_ in solid class
+// call this after calcAlphaf but before setting phi_ (?)
+
+// Transfer mass and momentum from small cells to larger neighbour cells
+void fixSmallCells(scalar smallCellTol)
+{
+    scalarField m_transferred =
+        m_pyro_*(alpha_ - thermo_.rho()/rhoS_)*mesh_.V();
+
+    // Value to force small cells to zero velocity
+    dimensionedScalar rhordT
+    (
+        "rhordT",
+        dimDensity/dimTime,
+        1.0/mesh_.time().deltaTValue()
+    );
+
+    // Value to force small cells to zero velocity
+    dimensionedScalar psirdT
+    (
+        "psirdT",
+        dimDensity/dimTime/dimPressure,
+        1e-5/mesh_.time().deltaTValue()
+    );
+
+    // If negative, alpha is a small cell
+    volScalarField alphaShift = alpha_ - smallCellTol;
+
+    // Momentum being generated in current cell
+    mU_ = m_pyro_ * burnU_;
+
+    // Sets diagonal terms for smal cell
+    USp_ = neg(alphaShift)*rhordT;
+    USu_ = dimensionedVector("zero",dimVelocity*dimDensity/dimTime,vector::zero);
+    pSp_ = neg(alphaShift)*psirdT;
+    pSu_ = dimensionedScalar("zero",dimDensity/dimTime,0.0);
+
+    // Intra-cell transfer weights
+    surfaceScalarField w
+    (
+        IOobject
+        (
+            "w",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedScalar("w", dimless, 0.0)
+    );
+
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbor = mesh_.neighbour();
+
+    // Calculate transfer weights
+    forAll(w, faceI)
+    {
+        label own = owner[faceI];
+        label nei = neighbor[faceI];
+
+        if (alphaShift[own] * alphaShift[nei] * alphaf_[faceI] < 0.0)
+        { //one is small, one is not, and they share a gas boundary
+
+            label sc = (alphaShift[own] < 0.0) ? own : nei; // Small Cell
+
+            w[faceI] = mag
+            (
+                (burnU_[sc] / mag(burnU_[sc]))
+              & (mesh_.Sf()[faceI] / mesh_.magSf()[faceI])
+            ) * alphaf_[faceI];
+        }
+    }
+
+    volScalarField wtot = fvc::surfaceSum(w);
+
+    // Do mass transfers and "de-activate" small cells
+    forAll(w, faceI)
+    {
+        if (w[faceI] > 0.0)
+        {
+            label own = owner[faceI];
+            label nei = neighbor[faceI];
+
+            label sc = (alphaShift[own] < 0.0) ? own : nei; //Small Cell
+            label rc = (alphaShift[own] < 0.0) ? nei : own; //Receiving Cell
+
+            m_pyro_[rc] += w[faceI]/wtot[sc] * m_transferred[sc];
+            mU[rc] += w[faceI]/wtot[sc] * m_transferred[sc] * burnU_[sc];
+            alphaf_[faceI] = 0.0;
+
+            m_pyro_[sc] = 0.0;
+            USu_[sc] = burnU[sc] * rhordT;
+            pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT;
+        }
+    }
+}
 
 // ************************************************************************* //
