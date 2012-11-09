@@ -290,7 +290,7 @@ void Foam::burningSolid::calculateNewInterface()
     volScalarField intermeds = pos(alpha_ - SMALL)*pos(1.0-SMALL - alpha_);
     
     // Calculate interface normal in intermediate cells
-    iNormal_ = fvc::grad(alpha_)/mag(fvc::grad(alpha_)+VSMALL) * intermeds;
+    iNormal_ = fvc::grad(alpha_)/(mag(fvc::grad(alpha_))+VSMALL) * intermeds;
         //TODO: Use a smoothing procedure to capture the interface better
     
     // Set a_burn equal to zero everywhere
@@ -376,7 +376,7 @@ void Foam::burningSolid::calculateNewInterface()
 // LIMITATIONS: This is only valid for 1D serial cases
 void Foam::burningSolid::calcAlphaf()
 {
-    calcBurningArea();
+
        
     Info<< "Calculating alphaf" << endl;
 
@@ -406,6 +406,8 @@ void Foam::burningSolid::calcAlphaf()
     isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
                 + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
     iNormal_ = dimensionedVector("n",dimless,vector(0,1,0)) * isBurning_;
+    
+    calcBurningArea();
 }
 
 
