@@ -25,6 +25,8 @@ License
 
 #include "burningSolid.H"
 
+const dimensionedScalar Ru_ = constant::physicoChemical::R*1000;
+
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::burningSolid::burningSolid
@@ -203,7 +205,35 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedScalar("pSu", dimDensity/dimTime, 0.0)
     ),
-    
+
+    TsSp_
+    (
+        IOobject
+        (
+            "TsSp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("TsSp", dimPower/dimVolume/dimTemperature, 0.0)
+    ),
+
+    TsSu_
+    (
+        IOobject
+        (
+            "pSu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("TsSu", dimPower/dimVolume, 0.0)
+    ),
+
     iNormal_
     (
         IOobject
@@ -217,10 +247,29 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedVector("iNormal", dimless, vector::zero)
     ),
-    
+
+    Ts_
+    (
+        IOobject
+        (
+            "Ts",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("Ts",dimTemperature, 300.0)
+    ),
+
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0")),
-    alphaMin_(pyroDict_.lookup("alphaMin"))
+    alphaMin_(pyroDict_.lookup("alphaMin")),
+    Ac_(pyroDict_.lookup("Ac")),
+    Ec_(pyroDict_.lookup("Ec")),
+    Qc_(pyroDict_.lookup("Qc")),
+    kc_(pyroDict_.lookup("kc")),
+    Cpc_(pyroDict_.lookup("Cpc"))
 
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
@@ -228,11 +277,11 @@ Foam::burningSolid::burningSolid
 
     // Calculate new interface position and update alphaf and a_burn
     calcAlphaf();
-    
+
     alphaf_.oldTime();
     iNormal_.oldTime();
     a_burn_.oldTime();
-    
+
     // Calculate mass flux field
     phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
@@ -256,27 +305,27 @@ void Foam::burningSolid::correct()
 
     // Step 1: Calculate mass flux (m0) using current P and T
     // *** Assumed constant for now ***
-    
+
     // Step 2: Calculate mass density source using original cell area
     m_pyro_.internalField() = m0_ * a_burn_.oldTime() / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
     // Step 3: Evolve interface using calculated burning rate (alpha_)
     solve(fvm::ddt(alpha_) == m_pyro_/rhoS_);
-    
+
     // Step 4: Calculate burn gas velocity using original interface orientation
     calcBurnU();
-    
+
     // Step 5: Calculate momentum source
     mU_ = burnU_ * m_pyro_;
 
     // Step 6: Calculate new interface position and update alphaf and a_burn
     calcAlphaf();
-    
+
     // Step 7: Fix small cells by transferring momentum (mU) and mass (m_pyro)
     //         to neighbouring larger cells
     fixSmallCells();
-    
+
     // Step 8: Calculate mass flux field that includes alphaf
     phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
@@ -288,14 +337,14 @@ void Foam::burningSolid::calculateNewInterface()
 {
     // Identify intermediate cells
     volScalarField intermeds = pos(alpha_ - SMALL)*pos(1.0-SMALL - alpha_);
-    
+
     // Calculate interface normal in intermediate cells
     iNormal_ = fvc::grad(alpha_)/mag(fvc::grad(alpha_)+VSMALL) * intermeds;
         //TODO: Use a smoothing procedure to capture the interface better
-    
+
     // Set a_burn equal to zero everywhere
     a_burn_ = dimensionedScalar("zero",dimArea,0.0);
-    
+
     // Calculate the cut plane and cut area in intermediate cells
     volVectorField iPoint
     (
@@ -308,7 +357,7 @@ void Foam::burningSolid::calculateNewInterface()
         mesh_,
         dimensionedVector("iPoint", dimless, vector::zero)
     );
-    
+
     forAll(iNormal_, cellI)
     {
         if (intermeds[cellI] > SMALL)
@@ -321,54 +370,54 @@ void Foam::burningSolid::calculateNewInterface()
         */
         }
     }
-    
-    
+
+
     // Calculate alphaf on all faces
     alphaf_ = fvc::interpolate(alpha_); //valid in all homogeneous regions
-    
+
     // Correct alphaf near interface
     surfaceScalarField avgNorm = fvc::interpolate(mag(iNormal_));
-    
+
     forAll(alphaf_, faceI)
     {
     /*
         // Faces where there is a cut plane in one or both neighbour cells
         if (avgNorm[faceI] > SMALL)
         {
-        
+
             cuttableFace cf(mesh_, faceI);
-            
+
             scalar alphafNei = 1.0;
             scalar alphafOwn = 1.0;
-        
+
             if (mag(iNormal_[nei]) > SMALL)
             {
                 alphafNei = cf.cutArea(iPoint_[nei], iNormal_[nei]);
             }
-                
+
             if (mag(iNormal_[own]) > SMALL)
             {
                 alphafOwn = cf.cutArea(iPoint_[own], iNormal_[own]);
             }
-        
+
             alphaf_[face] = min(alphafNei, alphafOwn);
-        
+
         }
-        
+
         // catch sharp face-coincident boundaries
         else if (alpha_[own]*alpha_[nei] < SMALL && mag(alpha_[own]+alpha_[nei]-1)<SMALL)
         {
-        
+
             alphaf_[faceI] = 0.0;
-            
+
             //set iNormal and a_burn for this case
-            
-        
+
+
         }
     */
     }
-    
-    
+
+
 }
 
 
@@ -377,7 +426,7 @@ void Foam::burningSolid::calculateNewInterface()
 void Foam::burningSolid::calcAlphaf()
 {
     calcBurningArea();
-       
+
     Info<< "Calculating alphaf" << endl;
 
     //Normal definition applied first, applicable away from interfaces
@@ -402,7 +451,7 @@ void Foam::burningSolid::calcAlphaf()
             alphaf_[faceI] = 0.0;
         }
     }
-    
+
     isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
                 + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
     iNormal_ = dimensionedVector("n",dimless,vector(0,1,0)) * isBurning_;
@@ -411,7 +460,7 @@ void Foam::burningSolid::calcAlphaf()
 
 // Return the heat generation rate (W/m3)
 // LIMITATIONS: NOT IMPLEMENTED
-Foam::tmp<Foam::volScalarField> Foam::burningSolid::Sh() const
+volScalarField Foam::burningSolid::Sh()
 {
     tmp<volScalarField> tSh
     (
@@ -427,6 +476,8 @@ Foam::tmp<Foam::volScalarField> Foam::burningSolid::Sh() const
             dimensionedScalar("tSh", dimPower/dimVolume, 0.0)
         )
     );
+
+    tSh = Qc_*rhoS_*Ac_*exp(-Ec_/(Ts_*Ru_));
 
     return tSh;
 }
@@ -488,9 +539,9 @@ void Foam::burningSolid::fixSmallCells()
 {
     //scalarField m_generated = m_pyro_*mesh_.V(); //a_burn_ * m0_;     // (kg_gas/s)
     //scalarField m_stored = fvc::ddt(alpha_)*thermo_.rho()*mesh_.V();  // (kg_gas/s)
-    
+
     // ddt(alpha_) = m_pyro_/rhoS, which can be substituted into the expression above
-    
+
     scalarField m_transferred = m_pyro_*mesh_.V()*(1.0 - thermo_.rho()/rhoS_);
 
     // Value to force small cells to designated velocity
@@ -551,18 +602,18 @@ void Foam::burningSolid::fixSmallCells()
     }
 
     volScalarField wtot = fvc::surfaceSum(w);
-    
+
     // Sets diagonal terms for SMALL and SOLID cells
     USp_ = neg(alphaShift)*rhordT;
     USu_ = dimensionedVector("zero",dimVelocity*dimDensity/dimTime,vector::zero);
-    
+
     // pSp set in SMALL and SOLID cells
     pSp_ = neg(alphaShift)*psirdT;
-    
+
     // Only set pSu in SOLID cells, not SMALL cells. SMALL cells are set in the
     // loop below
     pSu_ = neg(alphaShift)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
-    
+
 
     // Do mass transfers and "de-activate" small cells
     Info<< "Doing transfers" << endl;
@@ -586,6 +637,33 @@ void Foam::burningSolid::fixSmallCells()
             //pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
         }
     }
+}
+
+void Foam::burningSolid::solveTs()
+{
+    // Copy gas temperature field for full gas cells
+    Ts_ = Ts_ + (thermo_.T() - Ts_)*pos(alpha_.value() - 1. + SMALL);
+
+    // Calculate explicit source term
+    TsSu_ = (1. - alpha_)*Sh();
+
+    // Calculate implicit source term
+
+    fvScalarMatrix TsEqn
+    (
+        fvm::ddt((1.-alpha_)*rhoS_*Cpc_, Ts_)
+     ==
+        fvm::laplacian(kc_, Ts_)
+      + TsSu_ + fvm::Sp(TsSp_,Ts_)
+    );
+
+    TsEqn.relax();
+    TsEqn.solve();
+
+//    thermo.correct(); //we may need to create a 'specie' for the solid so that this works
+
+    Info<< "T solid min/max   = " << min(Ts_).value() << ", "
+        << max(Ts_).value() << endl;
 }
 
 // ************************************************************************* //
