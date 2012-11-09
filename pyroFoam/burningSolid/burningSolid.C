@@ -331,15 +331,15 @@ void Foam::burningSolid::calculateNewInterface()
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
        
+    // This loop should be modified for parallel cases. This should be doable
     forAll(alphaf_, faceI)
     {
         label own = owner[faceI];
         label nei = neighbor[faceI];
-    /*
+    
         // Faces where there is a cut plane in one or both bounding cells
         if (avgNorm[faceI] > SMALL)
         {
-        
             cuttableFace cf(mesh_, faceI);
             
             scalar alphafNei = 1.0;
@@ -347,23 +347,23 @@ void Foam::burningSolid::calculateNewInterface()
         
             if (mag(iNormal_[nei]) > SMALL)
             {
-                alphafNei = cf.cutArea(iPoint_[nei], iNormal_[nei]);
+                Foam::plane p(iPoint[nei], iNormal_[nei]);
+                alphafNei = cf.cut(p);
             }
                 
             if (mag(iNormal_[own]) > SMALL)
             {
-                alphafOwn = cf.cutArea(iPoint_[own], iNormal_[own]);
+                Foam::plane p(iPoint[own], iNormal_[own]);
+                alphafOwn = cf.cut(p);
             }
         
-            alphaf_[face] = min(alphafNei, alphafOwn);
-        
+            alphaf_[faceI] = Foam::min(alphafNei, alphafOwn);
         }
         
         // Catch sharp face-coincident interfaces. In this case, the solid cell
         // is the one that will be burning at the next time step.
         else if (alpha_[own]*alpha_[nei] < SMALL && mag(alpha_[own]+alpha_[nei]-1)<SMALL)
         {
-        
             alphaf_[faceI] = 0.0;
             
             //set iNormal and a_burn for this case
@@ -380,10 +380,7 @@ void Foam::burningSolid::calculateNewInterface()
                 iNormal_[solidcell] *= -1.0;
             }
         }
-    */
     }
-    
-    
 }
 
 

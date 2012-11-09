@@ -34,6 +34,7 @@ SourceFiles
 
 #include "cuttableFace.H"
 
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::cuttableFace::cuttableFace(const fvMesh& mesh, label faceI)
 :
@@ -41,6 +42,8 @@ Foam::cuttableFace::cuttableFace(const fvMesh& mesh, label faceI)
     faceID(faceI)
 {}
 
+
+// * * * * * * * * * * * * * * * * Public Methods  * * * * * * * * * * * * * //
 Foam::scalar Foam::cuttableFace::cut(const plane& p) const
 {
 

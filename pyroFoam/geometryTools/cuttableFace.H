@@ -32,6 +32,9 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
+#ifndef cuttableFace_H
+#define cuttableFace_H
+
 #include "fvCFD.H"
 #include "plane.H"
 #include "SortableList.H"
@@ -56,4 +59,7 @@ class cuttableFace
 
 
 };
+
+#endif
+
 

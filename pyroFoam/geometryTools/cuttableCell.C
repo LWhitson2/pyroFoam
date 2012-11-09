@@ -34,7 +34,66 @@ SourceFiles
 
 #include "cuttableCell.H"
 
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
+Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
+ : points_(mesh.cellPoints()[cellI].size()),
+   faces_(mesh.cells()[cellI].size()),
+   pointEqualTol_(1e-3),
+   baseVol_(mesh.V()[cellI]),
+   centroid_(Foam::vector::zero),
+   cutArea_(0.0)
+{
+    Foam::labelList pointMap(points_.size());
+    
+    const Foam::pointField& meshPoints = mesh.points();
+    const Foam::labelList& cellPoints = mesh.cellPoints()[cellI];
+    
+    // Gather points
+    forAll(cellPoints, pointI)
+    {
+        points_[pointI] = meshPoints[cellPoints[pointI]];
+        pointMap[pointI] = cellPoints[pointI];
+        centroid_ += points_[pointI];
+    }
+    centroid_ /= points_.size();
+
+    // Map faces
+    const Foam::cell& faces = mesh.cells()[cellI];
+    forAll(faces, faceI)
+    {
+        
+        const Foam::labelList& facePoints = mesh.faces()[faces[faceI]];
+        Foam::face mappedFace(facePoints.size());
+        
+        forAll(facePoints, pointI)
+        {
+            label pOld = facePoints[pointI];
+            label pNew = -1;
+            
+            forAll(pointMap, p)
+            {
+                if (pointMap[p] == pOld)
+                {
+                    pNew = p;
+                    break;
+                }
+            }
+            
+            if (pNew == -1)
+            {
+                Info<<"Could not find point " << pOld
+                    << " in " << pointMap << endl;
+            }
+            
+            mappedFace[pointI] = pNew;
+        }
+        faces_[faceI] = mappedFace;
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * Methods * * * * * * * * * * * * * * * * * //
 
 Foam::plane Foam::cuttableCell::constructInterface
 (
@@ -84,8 +143,8 @@ Foam::plane Foam::cuttableCell::constructInterface
 
             res = Foam::mag(fM);
 
-            dL = (fM < 0) ? dM : dL;
-            dH = (fM < 0) ? dH : dM;
+            dL = (fM < 0.0) ? dM : dL;
+            dH = (fM < 0.0) ? dH : dM;
 
             if (Foam::mag(dL - dH) < SMALL)
                 break;
@@ -336,115 +395,6 @@ bool Foam::cuttableCell::cutFace
     return true;
 }
 
-
-Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
- : points_(mesh.cellPoints()[cellI].size()),
-   faces_(mesh.cells()[cellI].size()),
-   pointEqualTol_(1e-3),
-   baseVol_(mesh.V()[cellI]),
-   centroid_(Foam::vector::zero),
-   cutArea_(0.0)
-{
-    Foam::labelList pointMap(points_.size());
-    
-    const Foam::pointField& meshPoints = mesh.points();
-    const Foam::labelList& cellPoints = mesh.cellPoints()[cellI];
-    
-    // Gather points
-    forAll(cellPoints, pointI)
-    {
-        points_[pointI] = meshPoints[cellPoints[pointI]];
-        pointMap[pointI] = cellPoints[pointI];
-        centroid_ += points_[pointI];
-    }
-    centroid_ /= points_.size();
-
-    // Map faces
-    const Foam::cell& faces = mesh.cells()[cellI];
-    forAll(faces, faceI)
-    {
-        
-        const Foam::labelList& facePoints = mesh.faces()[faces[faceI]];
-        Foam::face mappedFace(facePoints.size());
-        
-        forAll(facePoints, pointI)
-        {
-            label pOld = facePoints[pointI];
-            label pNew = -1;
-            
-            forAll(pointMap, p)
-            {
-                if (pointMap[p] == pOld)
-                {
-                    pNew = p;
-                    break;
-                }
-            }
-            
-            if (pNew == -1)
-            {
-                Info<<"Could not find point " << pOld
-                    << " in " << pointMap << endl;
-            }
-            
-            mappedFace[pointI] = pNew;
-        }
-        faces_[faceI] = mappedFace;
-    }
-}
-
-
-// For the version with a vectorField for d, the only things that will change
-//  are the calculation of baseVol_ and the addition of d[pointI] rather than
-//  d in the point gathering loop. A check to make sure d.size() == f.size()
-//  would also be good.
-Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label faceI, Foam::vector d)
- : points_(mesh.faces()[faceI].size()*2),
-   faces_(mesh.faces()[faceI].size()+2),
-   pointEqualTol_(1e-3),
-   baseVol_(Foam::mag(mesh.faces()[faceI].normal(mesh.points()) & d)),
-   centroid_(Foam::vector::zero),
-   cutArea_(0.0)
-{
-    Foam::labelList pointMap(points_.size());
-    
-    const Foam::pointField& meshPoints = mesh.points();
-    const Foam::face& f = mesh.faces()[faceI];
-    
-    // base and top faces are the same size
-    Foam::face base(f.size());
-    Foam::face top(f.size());
-
-    //Gather all points and make faces base (original) and top (extruded)
-    forAll(f, pointI)
-    {
-        points_[pointI] = meshPoints[f[pointI]];
-        points_[pointI + f.size()] = meshPoints[f[pointI]] + d;
-        pointMap[pointI] = f[pointI];
-        centroid_ += points_[pointI] + points_[pointI + f.size()];
-        base[pointI] = pointI;
-        top[pointI] = pointI + f.size();
-    }
-    centroid_ /= points_.size();
-
-    faces_[0] = base;
-    faces_[1] = top;
-
-    //Now loop around the base and make the side faces
-    forAll(base, pointI)
-    {
-        Foam::face side(4);
-        label ps = base[pointI];
-        label pe = base.nextLabel(pointI);
-        
-        side[0] = ps;
-        side[1] = pe;
-        side[2] = pe + base.size();
-        side[3] = ps + base.size();
-        
-        faces_[pointI+2] = side;
-    }
-}
 
 
 scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)

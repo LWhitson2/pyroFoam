@@ -32,6 +32,9 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
+#ifndef cuttableCell_H
+#define cuttableCell_H
+
 #include "fvCFD.H"
 #include "plane.H"
 #include "SortableList.H"
@@ -101,13 +104,6 @@ class cuttableCell
         //- Construct from a cell in the mesh
         cuttableCell(const fvMesh& mesh, label cellI);
 
-        //- Construct by extruding a face in the mesh in direction d
-        cuttableCell(const fvMesh& mesh, label faceI, vector d);
-
-        //- Construct by extruding each point[i] of a face in the mesh by a
-        //   different direction d[i]
-        //cuttableCell(const fvMesh& mesh, label faceI, vectorField d); //TODO
-
     // Methods
 
         //- Cut the cell by the plane p and return the cut volume. The cut
@@ -123,5 +119,7 @@ class cuttableCell
 };
 
 };
+
+#endif
 
 
