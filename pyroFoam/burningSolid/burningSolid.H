@@ -41,6 +41,8 @@ SourceFiles
 #include "dimensionedScalar.H"
 #include "dimensionedScalarFwd.H"
 #include "hsCombustionThermo.H"
+#include "cuttableCell.H"
+#include "cuttableFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

@@ -284,6 +284,7 @@ void Foam::burningSolid::correct()
 
 // 3D interface evolution and geometry calculations (replaces calcAlphaf)
 //  Update iNormal_, a_burn_, and alphaf_
+// LIMITATIONS: SERIAL RUNS ONLY
 void Foam::burningSolid::calculateNewInterface()
 {
     // Identify intermediate cells
@@ -313,12 +314,10 @@ void Foam::burningSolid::calculateNewInterface()
     {
         if (intermeds[cellI] > SMALL)
         {
-        /*
             cuttableCell cc(mesh_, cellI);
             plane p = cc.constructInterface(iNormal_[cellI], alpha_[cellI]);
             iPoint[cellI] = p.refPoint();
             a_burn_[cellI] = cc.cutArea();
-        */
         }
     }
     
@@ -329,10 +328,15 @@ void Foam::burningSolid::calculateNewInterface()
     // Correct alphaf near interface
     surfaceScalarField avgNorm = fvc::interpolate(mag(iNormal_));
     
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbor = mesh_.neighbour();
+       
     forAll(alphaf_, faceI)
     {
+        label own = owner[faceI];
+        label nei = neighbor[faceI];
     /*
-        // Faces where there is a cut plane in one or both neighbour cells
+        // Faces where there is a cut plane in one or both bounding cells
         if (avgNorm[faceI] > SMALL)
         {
         
@@ -355,15 +359,26 @@ void Foam::burningSolid::calculateNewInterface()
         
         }
         
-        // catch sharp face-coincident boundaries
+        // Catch sharp face-coincident interfaces. In this case, the solid cell
+        // is the one that will be burning at the next time step.
         else if (alpha_[own]*alpha_[nei] < SMALL && mag(alpha_[own]+alpha_[nei]-1)<SMALL)
         {
         
             alphaf_[faceI] = 0.0;
             
             //set iNormal and a_burn for this case
+            label solidcell = (alpha_[own]<SMALL) ? own : nei;
             
-        
+            a_burn_[solidcell] = mesh_.magSf()[faceI];
+            iNormal_[solidcell] = mesh_.Sf()[faceI] / a_burn_[solidcell];
+            
+            //flip iNormal if pointed wrong way
+            vector vSF = mesh_.Cf()[faceI] - mesh_.C()[solidcell];
+            
+            if ((vSF & iNormal_[solidcell]) < 0.0)
+            {
+                iNormal_[solidcell] *= -1.0;
+            }
         }
     */
     }

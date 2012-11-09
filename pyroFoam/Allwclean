@@ -4,6 +4,7 @@ set -x
 
 wclean
 wclean burningSolid
+wclean geometryTools
 find . -name '*~' -delete
 
 # ----------------------------------------------------------------- end-of-file
