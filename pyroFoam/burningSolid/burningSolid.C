@@ -282,6 +282,96 @@ void Foam::burningSolid::correct()
 }
 
 
+// 3D interface evolution and geometry calculations (replaces calcAlphaf)
+//  Update iNormal_, a_burn_, and alphaf_
+void Foam::burningSolid::calculateNewInterface()
+{
+    // Identify intermediate cells
+    volScalarField intermeds = pos(alpha_ - SMALL)*pos(1.0-SMALL - alpha_);
+    
+    // Calculate interface normal in intermediate cells
+    iNormal_ = fvc::grad(alpha_)/mag(fvc::grad(alpha_)+VSMALL) * intermeds;
+        //TODO: Use a smoothing procedure to capture the interface better
+    
+    // Set a_burn equal to zero everywhere
+    a_burn_ = dimensionedScalar("zero",dimArea,0.0);
+    
+    // Calculate the cut plane and cut area in intermediate cells
+    volVectorField iPoint
+    (
+        IOobject
+        (
+            "iPoint",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mesh_,
+        dimensionedVector("iPoint", dimless, vector::zero)
+    );
+    
+    forAll(iNormal_, cellI)
+    {
+        if (intermeds[cellI] > SMALL)
+        {
+        /*
+            cuttableCell cc(mesh_, cellI);
+            plane p = cc.constructInterface(iNormal_[cellI], alpha_[cellI]);
+            iPoint[cellI] = p.refPoint();
+            a_burn_[cellI] = cc.cutArea();
+        */
+        }
+    }
+    
+    
+    // Calculate alphaf on all faces
+    alphaf_ = fvc::interpolate(alpha_); //valid in all homogeneous regions
+    
+    // Correct alphaf near interface
+    surfaceScalarField avgNorm = fvc::interpolate(mag(iNormal_));
+    
+    forAll(alphaf_, faceI)
+    {
+    /*
+        // Faces where there is a cut plane in one or both neighbour cells
+        if (avgNorm[faceI] > SMALL)
+        {
+        
+            cuttableFace cf(mesh_, faceI);
+            
+            scalar alphafNei = 1.0;
+            scalar alphafOwn = 1.0;
+        
+            if (mag(iNormal_[nei]) > SMALL)
+            {
+                alphafNei = cf.cutArea(iPoint_[nei], iNormal_[nei]);
+            }
+                
+            if (mag(iNormal_[own]) > SMALL)
+            {
+                alphafOwn = cf.cutArea(iPoint_[own], iNormal_[own]);
+            }
+        
+            alphaf_[face] = min(alphafNei, alphafOwn);
+        
+        }
+        
+        // catch sharp face-coincident boundaries
+        else if (alpha_[own]*alpha_[nei] < SMALL && mag(alpha_[own]+alpha_[nei]-1)<SMALL)
+        {
+        
+            alphaf_[faceI] = 0.0;
+            
+            //set iNormal and a_burn for this case
+            
+        
+        }
+    */
+    }
+    
+    
+}
+
+
 // Calculate the gas area fraction on mesh faces
 // LIMITATIONS: This is only valid for 1D serial cases
 void Foam::burningSolid::calcAlphaf()

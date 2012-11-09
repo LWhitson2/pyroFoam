@@ -91,7 +91,7 @@ class burningSolid
         void calcBurningArea();       // Calculate burning face areas
         void calcBurnU();             // Calculate burning gas velocity
         void fixSmallCells();         // Fix small cells
-
+        void calculateNewInterface(); // Move interface and update values
 public:
 
     // Constructors
