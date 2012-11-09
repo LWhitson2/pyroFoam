@@ -449,8 +449,7 @@ void Foam::burningSolid::fixSmallCells()
     
     // Only set pSu in SOLID cells, not SMALL cells. SMALL cells are set in the
     // loop below
-    //  EDITED TEMPORARILY, NEED BETTER P TREATMENT IN SMALL CELLS
-    pSu_ = neg(alphaShift)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
+    pSu_ = neg(alpha_ - SMALL)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
     
 
     // Do mass transfers and "de-activate" small cells
@@ -472,7 +471,7 @@ void Foam::burningSolid::fixSmallCells()
             m_pyro_[sc] = 0.0;
             mU_[sc] = vector::zero;
             USu_[sc] = burnU_[sc] * rhordT.value();
-            //pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value(); //TEMPORARY EDIT
+            pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
         }
     }
 }
