@@ -71,22 +71,31 @@ class burningSolid
         // Fields owned by this class
         volScalarField alpha_;        // Volume fraction of GAS
         surfaceScalarField alphaf_;   // Face area fraction of gas
-        volScalarField m_pyro_;       // Solid burning rate
+        volScalarField m_pyro_;       // Solid burning rate (kg/m^3-s)
         volScalarField isBurning_;    // Flag for burning cells
-        volScalarField a_burn_;       // Burning area
-        volVectorField burnU_;        // Burning gas velocity
+        volScalarField a_burn_;       // Burning area (m^2)
+        volVectorField burnU_;        // Burning gas velocity (m/s)
 
         volVectorField mU_;           // Burning gas momentum
         volScalarField USp_;
         volVectorField USu_;
         volScalarField pSp_;
         volScalarField pSu_;
-        
+        volScalarField TsSp_;         // Solid temperature implicit source
+        volScalarField TsSu_;         // Solid temperature explicit source
         volVectorField iNormal_;
 
-        dimensionedScalar rhoS_;      // Density of energetic material
+        volScalarField Ts_;           // Solid temperature field (K)
+
+        // Constants read from dictionary
+        dimensionedScalar rhoS_;      // Density of energetic material (kg/m^3)
         dimensionedScalar m0_;        // Constant burning rate (for now, kg/m2/s)
         dimensionedScalar alphaMin_;  // Minimum alpha for full cell
+        dimensionedScalar Ac_;        // Solid arrhenius rate constant (1/s)
+        dimensionedScalar Ec_;        // Solid activation energy (J/mol)
+        dimensionedScalar Qc_;        // Solid phase heat release (J/kg)
+        dimensionedScalar kc_;        // Solid thermal conductivity (W/m-K)
+        dimensionedScalar Cpc_;       // Solid heat capacity (J/kg-K)
 
     // Private member functions
         void calcAlphaf();            // Calculate gas face fraction
@@ -171,11 +180,18 @@ public:
             return mU_;
         }
 
+        const volScalarField& Ts() const
+        {
+            return Ts_;
+        }
+
         tmp<volScalarField> alphaUsed() const;
-        
+
         tmp<volScalarField> Sh() const;
 
         void correct();
+
+        void solveTs();
 };
 
 
