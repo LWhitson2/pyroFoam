@@ -1,5 +1,6 @@
 EXE_INC = \
     -IburningSolid/lnInclude \
+    -IgeometryTools/lnInclude \
     -I$(LIB_SRC)/turbulenceModels/compressible/turbulenceModel \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
@@ -21,4 +22,5 @@ EXE_LIBS = \
     -lchemistryModel \
     -lODE \
     -lfiniteVolume \
-    -lcombustionModels
+    -lcombustionModels \
+    -lgeometryTools

@@ -41,6 +41,8 @@ SourceFiles
 #include "dimensionedScalar.H"
 #include "dimensionedScalarFwd.H"
 #include "hsCombustionThermo.H"
+#include "cuttableCell.H"
+#include "cuttableFace.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -185,7 +187,7 @@ public:
 
         tmp<volScalarField> alphaUsed() const;
 
-        volScalarField Sh();
+        tmp<volScalarField> Sh() const;
 
         void correct();
 

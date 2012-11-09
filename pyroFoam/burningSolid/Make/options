@@ -1,12 +1,15 @@
 EXE_INC = \
+    -I../geometryTools/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude
 
 LIB_LIBS = \
+    -L$(FOAM_USER_LIBBIN) \
     -lfiniteVolume \
     -lreactionThermophysicalModels \
     -lspecie \
-    -lbasicThermophysicalModels
+    -lbasicThermophysicalModels \
+    -lgeometryTools
 

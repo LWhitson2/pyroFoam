@@ -333,13 +333,14 @@ void Foam::burningSolid::correct()
 
 // 3D interface evolution and geometry calculations (replaces calcAlphaf)
 //  Update iNormal_, a_burn_, and alphaf_
+// LIMITATIONS: SERIAL RUNS ONLY
 void Foam::burningSolid::calculateNewInterface()
 {
     // Identify intermediate cells
     volScalarField intermeds = pos(alpha_ - SMALL)*pos(1.0-SMALL - alpha_);
 
     // Calculate interface normal in intermediate cells
-    iNormal_ = fvc::grad(alpha_)/mag(fvc::grad(alpha_)+VSMALL) * intermeds;
+    iNormal_ = fvc::grad(alpha_)/(mag(fvc::grad(alpha_))+VSMALL) * intermeds;
         //TODO: Use a smoothing procedure to capture the interface better
 
     // Set a_burn equal to zero everywhere
@@ -362,12 +363,10 @@ void Foam::burningSolid::calculateNewInterface()
     {
         if (intermeds[cellI] > SMALL)
         {
-        /*
             cuttableCell cc(mesh_, cellI);
             plane p = cc.constructInterface(iNormal_[cellI], alpha_[cellI]);
             iPoint[cellI] = p.refPoint();
             a_burn_[cellI] = cc.cutArea();
-        */
         }
     }
 
@@ -377,14 +376,18 @@ void Foam::burningSolid::calculateNewInterface()
 
     // Correct alphaf near interface
     surfaceScalarField avgNorm = fvc::interpolate(mag(iNormal_));
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbor = mesh_.neighbour();
 
+    // This loop should be modified for parallel cases. This should be doable
     forAll(alphaf_, faceI)
     {
-    /*
-        // Faces where there is a cut plane in one or both neighbour cells
+        label own = owner[faceI];
+        label nei = neighbor[faceI];
+
+        // Faces where there is a cut plane in one or both bounding cells
         if (avgNorm[faceI] > SMALL)
         {
-
             cuttableFace cf(mesh_, faceI);
 
             scalar alphafNei = 1.0;
@@ -392,32 +395,39 @@ void Foam::burningSolid::calculateNewInterface()
 
             if (mag(iNormal_[nei]) > SMALL)
             {
-                alphafNei = cf.cutArea(iPoint_[nei], iNormal_[nei]);
+                Foam::plane p(iPoint[nei], iNormal_[nei]);
+                alphafNei = cf.cut(p);
             }
 
             if (mag(iNormal_[own]) > SMALL)
             {
-                alphafOwn = cf.cutArea(iPoint_[own], iNormal_[own]);
+                Foam::plane p(iPoint[own], iNormal_[own]);
+                alphafOwn = cf.cut(p);
             }
-
-            alphaf_[face] = min(alphafNei, alphafOwn);
-
+            alphaf_[faceI] = Foam::min(alphafNei, alphafOwn);
         }
 
-        // catch sharp face-coincident boundaries
+        // Catch sharp face-coincident interfaces. In this case, the solid cell
+        // is the one that will be burning at the next time step.
         else if (alpha_[own]*alpha_[nei] < SMALL && mag(alpha_[own]+alpha_[nei]-1)<SMALL)
         {
-
             alphaf_[faceI] = 0.0;
 
             //set iNormal and a_burn for this case
+            label solidcell = (alpha_[own]<SMALL) ? own : nei;
 
+            a_burn_[solidcell] = mesh_.magSf()[faceI];
+            iNormal_[solidcell] = mesh_.Sf()[faceI] / a_burn_[solidcell];
 
+            //flip iNormal if pointed wrong way
+            vector vSF = mesh_.Cf()[faceI] - mesh_.C()[solidcell];
+
+            if ((vSF & iNormal_[solidcell]) < 0.0)
+            {
+                iNormal_[solidcell] *= -1.0;
+            }
         }
-    */
     }
-
-
 }
 
 
@@ -425,8 +435,6 @@ void Foam::burningSolid::calculateNewInterface()
 // LIMITATIONS: This is only valid for 1D serial cases
 void Foam::burningSolid::calcAlphaf()
 {
-    calcBurningArea();
-
     Info<< "Calculating alphaf" << endl;
 
     //Normal definition applied first, applicable away from interfaces
@@ -455,12 +463,14 @@ void Foam::burningSolid::calcAlphaf()
     isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
                 + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
     iNormal_ = dimensionedVector("n",dimless,vector(0,1,0)) * isBurning_;
+
+    calcBurningArea();
 }
 
 
 // Return the heat generation rate (W/m3)
 // LIMITATIONS: NOT IMPLEMENTED
-volScalarField Foam::burningSolid::Sh()
+tmp<volScalarField> Foam::burningSolid::Sh() const
 {
     tmp<volScalarField> tSh
     (
