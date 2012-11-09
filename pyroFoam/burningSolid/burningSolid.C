@@ -203,7 +203,21 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedScalar("pSu", dimDensity/dimTime, 0.0)
     ),
-
+    
+    iNormal_
+    (
+        IOobject
+        (
+            "iNormal",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("iNormal", dimless, vector::zero)
+    ),
+    
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0")),
     alphaMin_(pyroDict_.lookup("alphaMin"))
@@ -211,10 +225,15 @@ Foam::burningSolid::burningSolid
 {
     Foam::Info << "Created burning solid class" << Foam::endl;
     alpha_.oldTime();
-    alphaf_.oldTime();
 
-    //Clip phi by alphaf
+    // Calculate new interface position and update alphaf and a_burn
     calcAlphaf();
+    
+    alphaf_.oldTime();
+    iNormal_.oldTime();
+    a_burn_.oldTime();
+    
+    // Calculate mass flux field
     phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
 
@@ -235,32 +254,30 @@ void Foam::burningSolid::correct()
 {
     Foam::Info << "Correcting solid interface" << Foam::endl;
 
-    // Determine the burning faces
-    // First term 1 for intermediates, 0 otherwise
-    // Second term 1 for alpha == 0 and sum(alphaf) /= 0, 0 otherwise
-    isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
-                + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
-
-    // Calculate burning face area
-    calcBurningArea();
-
-    // Calculate propellant burning rate
-    m_pyro_.internalField() = a_burn_ * m0_ / mesh_.V();
+    // Step 1: Calculate mass flux (m0) using current P and T
+    // *** Assumed constant for now ***
+    
+    // Step 2: Calculate mass density source using original cell area
+    m_pyro_.internalField() = m0_ * a_burn_.oldTime() / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
-    // Update alpha_
+    // Step 3: Evolve interface using calculated burning rate (alpha_)
     solve(fvm::ddt(alpha_) == m_pyro_/rhoS_);
     
-    // Calculate burn gas velocity
+    // Step 4: Calculate burn gas velocity using original interface orientation
     calcBurnU();
+    
+    // Step 5: Calculate momentum source
+    mU_ = burnU_ * m_pyro_;
 
-    // Update alphaf_
+    // Step 6: Calculate new interface position and update alphaf and a_burn
     calcAlphaf();
     
-    // Fix small cells
+    // Step 7: Fix small cells by transferring momentum (mU) and mass (m_pyro)
+    //         to neighbouring larger cells
     fixSmallCells();
     
-    // Include alphaf into phi
+    // Step 8: Calculate mass flux field that includes alphaf
     phi_ = (fvc::interpolate(U_*thermo_.rho()) & mesh_.Sf()) * alphaf_;
 }
 
@@ -269,6 +286,8 @@ void Foam::burningSolid::correct()
 // LIMITATIONS: This is only valid for 1D serial cases
 void Foam::burningSolid::calcAlphaf()
 {
+    calcBurningArea();
+       
     Info<< "Calculating alphaf" << endl;
 
     //Normal definition applied first, applicable away from interfaces
@@ -293,6 +312,10 @@ void Foam::burningSolid::calcAlphaf()
             alphaf_[faceI] = 0.0;
         }
     }
+    
+    isBurning_ = pos(alpha_ - SMALL)*pos(1-SMALL - alpha_)
+                + neg(alpha_ - SMALL)*pos(fvc::surfaceSum(alphaf_) - SMALL);
+    iNormal_ = dimensionedVector("n",dimless,vector(0,1,0)) * isBurning_;
 }
 
 
@@ -359,11 +382,10 @@ void Foam::burningSolid::calcBurningArea()
 }
 
 // Calculate the burn gas velocity
-// LIMITATIONS: This is only valid for 1D cases
 void Foam::burningSolid::calcBurnU()
 {
     //TODO: Locate "HMXGas" in species list and get its rho here
-    burnU_ = m0_ / thermo_.rho() * vector(0,1,0) * isBurning_;
+    burnU_ = m0_ / thermo_.rho() * iNormal_.oldTime();
 }
 
 
@@ -449,7 +471,7 @@ void Foam::burningSolid::fixSmallCells()
     
     // Only set pSu in SOLID cells, not SMALL cells. SMALL cells are set in the
     // loop below
-    pSu_ = neg(alpha_ - SMALL)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
+    pSu_ = neg(alphaShift)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
     
 
     // Do mass transfers and "de-activate" small cells
@@ -471,7 +493,7 @@ void Foam::burningSolid::fixSmallCells()
             m_pyro_[sc] = 0.0;
             mU_[sc] = vector::zero;
             USu_[sc] = burnU_[sc] * rhordT.value();
-            pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
+            //pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
         }
     }
 }

@@ -79,6 +79,8 @@ class burningSolid
         volVectorField USu_;
         volScalarField pSp_;
         volScalarField pSu_;
+        
+        volVectorField iNormal_;
 
         dimensionedScalar rhoS_;      // Density of energetic material
         dimensionedScalar m0_;        // Constant burning rate (for now, kg/m2/s)
