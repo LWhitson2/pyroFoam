@@ -652,7 +652,7 @@ void Foam::burningSolid::fixSmallCells()
 void Foam::burningSolid::solveTs()
 {
     // Copy gas temperature field for full gas cells
-    Ts_ = Ts_ + (thermo_.T() - Ts_)*pos(alpha_.value() - 1. + SMALL);
+    Ts_ = Ts_ + (thermo_.T() - Ts_)*pos(alpha_ - 1. + SMALL);
 
     // Calculate explicit source term
     TsSu_ = (1. - alpha_)*Sh();
