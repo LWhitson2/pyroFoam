@@ -415,8 +415,7 @@ void Foam::burningSolid::calculateNewInterface()
 
             //set iNormal and a_burn for this case
             label solidcell = (alpha_[own]<SMALL) ? own : nei;
-<<<<<<< HEAD
-            
+
             // Increment a_burn since a solidcell could technically have more
             // than one sharp boundary
             a_burn_[solidcell] += mesh_.magSf()[faceI];
@@ -428,16 +427,6 @@ void Foam::burningSolid::calculateNewInterface()
             vector vSF = mesh_.Cf()[faceI] - mesh_.C()[solidcell];
             
             if ((vSF & norm) < 0.0)
-=======
-
-            a_burn_[solidcell] = mesh_.magSf()[faceI];
-            iNormal_[solidcell] = mesh_.Sf()[faceI] / a_burn_[solidcell];
-
-            //flip iNormal if pointed wrong way
-            vector vSF = mesh_.Cf()[faceI] - mesh_.C()[solidcell];
-
-            if ((vSF & iNormal_[solidcell]) < 0.0)
->>>>>>> f359b8a46cd221b3b6d2ae6c51dfad0f25204db0
             {
                 norm *= -1.0;
             }
