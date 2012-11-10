@@ -46,7 +46,7 @@ Foam::cuttableFace::cuttableFace(const fvMesh& mesh, label faceI)
 // * * * * * * * * * * * * * * * * Public Methods  * * * * * * * * * * * * * //
 Foam::scalar Foam::cuttableFace::cut(const plane& p) const
 {
-    const face& face = mesh_.faces()[faceID_];
+    const face& f = mesh_.faces()[faceID_];
     const pointField& points = mesh_.points();
     
     point facePoint = f.centre(points);
