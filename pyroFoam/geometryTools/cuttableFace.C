@@ -49,7 +49,6 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
     const face& f = mesh_.faces()[faceID_];
     const pointField& points = mesh_.points();
     
-    point facePoint = f.centre(points);
     scalar faceArea = Foam::mag(f.normal(points));
 
     scalar tol = Foam::sqrt(faceArea) * 1e-3;
