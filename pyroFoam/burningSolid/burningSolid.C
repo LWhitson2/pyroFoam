@@ -276,7 +276,7 @@ Foam::burningSolid::burningSolid
     alpha_.oldTime();
 
     // Calculate new interface position and update alphaf and a_burn
-    calcAlphaf();
+    calculateNewInterface();
 
     alphaf_.oldTime();
     iNormal_.oldTime();
@@ -320,7 +320,7 @@ void Foam::burningSolid::correct()
     mU_ = burnU_ * m_pyro_;
 
     // Step 6: Calculate new interface position and update alphaf and a_burn
-    calcAlphaf();
+    calculateNewInterface();
 
     // Step 7: Fix small cells by transferring momentum (mU) and mass (m_pyro)
     //         to neighbouring larger cells
@@ -557,11 +557,6 @@ void Foam::burningSolid::calcBurnU()
 
 void Foam::burningSolid::fixSmallCells()
 {
-    //scalarField m_generated = m_pyro_*mesh_.V(); //a_burn_ * m0_;     // (kg_gas/s)
-    //scalarField m_stored = fvc::ddt(alpha_)*thermo_.rho()*mesh_.V();  // (kg_gas/s)
-
-    // ddt(alpha_) = m_pyro_/rhoS, which can be substituted into the expression above
-
     scalarField m_transferred = m_pyro_*mesh_.V()*(1.0 - thermo_.rho()/rhoS_);
 
     // Value to force small cells to designated velocity
