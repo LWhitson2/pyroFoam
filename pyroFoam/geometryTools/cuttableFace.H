@@ -48,7 +48,7 @@ namespace Foam
 class cuttableFace
 {
     const fvMesh& mesh_;
-    label faceID;
+    label faceID_;
     
   public:
   

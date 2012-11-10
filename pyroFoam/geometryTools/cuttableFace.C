@@ -39,16 +39,102 @@ SourceFiles
 Foam::cuttableFace::cuttableFace(const fvMesh& mesh, label faceI)
 :
     mesh_(mesh),
-    faceID(faceI)
+    faceID_(faceI)
 {}
 
 
 // * * * * * * * * * * * * * * * * Public Methods  * * * * * * * * * * * * * //
 Foam::scalar Foam::cuttableFace::cut(const plane& p) const
 {
+    const face& face = mesh_.faces()[faceID_];
+    const pointField& points = mesh_.points();
+    
+    point facePoint = f.centre(points);
+    scalar faceArea = Foam::mag(f.normal(points));
+
+    scalar tol = Foam::sqrt(faceArea) * 1e-3;
+
+    // Classify each point of the face as either
+    // -1 (kept side), 0 (coplanar), or 1 (opposite)
+    // Points with a -1 are opposite the plane normal (in the solid)
+    Foam::labelList pointState(f.size()); 
+
+    forAll(f, pointI)
+    {
+        Foam::vector vp = points[f[pointI]] - p.refPoint();
+        bool inFront = (vp & p.normal()) > 0.0;
+        bool coplanar = p.distance(points[f[pointI]]) <= tol;
+        
+        pointState[pointI] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
+    }
+
+    //exit here if face is not cut
+    if (min(pointState) > -1) //has only 0's and 1's
+    { //face is completely on the gas side
+        return 1.0; 
+    }
+    else if (max(pointState) < 1) //has only -1's and 0's
+    { //face is completely solid
+        return 0.0; 
+    }
+    
+    // If we're still here, it's a cut face. Find the new face's points.
+    Foam::DynamicList<Foam::point> newFacePoints(f.size());
+    forAll(f, pointI)
+    {
+        // vs,ve are global vertex indices
+        label vs = f[pointI];
+        label ve = f.nextLabel(pointI);
+        
+        // ps,pe are local (to this face) vertex indices
+        label ps = pointI;
+        label pe = (pointI == f.size()-1) ? 0 : pointI+1;
+        
+        if (pointState[ps] * pointState[pe] == -1) //edge is cut
+        {
+            //find intersection point (pI)
+            Foam::edge e(vs,ve);
+            scalar s = p.normalIntersect( points[vs], e.vec(points) );
+            Foam::point pI = points[vs] + s*e.vec(points);
+
+            if (pointState[ps] == 1)
+            {
+                newFacePoints.append(points[vs]);
+                newFacePoints.append(pI);
+            }
+            else
+            {
+                newFacePoints.append(pI);
+            }
+        }
+        else if (pointState[ps] >= 0) //edge starts on the kept side
+        {
+            newFacePoints.append(points[vs]);
+        }
+    }
+
+    //Find cut face area   
+    Foam::vector v01 = newFacePoints[1] - newFacePoints[0];
+    Foam::vector v02 = newFacePoints[2] - newFacePoints[0];
+    scalar area = 0.5*mag(v01 ^ v02);
+
+    if (area == 0)
+    {
+        Foam::Info<< "ERROR: makePoints received co-linear points ("
+                  << pointList<<") and got a zero areaVec" << Foam::endl;
+        return;
+    }
 
 
-    return 0.0;
+    v01 = v02;
+    for(label i=3; i<newFacePoints.size(); ++i)
+    {
+        v02 = newFacePoints[i] - newFacePoints[0];
+        area += 0.5*mag(v01 ^ v02);
+        v01 = v02;
+    }
+
+    return area/faceArea;
 }
 
 
