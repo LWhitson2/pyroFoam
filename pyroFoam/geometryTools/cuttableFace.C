@@ -119,7 +119,7 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
 
     if (area == 0)
     {
-        Foam::Info<< "ERROR: makePoints received co-linear points ("
+        Foam::Info<< "ERROR: cuttableFace::cut received co-linear points ("
                   << newFacePoints<<") and got a zero areaVec" << Foam::endl;
         return -1.0;
     }
