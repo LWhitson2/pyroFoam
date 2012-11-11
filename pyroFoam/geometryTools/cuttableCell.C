@@ -101,8 +101,6 @@ Foam::plane Foam::cuttableCell::constructInterface
     Foam::scalar alpha
 )
 {
-    //Info<< "\n\nSTARTING INTERFACE LOCATION:" << endl;
-    
     // plane refPoint = centroid + d*n, want to find scalar 'd'
     Foam::vector n = pn / mag(pn); //make sure plane normal is normalized
     
@@ -144,30 +142,13 @@ Foam::plane Foam::cuttableCell::constructInterface
         cut(pl); //we must still call cut so the cut area is calculated
     }
     else
-    {
-        DynamicList<scalar> ds(10);
-        DynamicList<scalar> fs(10);
-        DynamicList<scalar> ps(10);
-        
-        ds.append(dL);
-        ds.append(dH);
-        fs.append(-alpha);
-        fs.append(1.0-alpha);
-        vector vL = centroid_ + n*dL;
-        vector vH = centroid_ + n*dH;
-        ps.append(vL.y());
-        ps.append(vH.y());
-        
+    {       
         while (res > resmin)
         {
+            // Bisection method
             dM = 0.5*(dL + dH);
             Foam::plane pl(centroid_ + n*dM,n);
             scalar fM = cut(pl) - alpha;
-
-            ds.append(dM);
-            fs.append(fM);
-            vector vM = centroid_ + n*dM;
-            ps.append(vM.y());
             
             res = Foam::mag(fM);
 
@@ -177,18 +158,12 @@ Foam::plane Foam::cuttableCell::constructInterface
             if (Foam::mag(dL - dH) < SMALL)
             {
                 Info<< "\nWARNING: Bisection method failed" << endl;
-                Info<< "ds = " << ds << endl;
-                Info<< "fs = " << fs << endl;
-                Info<< "ps = " << ps << endl;
-                Info<< "n = " << n << endl;
-                Info<< "cell = " << points_ << endl;
-                Info<< "alpha = " << alpha << endl;
                 FatalError << "bisection method failed " << abort(FatalError);
-            
                 break;
             }
 
     /*
+            // Secant method
             scalar d3 = 0.0;
 
             // Deal with inflection points (highly unlikely..., but possible)
@@ -496,21 +471,12 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
         }
     }
     
-
-    
     //Get cut face centroid and area vector
     Foam::point cutPoint = Foam::vector::zero;
     Foam::vector cutNormal = Foam::vector::zero;
     makePoints(cutPoints, cutPoint, cutNormal);
     cutArea_ = mag(cutNormal);
-    /*
-    Info<< "\nStart cut dump:" << endl;
-    Info<< "  Cut points are " << cutPoints << endl;
-    Info<< "  Face points are " << facePoints << endl;
-    Info<< "  Face areas are " << faceAreas << endl;
-    Info<< "  Cut point is " << cutPoint << endl;
-    Info<< "  Cut area is " << cutNormal << endl;
-    */
+
     //Assemble cut portion centroid
     Foam::point polyCentroid = vector::zero;
     forAll(facePoints, fp)
