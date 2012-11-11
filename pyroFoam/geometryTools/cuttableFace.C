@@ -66,7 +66,7 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
         
         pointState[pointI] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
     }
-
+    
     //exit here if face is not cut
     if (min(pointState) > -1) //has only 0's and 1's
     { //face is completely on the gas side
@@ -132,7 +132,7 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
         area += 0.5*mag(v01 ^ v02);
         v01 = v02;
     }
-
+    
     return area/faceArea;
 }
 
