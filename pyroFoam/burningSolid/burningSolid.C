@@ -277,7 +277,9 @@ void Foam::burningSolid::calculateInterfaceNormal
 )
 {
     dimensionedScalar vsrL("vsrL",dimless/dimLength,VSMALL);
-    iNormal_ = fvc::grad(alpha_)/(mag(fvc::grad(alpha_))+vsrL)*intermeds;
+    
+    iNormal_ = vector(0,0,1)*intermeds;
+    //iNormal_ = fvc::grad(alpha_)/(mag(fvc::grad(alpha_))+vsrL)*intermeds;
         //TODO: Use a smoothing procedure to capture the interface better
 }
 
@@ -316,13 +318,22 @@ void Foam::burningSolid::calculateNewInterface()
             iPoint[cellI] = p.refPoint();
             a_burn_[cellI] = cc.cutArea();
             
-            // DEBUGGING ONLY, REMOVE ONCE TESTED
             if (a_burn_[cellI] < SMALL)
             {
-                Info<< "WARNING: Cut area is zero" 
-                    << " with alpha = " << 1.0-alpha_[cellI] << endl;
-                iNormal_[cellI] = vector::zero;
                 intermeds[cellI] = 0;
+                if (alpha_[cellI] > 0.9)
+                { //mostly gas
+                    a_burn_[cellI] = Foam::pow(1.0-alpha_[cellI], 2.0/3.0);
+                }
+                /*else if (alpha_[cellI] < 0.1)
+                { //mostly solid
+                    a_burn_[cellI] = Foam::pow(alpha_[cellI], 2.0/3.0);
+                }*/
+                else
+                {
+                    Info<< "WARNING: Cut area is zero" 
+                        << " with alphaSolid = " << 1.0-alpha_[cellI] << endl;
+                }
             }
         }
         else
@@ -396,7 +407,7 @@ void Foam::burningSolid::calculateNewInterface()
             iNormal_[solidcell] += norm;
         }
     }
-    
+       
     a_burn_.correctBoundaryConditions();
     
     //Re-normalize iNormal (only needed for the cases when it is incremented)
