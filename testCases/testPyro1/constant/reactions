@@ -1,6 +1,7 @@
 species
 (
     N2
+    EMs
 );
 
 reactions

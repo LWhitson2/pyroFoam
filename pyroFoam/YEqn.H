@@ -17,18 +17,22 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
     forAll(Y, i)
     {
-        if (Y[i].name() != inertSpecie)
+        if (Y[i].name() == "EMs")
+        {
+            Y[i] = neg(solid.alpha() - SMALL);
+        }
+        else if (Y[i].name() != inertSpecie)
         {
             volScalarField& Yi = Y[i];
 
             fvScalarMatrix YiEqn
-            (
-                fvm::ddt(rho, Yi)
-              + mvConvection->fvmDiv(phi, Yi)
-              - fvm::laplacian(turbulence->muEff(), Yi)
-             ==
-                combustion->R(Yi)
-            );
+                (
+                    fvm::ddt(solid.alpha()*rho, Yi)
+                + mvConvection->fvmDiv(phi, Yi)
+                // - fvm::laplacian(turbulence->muEff(), Yi)
+                ==
+                    solid.alpha()*combustion->R(Yi)
+                );
 
             YiEqn.relax();
             YiEqn.solve(mesh.solver("Yi"));

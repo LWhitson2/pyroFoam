@@ -419,23 +419,23 @@ void Foam::burningSolid::calculateNewInterface()
             // Increment a_burn since a solidcell could technically have more
             // than one sharp boundary
             a_burn_[solidcell] += mesh_.magSf()[faceI];
-            
+
             // Calculate face normal pointing into gas
             vector norm = mesh_.Sf()[faceI] / mesh_.magSf()[faceI];
-            
+
             //flip iNormal if pointed wrong way
             vector vSF = mesh_.Cf()[faceI] - mesh_.C()[solidcell];
-            
+
             if ((vSF & norm) < 0.0)
             {
                 norm *= -1.0;
             }
-            
+
             // Increment iNormal_ for the same reason a_burn is incremented
             iNormal_[solidcell] += norm;
         }
     }
-    
+
     //Re-normalize iNormal
     iNormal_ /= (mag(iNormal_) + VSMALL);
 }

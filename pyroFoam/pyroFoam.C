@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
             solid.correct();                                              //<--
 
             #include "UEqn.H"
-            //#include "YEqn.H"
+            #include "YEqn.H"
             //#include "hsEqn.H"
 
             // --- Pressure corrector loop
