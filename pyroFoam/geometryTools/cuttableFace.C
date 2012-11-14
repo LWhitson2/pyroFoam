@@ -51,7 +51,7 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
     
     scalar faceArea = Foam::mag(f.normal(points));
 
-    scalar tol = Foam::sqrt(faceArea) * 1e-3;
+    //scalar tol = Foam::sqrt(faceArea) * 1e-3;
 
     // Classify each point of the face as either
     // -1 (kept side), 0 (coplanar), or 1 (opposite)
@@ -62,7 +62,7 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
     {
         Foam::vector vp = points[f[pointI]] - p.refPoint();
         bool inFront = (vp & p.normal()) > 0.0;
-        bool coplanar = p.distance(points[f[pointI]]) <= tol;
+        bool coplanar = p.distance(points[f[pointI]]) <= SMALL;
         
         pointState[pointI] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
     }

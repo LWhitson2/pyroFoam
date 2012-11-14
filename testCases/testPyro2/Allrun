@@ -6,6 +6,8 @@ cd ${0%/*} || exit 1    # run from this directory
 . $WM_PROJECT_DIR/bin/tools/RunFunctions
 
 cp -r 0.org 0
+gambit -inp gambit_journal.jou
+rm -f default_id.*
 gambitToFoam mesh.neu
 cp -f constant/polyMesh/boundary.org constant/polyMesh/boundary
 VOFSetFields

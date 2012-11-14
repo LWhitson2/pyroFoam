@@ -275,12 +275,56 @@ void Foam::burningSolid::calculateInterfaceNormal
 (
     const volScalarField& intermeds
 )
-{
-    dimensionedScalar vsrL("vsrL",dimless/dimLength,VSMALL);
+{    
+    //iNormal_ = vector(0,0,1)*intermeds;
     
-    iNormal_ = vector(0,0,1)*intermeds;
     //iNormal_ = fvc::grad(alpha_)/(mag(fvc::grad(alpha_))+vsrL)*intermeds;
         //TODO: Use a smoothing procedure to capture the interface better
+        
+    // Get gradient
+    iNormal_ = fvc::grad(alpha_)*dimensionedScalar("one",dimLength,1.0);
+        
+    const labelListList& cellCells = mesh_.cellCells();
+    const scalarField& cellVolumes = mesh_.V();
+
+    // Do spatial smoothing of gradient by volume-weighted local averaging
+    forAll(mesh_.cells(), cellI)
+    {
+        vector normSum = iNormal_[cellI]*cellVolumes[cellI];
+        scalar Vtot = cellVolumes[cellI];
+
+        const labelList& nbList = cellCells[cellI];
+        
+        forAll(nbList, nbI)
+        {
+            normSum += iNormal_[ nbList[nbI] ]*cellVolumes[ nbList[nbI] ];        
+            Vtot += cellVolumes[ nbList[nbI] ];
+        }
+
+        iNormal_[cellI] = normSum / Vtot;
+    }
+    
+    // Normalize and limit iNormal only to intermediate cells
+    iNormal_ *= intermeds / (mag(iNormal_) + VSMALL);
+        
+}
+
+
+// Get the outward facing normal vector on faceI relative to cellI
+Foam::vector Foam::burningSolid::outwardNormal(label faceI, label cellI) const
+{
+    // Calculate face normal
+    vector norm = mesh_.Sf()[faceI] / mesh_.magSf()[faceI];
+    
+    // Flip norm if pointed wrong way
+    vector vSF = mesh_.Cf()[faceI] - mesh_.C()[cellI];
+    
+    if ((vSF & norm) < 0.0)
+    {
+        norm *= -1.0;
+    }
+    
+    return norm;
 }
 
 
@@ -289,14 +333,15 @@ void Foam::burningSolid::calculateInterfaceNormal
 // LIMITATIONS: SERIAL RUNS ONLY
 void Foam::burningSolid::calculateNewInterface()
 {
-    // Identify intermediate cells based on reconstructTol_
+    // Step 1: Identify intermediate cells based on alpha_ and reconstructTol_
     volScalarField intermeds = pos(alpha_ - reconstructTol_)
                                *pos(1.0-reconstructTol_ - alpha_);
 
-    // Calculate interface normal in intermediate cells
+    // Step 2: Calculate interface normal in intermediate cells
     calculateInterfaceNormal(intermeds);
 
-    // Calculate the cut plane and cut area in intermediate cells
+    // Step 3: Calculate the cut plane and cut area in intermediate cells
+    //         setting a_burn to zero in all non-intermediate cells
     volVectorField iPoint
     (
         IOobject
@@ -321,19 +366,18 @@ void Foam::burningSolid::calculateNewInterface()
             if (a_burn_[cellI] < SMALL)
             {
                 intermeds[cellI] = 0;
-                if (alpha_[cellI] > 0.9)
+                /*if (alpha_[cellI] > 0.9)
                 { //mostly gas
                     a_burn_[cellI] = Foam::pow(1.0-alpha_[cellI], 2.0/3.0);
-                }
+                }*/
                 /*else if (alpha_[cellI] < 0.1)
                 { //mostly solid
                     a_burn_[cellI] = Foam::pow(alpha_[cellI], 2.0/3.0);
                 }*/
-                else
-                {
-                    Info<< "WARNING: Cut area is zero" 
-                        << " with alphaSolid = " << 1.0-alpha_[cellI] << endl;
-                }
+
+                Info<< "WARNING: Cut area is " << a_burn_[cellI]
+                    << " with alphaSolid = " << 1.0-alpha_[cellI] << endl;
+
             }
         }
         else
@@ -343,10 +387,13 @@ void Foam::burningSolid::calculateNewInterface()
     }
 
 
-    // Calculate alphaf on all faces
-    alphaf_ = fvc::interpolate(alpha_); //valid in all homogeneous regions
+    // Step 4: Calculate alphaf on all faces, valid only in the homogeneous
+    //         regions away from the interface
+    alphaf_ = fvc::interpolate(alpha_);
 
-    // Correct alphaf near interface
+    // Step 5: Use the planes in intermediate cells to correct alphaf 
+    //         near the interface. Also catch solid cells that have a partial
+    //         burning face as calculated from an intermediate cell cut plane.
     surfaceScalarField hasIntermeds = fvc::interpolate(intermeds);
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
@@ -377,6 +424,36 @@ void Foam::burningSolid::calculateNewInterface()
                 alphafOwn = cf.cut(p);
             }
             alphaf_[faceI] = Foam::min(alphafNei, alphafOwn);
+            
+            // Catch the cases where:
+            //
+            //   +---------+
+            //   |\        |
+            //   | \   g   |
+            //   |s \      |
+            //   +---======+  <- Face in question
+            //   |         |
+            //   |    s    |
+            //   |         |
+            //   +---------+
+            //
+            //  The value of alphaf (===) for the face is calculated correctly,
+            //  but needs to be added to the burning area of the solid cell
+            
+            if (alpha_[own] < reconstructTol_.value())
+            {   //own is solid
+                a_burn_[own] += mesh_.magSf()[faceI] * alphaf_[faceI];
+                                
+                // Increment iNormal_
+                iNormal_[own] += outwardNormal(faceI, own);
+            }
+            else if (alpha_[nei] < reconstructTol_.value())
+            {   //nei is solid
+                a_burn_[nei] += mesh_.magSf()[faceI] * alphaf_[faceI];
+                                
+                // Increment iNormal_
+                iNormal_[nei] += outwardNormal(faceI, nei);
+            }
         }
 
         // Catch sharp face-coincident interfaces. In this case, the solid cell
@@ -391,20 +468,9 @@ void Foam::burningSolid::calculateNewInterface()
             // Increment a_burn since a solidcell could technically have more
             // than one sharp boundary
             a_burn_[solidcell] += mesh_.magSf()[faceI];
-            
-            // Calculate face normal
-            vector norm = mesh_.Sf()[faceI] / mesh_.magSf()[faceI];
-            
-            // Flip norm if pointed wrong way
-            vector vSF = mesh_.Cf()[faceI] - mesh_.C()[solidcell];
-            
-            if ((vSF & norm) < 0.0)
-            {
-                norm *= -1.0;
-            }
-            
-            // Increment iNormal_ for the same reason a_burn is incremented
-            iNormal_[solidcell] += norm;
+                        
+            // Increment iNormal_
+            iNormal_[solidcell] += outwardNormal(faceI, solidcell);
         }
     }
        
@@ -526,8 +592,8 @@ void Foam::burningSolid::fixSmallCells()
 
     // Only set pSu in SOLID cells, not SMALL cells. SMALL cells are set in the
     // loop below
-    pSu_ = neg(alphaShift)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
-
+    //pSu_ = neg(alphaShift)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
+    pSu_ = neg(alpha_ - SMALL)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
 
     // Do mass transfers and "de-activate" small cells
     Info<< "Doing transfers" << endl;
@@ -548,7 +614,7 @@ void Foam::burningSolid::fixSmallCells()
             m_pyro_[sc] = 0.0;
             mU_[sc] = vector::zero;
             USu_[sc] = burnU_[sc] * rhordT.value();
-            //pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[sc] * psirdT.value();
+            pSu_[sc] += w[faceI]/wtot[sc] * thermo_.p()[rc] * psirdT.value();
         }
     }
 }

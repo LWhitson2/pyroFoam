@@ -96,6 +96,10 @@ class burningSolid
         
         // Calculate the interface normals
         void calculateInterfaceNormal(const volScalarField& intermeds);
+        
+        // Get the outward facing normal vector from faceI relative to cellI
+        vector outwardNormal(label faceI, label cellI) const;
+        
 public:
 
     // Constructors

@@ -23,7 +23,8 @@ ddtSchemes
 gradSchemes
 {
     default         Gauss linear;
-    grad(p)         Gauss linear;
+    grad(p)         cellLimited Gauss linear 1
+    grad(U)         cellLimited Gauss linear 1;
 }
 
 divSchemes
@@ -42,13 +43,13 @@ divSchemes
 
 laplacianSchemes
 {
-    default         Gauss linear uncorrected;
-    laplacian(muEff,U) Gauss linear uncorrected;
-    laplacian(mut,U) Gauss linear uncorrected;
-    laplacian(DkEff,k) Gauss linear uncorrected;
-    laplacian(DepsilonEff,epsilon) Gauss linear uncorrected;
-    laplacian((rho*(1|A(U))),p) Gauss linear uncorrected;
-    laplacian(alphaEff,h) Gauss linear uncorrected;
+    default         Gauss linear corrected;
+    laplacian(muEff,U) Gauss linear corrected;
+    laplacian(mut,U) Gauss linear corrected;
+    laplacian(DkEff,k) Gauss linear corrected;
+    laplacian(DepsilonEff,epsilon) Gauss linear corrected;
+    laplacian((rho*(1|A(U))),p) Gauss linear corrected;
+    laplacian(alphaEff,h) Gauss linear corrected;
 }
 
 interpolationSchemes
@@ -58,7 +59,7 @@ interpolationSchemes
 
 snGradSchemes
 {
-    default         uncorrected;
+    default         corrected;
 }
 
 fluxRequired

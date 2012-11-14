@@ -39,7 +39,7 @@ SourceFiles
 Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
  : points_(mesh.cellPoints()[cellI].size()),
    faces_(mesh.cells()[cellI].size()),
-   pointEqualTol_(1e-10),
+   pointEqualTol_(SMALL),
    baseVol_(mesh.V()[cellI]),
    centroid_(Foam::vector::zero),
    cutArea_(0.0)
@@ -123,10 +123,10 @@ Foam::plane Foam::cuttableCell::constructInterface
     //scalar fH = 1.0-alpha;
     scalar res = 1.0; //mag(f2);
     label iters = 0;
-    scalar resmin = 1e-4;
+    scalar resmin = 1e-6;
     
     scalar dspan = dmax - dmin;
-    scalar dtol = dspan / 1e3;
+    scalar dtol = dspan / 1e4;
     
 
     if (Foam::mag(alpha) <= resmin)
@@ -274,8 +274,8 @@ void Foam::cuttableCell::reduceCutPoints
         {
             Foam::vector vCN = reducedPoints[i] - centroid;
             scalar cosTheta = (vCN & vC0) / (mag(vCN)*mag(vC0));
-            cosTheta = min(1.0, cosTheta);
-            cosTheta = max(-1.0, cosTheta);
+            cosTheta = min(1.0, cosTheta); //shouldn't be needed
+            cosTheta = max(-1.0, cosTheta); //shouldn't be needed
             angles[i] = Foam::acos(cosTheta);
             
             if ((n & (vC0 ^ vCN)) < 0.0)
@@ -431,7 +431,7 @@ bool Foam::cuttableCell::cutFace
             }
             cutPoints.append(pI);
         }
-        else if (pointState[ps]  == 0) //edge starts on the cutting plane
+        else if (pointState[ps] == 0) //edge starts on the cutting plane
         {
             cutPoints.append(points_[vs]);
             newFacePoints.append(points_[vs]);
@@ -454,13 +454,13 @@ void Foam::cuttableCell::setVertStates
     const plane& cutPlane
 )
 {
-    scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
+    //scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
 
     forAll(points_, p)
     {
         Foam::vector vp = points_[p] - cutPlane.refPoint();
         bool inFront = (vp & cutPlane.normal()) > 0.0;
-        bool coplanar = cutPlane.distance(points_[p]) <= tol;
+        bool coplanar = cutPlane.distance(points_[p]) <= SMALL;
         
         vertStates[p] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
     }
@@ -494,19 +494,9 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     if (cutPoints.size() > 0)
     {
         reduceCutPoints( cutPoints );
-        if (cutPoints.size() < 3) //degenerate edge or point cut
-        {
-            if (facePoints.size() > 0)
-            {
-                return 1.0;
-            }
-            else
-            {
-                return 0.0;
-            }
-        }
     }
-    else
+    
+    if (cutPoints.size() < 3) //degenerate edge or point cut
     {
         if (facePoints.size() > 0)
         {
