@@ -28,10 +28,11 @@ tmp<fv::convectionScheme<scalar> > mvConvection
             fvScalarMatrix YiEqn
                 (
                     fvm::ddt(solid.alpha()*rho, Yi)
-                + mvConvection->fvmDiv(phi, Yi)
+                +   mvConvection->fvmDiv(phi, Yi)
                 // - fvm::laplacian(turbulence->muEff(), Yi)
                 ==
                     solid.alpha()*combustion->R(Yi)
+                +   solid.Ygen(Yi)
                 );
 
             YiEqn.relax();

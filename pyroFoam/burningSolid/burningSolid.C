@@ -659,6 +659,34 @@ void Foam::burningSolid::fixSmallCells()
     }
 }
 
+tmp<volScalarField> Foam::burningSolid::Ygen(const volScalarField& Y) const
+{
+    // Calculates mass generation rate for species Y
+    tmp<volScalarField> tYgen
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tYgen",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("tYgen", dimDensity/dimTime, 0.0)
+        )
+    );
+
+    // Set generation rate to 0 for everything except EMg
+    // EMg generation rate is equal to m_pyro_
+    if (Y.name() == "EMg")
+    {
+        tYgen = m_pyro_;
+    }
+
+    return tYgen;
+}
+
 void Foam::burningSolid::solveTs()
 {
     // Copy gas temperature field for full gas cells

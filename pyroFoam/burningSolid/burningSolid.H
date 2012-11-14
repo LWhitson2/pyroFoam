@@ -187,6 +187,8 @@ public:
 
         tmp<volScalarField> alphaUsed() const;
 
+        tmp<volScalarField> Ygen(const volScalarField& Y) const;
+
         tmp<volScalarField> Sh() const;
 
         void correct();
