@@ -80,12 +80,6 @@ class cuttableCell
             const labelList& vertStates
         ) const;
         
-        void setVertStates
-        (
-            labelList& vertStates,
-            const plane& cutPlane
-        );
-
         //- Given a list of co-planar sorted points, 
         //    find the centroid and area vector
         void makePoints

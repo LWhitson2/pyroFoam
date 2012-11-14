@@ -229,12 +229,10 @@ void Foam::cuttableCell::reduceCutPoints
     Foam::DynamicList<Foam::point>& cutPoints
 ) const
 {
-    //scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
-    
     Foam::DynamicList<Foam::point> reducedPoints(cutPoints.size());
+    
     // eliminate duplicates first
     reducedPoints.append( cutPoints[0] );
-    Foam::point centroid = cutPoints[0];
     
     for(label p=1; p<cutPoints.size(); ++p)
     {
@@ -251,7 +249,6 @@ void Foam::cuttableCell::reduceCutPoints
         if (!inList)
         {
             reducedPoints.append( cutPoints[p] );
-            centroid += cutPoints[p];
         }
     }
     
@@ -260,20 +257,25 @@ void Foam::cuttableCell::reduceCutPoints
     // Then sort points around cut face
     if (reducedPoints.size() > 3)
     {
-        centroid /= reducedPoints.size();
+        point centroid = sum(reducedPoints) / reducedPoints.size();
                 
         Foam::SortableList<scalar> angles( reducedPoints.size() );
         
-        angles[0] = 0.0; //measure from this on
+        angles[0] = 1.0; //measure from this vertex
 
         Foam::vector vC0 = reducedPoints[0] - centroid;
         
         Foam::vector n = (vC0 ^ (reducedPoints[1] - centroid));
         
+        if (mag(n) < SMALL)
+        {
+            n = (vC0 ^ (reducedPoints[2] - centroid));
+        }
+        
         for(label i=1; i<reducedPoints.size(); ++i)
         {
             Foam::vector vCN = reducedPoints[i] - centroid;
-            angles[i] = (vCN & vC0) / (mag(vCN)*mag(vC0));
+            angles[i] = (vCN & vC0) / (mag(vCN)*mag(vC0)); // = cos(theta)
             
             if ((n & (vC0 ^ vCN)) < 0.0)
             {
@@ -445,25 +447,6 @@ bool Foam::cuttableCell::cutFace
     return true;
 }
 
-void Foam::cuttableCell::setVertStates
-(
-    labelList& vertStates,
-    const plane& cutPlane
-)
-{
-    //scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
-
-    forAll(points_, p)
-    {
-        Foam::vector vp = points_[p] - cutPlane.refPoint();
-        bool inFront = (vp & cutPlane.normal()) > 0.0;
-        bool coplanar = cutPlane.distance(points_[p]) <= SMALL;
-        
-        vertStates[p] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
-    }
-}
-
-
 
 scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
 {    
@@ -472,7 +455,15 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     Foam::DynamicList<Foam::vector> faceAreas(faces_.size());
     
     labelList vertStates(points_.size());
-    setVertStates( vertStates, cutPlane );
+    //scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
+    forAll(points_, p)
+    {
+        Foam::vector vp = points_[p] - cutPlane.refPoint();
+        bool inFront = (vp & cutPlane.normal()) > 0.0;
+        bool coplanar = cutPlane.distance(points_[p]) <= SMALL;
+        
+        vertStates[p] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
+    }
     
     forAll(faces_, faceI)
     {
@@ -510,23 +501,9 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     Foam::vector cutNormal = Foam::vector::zero;
     makePoints(cutPoints, cutPoint, cutNormal);
     cutArea_ = mag(cutNormal);
-    /*
-    Info<< "  Cut points are " << cutPoints << endl;
-    Info<< "  Face points are " << facePoints << endl;
-    Info<< "  Face areas are " << mag(faceAreas) << endl;	  	
-    Info<< "  Cut point is " << cutPoint << endl;	  	
-    Info<< "  Cut area is " << mag(cutNormal) << endl;
-    Info<< "  Point state = " << vertStates << endl;
-    */
+
     //Assemble cut portion centroid
-    Foam::point polyCentroid = vector::zero;
-    forAll(facePoints, fp)
-    {
-        polyCentroid += facePoints[fp];
-    }
-    
-    polyCentroid += cutPoint;
-    polyCentroid /= (facePoints.size() + 1);
+    point polyCentroid = (sum(facePoints)+cutPoint)/(facePoints.size()+1);
     
     //Calculate volume by adding pyramid volumes
     scalar volume = Foam::mag((1.0/3.0)*(cutNormal & (polyCentroid-cutPoint)));
@@ -538,9 +515,6 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
         );
     }
     
-    //Info<< "  volume = " << volume << endl;
-    //Info<< "  base volume = " << baseVol_ << endl;
- 
     return volume/baseVol_;
 }
 
