@@ -273,14 +273,11 @@ void Foam::cuttableCell::reduceCutPoints
         for(label i=1; i<reducedPoints.size(); ++i)
         {
             Foam::vector vCN = reducedPoints[i] - centroid;
-            scalar cosTheta = (vCN & vC0) / (mag(vCN)*mag(vC0));
-            cosTheta = min(1.0, cosTheta); //shouldn't be needed
-            cosTheta = max(-1.0, cosTheta); //shouldn't be needed
-            angles[i] = Foam::acos(cosTheta);
+            angles[i] = (vCN & vC0) / (mag(vCN)*mag(vC0));
             
             if ((n & (vC0 ^ vCN)) < 0.0)
             {
-                angles[i] *= -1.0;
+                angles[i] = -angles[i]-2.0;
             }
         }
         
