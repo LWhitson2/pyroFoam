@@ -642,4 +642,88 @@ void Foam::burningSolid::fixSmallCells()
     }
 }
 
+tmp<volScalarField> Foam::burningSolid::YSu(const volScalarField& Y) const
+{
+    // Calculates explicit source term for species Y
+    tmp<volScalarField> tYSu
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tYSu",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("zero", dimDensity/dimTime, 0.0)
+        )
+    );
+
+    // Set generation rate to 0 for everything except EMg
+    // EMg generation rate is equal to m_pyro_ in regular cells and to
+    // 1.0 in small cells in order to force EMg to 1.
+    if (Y.name() == "EMg")
+    {
+        tYSu() = pos(alphaUsed() - SMALL)*m_pyro_
+                - neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
+    }
+
+    tYSu() = pos(alpha_ - SMALL)*tYSu();
+
+    return tYSu;
+}
+
+tmp<volScalarField> Foam::burningSolid::YSp(const volScalarField& Y) const
+{
+    // Calculates implicit term for species Y
+    tmp<volScalarField> tYSp
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tYSp",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("zero", dimDensity/dimTime, 0.0)
+        )
+    );
+
+    // Set volume fraction to 0 in solid cells
+    tYSp = neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
+
+    return tYSp;
+}
+
+void Foam::burningSolid::solveTs()
+{
+    // Copy gas temperature field for full gas cells
+    Ts_ = Ts_ + (thermo_.T() - Ts_)*pos(alpha_ - 1. + SMALL);
+
+    // Calculate explicit source term
+    TsSu_ = (1. - alpha_)*Sh();
+
+    // Calculate implicit source term
+
+    fvScalarMatrix TsEqn
+    (
+        fvm::ddt((1.-alpha_)*rhoS_*Cpc_, Ts_)
+     ==
+        fvm::laplacian(kc_, Ts_)
+      + TsSu_ + fvm::Sp(TsSp_,Ts_)
+    );
+
+    TsEqn.relax();
+    TsEqn.solve();
+
+//    thermo.correct(); //we may need to create a 'specie' for the solid so that this works
+
+    Info<< "T solid min/max   = " << min(Ts_).value() << ", "
+        << max(Ts_).value() << endl;
+}
+
+
 // ************************************************************************* //

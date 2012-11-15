@@ -177,6 +177,9 @@ public:
 
         tmp<volScalarField> alphaUsed() const;
 
+        tmp<volScalarField> YSu(const volScalarField& Y) const;
+        tmp<volScalarField> YSp(const volScalarField& Y) const;
+
         tmp<volScalarField> Sh() const;
 
         void correct();
