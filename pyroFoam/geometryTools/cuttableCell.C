@@ -41,7 +41,7 @@ Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
    faces_(mesh.cells()[cellI].size()),
    pointEqualTol_(SMALL),
    baseVol_(mesh.V()[cellI]),
-   centroid_(Foam::vector::zero),
+   centroid_(mesh.C()[cellI]),
    cutArea_(0.0)
 {
     Foam::labelList pointMap(points_.size());
@@ -54,10 +54,11 @@ Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
     {
         points_[pointI] = meshPoints[cellPoints[pointI]];
         pointMap[pointI] = cellPoints[pointI];
-        centroid_ += points_[pointI];
     }
-    centroid_ /= points_.size();
 
+    cutCentroid_ = centroid_;
+    lostCentroid_ = vector::zero;
+    
     // Map faces
     const Foam::cell& faces = mesh.cells()[cellI];
     forAll(faces, faceI)
@@ -257,24 +258,24 @@ void Foam::cuttableCell::reduceCutPoints
     // Then sort points around cut face
     if (reducedPoints.size() > 3)
     {
-        point centroid = sum(reducedPoints) / reducedPoints.size();
+        point origin = sum(reducedPoints) / reducedPoints.size();
                 
         Foam::SortableList<scalar> angles( reducedPoints.size() );
         
         angles[0] = 1.0; //measure from this vertex
 
-        Foam::vector vC0 = reducedPoints[0] - centroid;
+        Foam::vector vC0 = reducedPoints[0] - origin;
         
-        Foam::vector n = (vC0 ^ (reducedPoints[1] - centroid));
+        Foam::vector n = (vC0 ^ (reducedPoints[1] - origin));
         
         if (mag(n) < SMALL)
         {
-            n = (vC0 ^ (reducedPoints[2] - centroid));
+            n = (vC0 ^ (reducedPoints[2] - origin));
         }
         
         for(label i=1; i<reducedPoints.size(); ++i)
         {
-            Foam::vector vCN = reducedPoints[i] - centroid;
+            Foam::vector vCN = reducedPoints[i] - origin;
             angles[i] = (vCN & vC0) / (mag(vCN)*mag(vC0)); // = cos(theta)
             
             if ((n & (vC0 ^ vCN)) < 0.0)
@@ -310,43 +311,36 @@ void Foam::cuttableCell::makePoints
         return;
     }
 
-
-    centroid = Foam::vector::zero;
-    areaVec = Foam::vector::zero;
+    //Find any old point inside the polygon
+    point origin = sum(pointList) / pointList.size();
     
-    // Get Centroid
-    forAll(pointList, p)
-    {
-        centroid += pointList[p];
-    }
-    centroid /= pointList.size();
-
-    //Find face area vector   
-    Foam::vector v01 = pointList[1] - pointList[0];
-    Foam::vector v02 = pointList[2] - pointList[0];
-    scalar area = 0.5*mag(v01 ^ v02);
-    areaVec = (v01 ^ v02);
-
+    
+    centroid = Foam::vector::zero;
+    scalar area = 0.0;
+    Foam::vector vCi = pointList[0] - origin;
+    Foam::vector vCj = pointList[1] - origin;
+    areaVec = (vCi ^ vCj);
+    
     if (mag(areaVec) == 0)
     {
         Info<< "ERROR: makePoints received co-linear points ("
             << pointList << ") and got a zero areaVec" << endl;
         return;
     }
-
-
-    v01 = v02;
-    for(label i=3; i<pointList.size(); ++i)
+    
+    //Find area and centroid
+    for (label i=0; i<pointList.size(); i++)
     {
-        v02 = pointList[i] - pointList[0];
-        area += 0.5*mag(v01 ^ v02);
-        v01 = v02;
+        label j = (i == pointList.size()-1) ? 0 : i+1;
+        vCi = pointList[i] - origin;
+        vCj = pointList[j] - origin;
+        scalar tarea = 0.5*mag(vCi ^ vCj);
+        area += tarea;
+        centroid += (1.0/3.0)*(3.0*origin + vCi + vCj) * tarea;
     }
-
-
+    centroid /= area;
     areaVec /= mag(areaVec);
     areaVec *= area;
-
 }
 
 // Cuts a face and returns the centroid and normal of the resulting cut face
@@ -503,19 +497,34 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     cutArea_ = mag(cutNormal);
 
     //Assemble cut portion centroid
-    point polyCentroid = (sum(facePoints)+cutPoint)/(facePoints.size()+1);
+    cutCentroid_ = vector::zero;
+    scalar volume = 0.0;
+    
+    // Pick a point inside the cut polyhedron
+    point origin = (sum(facePoints)+cutPoint)/(facePoints.size()+1);
     
     //Calculate volume by adding pyramid volumes
-    scalar volume = Foam::mag((1.0/3.0)*(cutNormal & (polyCentroid-cutPoint)));
+    scalar pvolume = Foam::mag((1.0/3.0)*(cutNormal & (origin - cutPoint)));
+    cutCentroid_ += (0.25*origin + 0.75*cutPoint)*pvolume;
+    volume += pvolume;
+    
     forAll(facePoints, fp)
     {
-        volume += Foam::mag
+        scalar pvolume = Foam::mag
         (
-            (1.0/3.0)*(faceAreas[fp] & (polyCentroid - facePoints[fp]))
+            (1.0/3.0)*(faceAreas[fp] & (origin - facePoints[fp]))
         );
+        cutCentroid_ += (0.25*origin + 0.75*facePoints[fp])*pvolume;
+        volume += pvolume;
     }
+    cutCentroid_ /= volume;
     
-    return volume/baseVol_;
+    scalar alpha = volume/baseVol_;
+    
+    lostCentroid_ = centroid_ + 
+                    (alpha - 1.0)/(alpha + SMALL)*(cutCentroid_ - centroid_);
+    
+    return alpha;
 }
 
 

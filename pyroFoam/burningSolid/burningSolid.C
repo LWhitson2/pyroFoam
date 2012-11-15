@@ -205,7 +205,33 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedVector("iNormal", dimless, vector::zero)
     ),
-
+    gasC_
+    (
+        IOobject
+        (
+            "gasC",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("gasC", dimless, vector::zero)
+    ),
+    solidC_
+    (
+        IOobject
+        (
+            "solidC",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("solidC", dimless, vector::zero)
+    ),
+    
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0")),
     alphaMin_(pyroDict_.lookup("alphaMin")),
@@ -276,10 +302,7 @@ void Foam::burningSolid::calculateInterfaceNormal
     const volScalarField& intermeds
 )
 {    
-    //iNormal_ = vector(0,0,1)*intermeds;
-    
-    //iNormal_ = fvc::grad(alpha_)/(mag(fvc::grad(alpha_))+vsrL)*intermeds;
-        //TODO: Use a smoothing procedure to capture the interface better
+    //Use a smoothing procedure to capture the interface better
         
     // Get gradient
     iNormal_ = fvc::grad(alpha_)*dimensionedScalar("one",dimLength,1.0);
@@ -305,8 +328,7 @@ void Foam::burningSolid::calculateInterfaceNormal
     }
     
     // Normalize and limit iNormal only to intermediate cells
-    iNormal_ *= intermeds / (mag(iNormal_) + VSMALL);
-        
+    iNormal_ *= intermeds / (mag(iNormal_) + VSMALL);  
 }
 
 
@@ -363,26 +385,30 @@ void Foam::burningSolid::calculateNewInterface()
             iPoint[cellI] = p.refPoint();
             a_burn_[cellI] = cc.cutArea();
             
+            // Save gas and solid portion centroids
+            gasC_[cellI] = cc.lostCentroid();
+            solidC_[cellI] = cc.cutCentroid();
+            
+            // DEBUGGING PURPOSES
             if (a_burn_[cellI] < SMALL)
             {
-                intermeds[cellI] = 0;
-                /*if (alpha_[cellI] > 0.9)
-                { //mostly gas
-                    a_burn_[cellI] = Foam::pow(1.0-alpha_[cellI], 2.0/3.0);
-                }*/
-                /*else if (alpha_[cellI] < 0.1)
-                { //mostly solid
-                    a_burn_[cellI] = Foam::pow(alpha_[cellI], 2.0/3.0);
-                }*/
-
                 Info<< "WARNING: Cut area is " << a_burn_[cellI]
                     << " with alphaSolid = " << 1.0-alpha_[cellI] << endl;
-
             }
         }
         else
         {
             a_burn_[cellI] = 0.0;
+            if (alpha_[cellI] > 0.5)
+            { //gas cell
+                gasC_[cellI] = mesh_.C()[cellI];
+                solidC_[cellI] = vector::zero;
+            }
+            else
+            { //solid cell
+                gasC_[cellI] = vector::zero;
+                solidC_[cellI] = mesh_.C()[cellI];
+            }
         }
     }
 
@@ -441,17 +467,15 @@ void Foam::burningSolid::calculateNewInterface()
             //  but needs to be added to the burning area of the solid cell
             
             if (alpha_[own] < reconstructTol_.value())
-            {   //own is solid
+            {
+                //own is solid
                 a_burn_[own] += mesh_.magSf()[faceI] * alphaf_[faceI];
-                                
-                // Increment iNormal_
                 iNormal_[own] += outwardNormal(faceI, own);
             }
             else if (alpha_[nei] < reconstructTol_.value())
-            {   //nei is solid
+            {
+                //nei is solid
                 a_burn_[nei] += mesh_.magSf()[faceI] * alphaf_[faceI];
-                                
-                // Increment iNormal_
                 iNormal_[nei] += outwardNormal(faceI, nei);
             }
         }
@@ -521,8 +545,8 @@ void Foam::burningSolid::calcBurnU()
 // Transfer mass and momentum from small cells to larger neighbour cells and
 // fix the values in the small cells to:
 //   U = Uburn
-//   p = weighted average of p in neighbouring gas cells
-
+//   p = weighted average of p in neighbouring non-small gas cells
+// LIMITATIONS: SERIAL RUNS ONLY
 void Foam::burningSolid::fixSmallCells()
 {
     scalarField m_transferred = m_pyro_*mesh_.V()*(1.0 - thermo_.rho()/rhoS_);
@@ -592,7 +616,6 @@ void Foam::burningSolid::fixSmallCells()
 
     // Only set pSu in SOLID cells, not SMALL cells. SMALL cells are set in the
     // loop below
-    //pSu_ = neg(alphaShift)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
     pSu_ = neg(alpha_ - SMALL)*dimensionedScalar("ps",dimPressure,1e5)*psirdT;
 
     // Do mass transfers and "de-activate" small cells

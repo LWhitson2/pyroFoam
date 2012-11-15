@@ -1,0 +1,10 @@
+/ Journal File for GAMBIT 2.4.6, Database 2.4.4, lnamd64 SP2007051420
+/ Identifier "default_id"
+/ File opened for write Wed Feb 16 08:26:39 2011.
+solver select "Generic"
+volume create width 0.01 depth 0.01 height 0.08 offset 0.005 0.005 0.04 brick
+volume mesh "volume.1" tetrahedral size 0.001
+physics create "bottom" btype "ELEMENT_SIDE" face "face.1"
+physics create "sides" btype "ELEMENT_SIDE" face "face.2" "face.3" "face.4" "face.5"
+physics create "top" btype "ELEMENT_SIDE" face "face.6"
+export gambit "mesh.neu"

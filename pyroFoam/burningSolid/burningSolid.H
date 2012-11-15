@@ -81,12 +81,15 @@ class burningSolid
         volScalarField pSp_;
         volScalarField pSu_;
 
-        volVectorField iNormal_;
+        volVectorField iNormal_;  // Interface normal vectors
+        volVectorField gasC_;     // Gas portion cell centroids (zero in solid)
+        volVectorField solidC_;   // Solid portion cell centroids (zero in gas)
+        
         
         // Constants read from dictionary
-        dimensionedScalar rhoS_;      // Density of energetic material (kg/m^3)
-        dimensionedScalar m0_;        // Constant burning rate (for now, kg/m2/s)
-        dimensionedScalar alphaMin_;  // Minimum alpha for full cell
+        dimensionedScalar rhoS_;     // Density of energetic material (kg/m^3)
+        dimensionedScalar m0_;       // Constant burning rate (for now, kg/m2/s)
+        dimensionedScalar alphaMin_; // Minimum alpha for full cell
         dimensionedScalar reconstructTol_;
 
     // Private member functions
@@ -177,6 +180,7 @@ public:
         tmp<volScalarField> Sh() const;
 
         void correct();
+        
 };
 
 

@@ -57,10 +57,6 @@ else*/
         )
     );
 
-    // treat the solid as "slightly" compressible to avoid numerical issues
-    dimensionedScalar psiS("psiS",dimDensity/dimPressure,SMALL);
-    volScalarField psiEff = psi*solid.alpha() + psiS*(1-solid.alpha());
-
     while (pimple.correctNonOrthogonal())
     {
         fvScalarMatrix pEqn

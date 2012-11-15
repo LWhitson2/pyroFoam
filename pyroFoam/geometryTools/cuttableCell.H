@@ -62,6 +62,10 @@ class cuttableCell
 
         //- Centroid of the uncut cell
         point centroid_;
+        
+        //- Centroid of the cut cell
+        point cutCentroid_;
+        point lostCentroid_;
 
         //- Area of the last cut done on the cell
         scalar cutArea_;
@@ -117,6 +121,9 @@ class cuttableCell
         
         //- Return the area of the last cut done on the cuttableCell
         inline scalar cutArea() const { return cutArea_; }
+        
+        inline point cutCentroid() const { return cutCentroid_; }
+        inline point lostCentroid() const { return lostCentroid_; }
 };
 
 };
