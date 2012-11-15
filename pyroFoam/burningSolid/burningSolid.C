@@ -659,33 +659,60 @@ void Foam::burningSolid::fixSmallCells()
     }
 }
 
-tmp<volScalarField> Foam::burningSolid::Ygen(const volScalarField& Y) const
+tmp<volScalarField> Foam::burningSolid::YSu(const volScalarField& Y) const
 {
-    // Calculates mass generation rate for species Y
-    tmp<volScalarField> tYgen
+    // Calculates explicit source term for species Y
+    tmp<volScalarField> tYSu
     (
         new volScalarField
         (
             IOobject
             (
-                "tYgen",
+                "tYSu",
                 mesh_.time().timeName(),
                 mesh_
             ),
             mesh_,
-            dimensionedScalar("tYgen", dimDensity/dimTime, 0.0)
+            dimensionedScalar("zero", dimDensity/dimTime, 0.0)
         )
     );
 
     // Set generation rate to 0 for everything except EMg
-    // EMg generation rate is equal to m_pyro_
+    // EMg generation rate is equal to m_pyro_ in regular cells and to
+    // 1.0 in small cells in order to force EMg to 1.
     if (Y.name() == "EMg")
     {
-        tYgen() = alphaUsed()*m_pyro_
+        tYSu() = pos(alphaUsed() - SMALL)*m_pyro_
                 - neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
     }
 
-    return tYgen;
+    tYSu() = pos(alpha_ - SMALL)*tYSu();
+
+    return tYSu;
+}
+
+tmp<volScalarField> Foam::burningSolid::YSp(const volScalarField& Y) const
+{
+    // Calculates implicit term for species Y
+    tmp<volScalarField> tYSp
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tYSp",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("zero", dimDensity/dimTime, 0.0)
+        )
+    );
+
+    // Set volume fraction to 0 in solid cells
+    tYSp = neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
+
+    return tYSp;
 }
 
 void Foam::burningSolid::solveTs()

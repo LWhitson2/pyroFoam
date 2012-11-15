@@ -34,12 +34,8 @@ tmp<fv::convectionScheme<scalar> > mvConvection
                 // - fvm::laplacian(turbulence->muEff(), Yi)
                 ==
                     solid.alphaUsed()*combustion->R(Yi)
-                +   pos(solid.alpha() - SMALL)*solid.Ygen(Yi)
-                +   fvm::Sp
-                    (
-                        neg(solid.alphaUsed() - SMALL)
-                    *   dimensionedScalar("one",dimDensity/dimTime,1.0), Yi
-                    )
+                +   solid.YSu(Yi)
+                +   fvm::Sp(solid.YSp(Yi), Yi)
                 );
 
             YiEqn.relax();
