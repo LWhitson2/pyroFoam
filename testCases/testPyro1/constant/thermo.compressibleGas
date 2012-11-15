@@ -25,9 +25,9 @@ EMg
     }
     thermodynamics
     {
-        // Taken from Caltech ASCI Technical Report 108
+        // Taken from Caltech ASCI Technical Report 108, Tlow should be 398.15
         // 0H 8C 4N 8O 8G
-        Tlow            398.15;
+        Tlow            200;
         Thigh           3998.150;
         Tcommon         1000;
         highCpCoeffs    ( 0.44706383E+02 0.23770308E-01 -0.23496857E-05 -0.13309834E-08 0.24969374E-12 0.96820439E+04 -0.20686334E+03 );

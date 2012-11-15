@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 
             #include "UEqn.H"
             #include "YEqn.H"
+            thermo.correct();
             //#include "hsEqn.H"
 
             // --- Pressure corrector loop

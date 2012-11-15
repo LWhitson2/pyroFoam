@@ -20,6 +20,8 @@ tmp<fv::convectionScheme<scalar> > mvConvection
         if (Y[i].name() == "EMs")
         {
             Y[i] = neg(solid.alpha() - SMALL);
+            Y[i].max(0.0);
+            Yt += Y[i];
         }
         else if (Y[i].name() != inertSpecie)
         {
@@ -33,11 +35,15 @@ tmp<fv::convectionScheme<scalar> > mvConvection
                 ==
                     solid.alpha()*combustion->R(Yi)
                 +   solid.Ygen(Yi)
+                +   fvm::Sp
+                    (
+                        neg(solid.alpha()-SMALL)
+                    *   dimensionedScalar("one",dimDensity/dimTime,1.0), Yi
+                    )
                 );
 
             YiEqn.relax();
             YiEqn.solve(mesh.solver("Yi"));
-
             Yi.max(0.0);
             Yt += Yi;
         }
@@ -49,4 +55,12 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
     Y[inertIndex] = scalar(1) - Yt;
     Y[inertIndex].max(0.0);
+
+    // Added to get sum(Yi) = 1
+    Yt += Y[inertIndex];
+
+    forAll(Y, i)
+    {
+        Y[i] = Y[i] / Yt;
+    }
 }
