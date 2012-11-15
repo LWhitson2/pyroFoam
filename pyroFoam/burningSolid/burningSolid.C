@@ -681,7 +681,8 @@ tmp<volScalarField> Foam::burningSolid::Ygen(const volScalarField& Y) const
     // EMg generation rate is equal to m_pyro_
     if (Y.name() == "EMg")
     {
-        tYgen() = m_pyro_;
+        tYgen() = alphaUsed()*m_pyro_
+                - neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
     }
 
     return tYgen;

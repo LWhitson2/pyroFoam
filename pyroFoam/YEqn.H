@@ -29,15 +29,15 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
             fvScalarMatrix YiEqn
                 (
-                    fvm::ddt(solid.alpha()*rho, Yi)
+                    fvm::ddt(solid.alphaUsed()*rho, Yi)
                 +   mvConvection->fvmDiv(phi, Yi)
                 // - fvm::laplacian(turbulence->muEff(), Yi)
                 ==
-                    solid.alpha()*combustion->R(Yi)
-                +   solid.Ygen(Yi)
+                    solid.alphaUsed()*combustion->R(Yi)
+                +   pos(solid.alpha() - SMALL)*solid.Ygen(Yi)
                 +   fvm::Sp
                     (
-                        neg(solid.alpha()-SMALL)
+                        neg(solid.alphaUsed() - SMALL)
                     *   dimensionedScalar("one",dimDensity/dimTime,1.0), Yi
                     )
                 );
@@ -53,14 +53,14 @@ tmp<fv::convectionScheme<scalar> > mvConvection
         }
     }
 
-    Y[inertIndex] = scalar(1) - Yt;
+    Y[inertIndex] = scalar(1.0) - Yt;
     Y[inertIndex].max(0.0);
 
     // Added to get sum(Yi) = 1
-    Yt += Y[inertIndex];
+    /*Yt += Y[inertIndex];
 
     forAll(Y, i)
     {
         Y[i] = Y[i] / Yt;
-    }
+    }*/
 }
