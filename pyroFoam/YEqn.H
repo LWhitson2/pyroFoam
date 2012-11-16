@@ -42,6 +42,8 @@ tmp<fv::convectionScheme<scalar> > mvConvection
             YiEqn.solve(mesh.solver("Yi"));
             Yi.max(0.0);
             Yt += Yi;
+            solid.YSuC() = solid.YSu(Yi);
+            solid.YSpC() = solid.YSp(Yi);
         }
         else
         {

@@ -234,6 +234,34 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("TsSu", dimPower/dimVolume, 0.0)
     ),
 
+    YSp_
+    (
+        IOobject
+        (
+            "YSp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("YSp", dimDensity/dimTime, 0.0)
+    ),
+
+    YSu_
+    (
+        IOobject
+        (
+            "YSu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("YSu", dimDensity/dimTime, 0.0)
+    ),
+
     iNormal_
     (
         IOobject

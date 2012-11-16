@@ -83,6 +83,8 @@ class burningSolid
         volScalarField pSu_;
         volScalarField TsSp_;         // Solid temperature implicit source
         volScalarField TsSu_;         // Solid temperature explicit source
+        volScalarField YSp_;          // Gas species implicit source
+        volScalarField YSu_;          // Gas species explicit source
         volVectorField iNormal_;
 
         volScalarField Ts_;           // Solid temperature field (K)
@@ -183,6 +185,16 @@ public:
         const volScalarField& Ts() const
         {
             return Ts_;
+        }
+
+        volScalarField& YSuC()
+        {
+            return YSu_;
+        }
+
+        volScalarField& YSpC()
+        {
+            return YSp_;
         }
 
         tmp<volScalarField> alphaUsed() const;
