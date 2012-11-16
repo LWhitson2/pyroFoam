@@ -673,6 +673,12 @@ void Foam::burningSolid::fixSmallCells()
                 burnU_[sc] & mesh_.Sf()[faceI]
             ) * alphaf_[faceI];
         }
+        
+        // if both cells are small, zero out alphaf between then
+        if (alphaShift[own] < 0.0 && alphaShift[nei] < 0.0)
+        {
+            alphaf_[faceI] = 0.0;
+        }
     }
 
     volScalarField wtot = fvc::surfaceSum(w);
