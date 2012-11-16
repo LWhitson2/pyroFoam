@@ -205,6 +205,21 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedVector("iNormal", dimless, vector::zero)
     ),
+    
+    iPoint_
+    (
+        IOobject
+        (
+            "iPoint",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedVector("iPoint", dimless, vector::zero)
+    ),
+    
     gasC_
     (
         IOobject
@@ -231,10 +246,53 @@ Foam::burningSolid::burningSolid
         mesh_,
         dimensionedVector("solidC", dimless, vector::zero)
     ),
-    
+    Ts_
+    (
+        IOobject
+        (
+            "Ts",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_
+    ),
+    TsSp_
+    (
+        IOobject
+        (
+            "TsSp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("TsSp", dimPower/dimVolume/dimTemperature, 0.0)
+    ),
+
+    TsSu_
+    (
+        IOobject
+        (
+            "pSu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("TsSu", dimPower/dimVolume, 0.0)
+    ),
     rhoS_(pyroDict_.lookup("rhoS")),
     m0_(pyroDict_.lookup("m0")),
     alphaMin_(pyroDict_.lookup("alphaMin")),
+    Ac_(pyroDict_.lookup("Ac")),
+    Ec_(pyroDict_.lookup("Ec")),
+    Qc_(pyroDict_.lookup("Qc")),
+    kc_(pyroDict_.lookup("kc")),
+    Cpc_(pyroDict_.lookup("Cpc")),
     reconstructTol_(pyroDict_.lookup("reconstructTol"))
 
 {
@@ -246,6 +304,7 @@ Foam::burningSolid::burningSolid
 
     alphaf_.oldTime();
     iNormal_.oldTime();
+    iPoint_.oldTime();
     a_burn_.oldTime();
 
     // Calculate mass flux field
@@ -261,6 +320,28 @@ Foam::autoPtr<Foam::burningSolid> Foam::burningSolid::clone() const
     return autoPtr<burningSolid>(NULL);
 }
 
+
+//All this needs to do is update alpha and alphaf for the newly refined mesh
+void Foam::burningSolid::recalculateInterface()
+{
+    //Mesh update will simply apply alpha of the parent cell to its child cells
+    // which is incorrect for the sharp interface. Fortunately, it will also
+    // write iNormal and iPoint to each child cell so that alpha can be 
+    // recalculated easily.
+    
+    forAll(alpha_, cellI)
+    {
+        if (mag(iNormal_[cellI]) > SMALL && mag(iPoint_[cellI]) > SMALL)
+        {
+            cuttableCell cc(mesh_, cellI);
+            plane p(iPoint_[cellI],iNormal_[cellI]);
+            alpha_[cellI] = 1.0 - cc.cut(p);
+        }
+    }
+    
+    // Now update alphaf using the new values of alpha
+    calculateNewInterface();
+}
 
 // correct evolves the solid surface, calculates m_pyro_, and updates alpha and
 // alphaf. This also clips phi based on gas surface area so it is correct mass
@@ -364,17 +445,6 @@ void Foam::burningSolid::calculateNewInterface()
 
     // Step 3: Calculate the cut plane and cut area in intermediate cells
     //         setting a_burn to zero in all non-intermediate cells
-    volVectorField iPoint
-    (
-        IOobject
-        (
-            "iPoint",
-            mesh_.time().timeName(),
-            mesh_
-        ),
-        mesh_,
-        dimensionedVector("iPoint", dimless, vector::zero)
-    );
     
     forAll(iNormal_, cellI)
     {
@@ -382,7 +452,7 @@ void Foam::burningSolid::calculateNewInterface()
         {
             cuttableCell cc(mesh_, cellI);
             plane p = cc.constructInterface(iNormal_[cellI],1.0-alpha_[cellI]);
-            iPoint[cellI] = p.refPoint();
+            iPoint_[cellI] = p.refPoint();
             a_burn_[cellI] = cc.cutArea();
             
             // Save gas and solid portion centroids
@@ -440,13 +510,13 @@ void Foam::burningSolid::calculateNewInterface()
 
             if (mag(iNormal_[nei]) > SMALL)
             {
-                Foam::plane p(iPoint[nei], iNormal_[nei]);
+                Foam::plane p(iPoint_[nei], iNormal_[nei]);
                 alphafNei = cf.cut(p);
             }
 
             if (mag(iNormal_[own]) > SMALL)
             {
-                Foam::plane p(iPoint[own], iNormal_[own]);
+                Foam::plane p(iPoint_[own], iNormal_[own]);
                 alphafOwn = cf.cut(p);
             }
             alphaf_[faceI] = Foam::min(alphafNei, alphafOwn);
@@ -724,6 +794,44 @@ void Foam::burningSolid::solveTs()
     Info<< "T solid min/max   = " << min(Ts_).value() << ", "
         << max(Ts_).value() << endl;
 }
+
+
+Foam::tmp<Foam::volScalarField> Foam::burningSolid::getRefinementField() const
+{
+    tmp<volScalarField> tRefinementField
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tRefinementField",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("tRefinementField", dimless, 0.0)
+        )
+    );
+
+    // Normalized Gradient Method
+    //  RF = |grad alpha| * V^(1/3)
+    tRefinementField().internalField() = 
+        mag(fvc::grad(alpha_)) * Foam::pow(mesh_.V(),1.0/3.0);
+
+
+    //Include curl criteria from Popinet (Gerris), scaled by 0.5, to also refine
+    // key fluid flow regions
+    tRefinementField().internalField() = max
+    (
+        tRefinementField().internalField(), 
+        Foam::mag(fvc::curl(U_)) * Foam::pow(mesh_.V(),1.0/3.0) * 0.5
+    );
+
+    return tRefinementField;
+}
+
+
+
 
 
 // ************************************************************************* //

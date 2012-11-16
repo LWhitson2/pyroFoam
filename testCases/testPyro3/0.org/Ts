@@ -9,45 +9,40 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "system";
-    object      controlDict;
+    class       volScalarField;
+    location    "0";
+    object      Ts;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     pyroFoam;
+dimensions      [0 0 0 1 0 0 0];
 
-startFrom       latestTime;
+internalField   uniform 298;
 
-startTime       0;
+boundaryField
+{
+    top
+    {
+        type            fixedValue;
+        value           uniform 298;
+    }
+    
+    bottom
+    {
+        type            fixedValue;
+        value           uniform 298;
+    }
+    
+    sides
+    {
+        type            zeroGradient;
+    }
 
-stopAt          endTime;
-
-endTime         10.0;
-
-deltaT          1e-5;
-
-writeControl    adjustableRunTime;
-
-writeInterval   1e-2;
-
-purgeWrite      0;
-
-writeFormat     binary;
-
-writePrecision  10;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-adjustTimeStep  yes;
-
-maxCo           0.3;
+    frontAndBack
+    {
+        type            symmetryPlane;
+    }
+}
 
 
 // ************************************************************************* //

@@ -82,14 +82,23 @@ class burningSolid
         volScalarField pSu_;
 
         volVectorField iNormal_;  // Interface normal vectors
+        volVectorField iPoint_;   // Interface plane defining point
         volVectorField gasC_;     // Gas portion cell centroids (zero in solid)
         volVectorField solidC_;   // Solid portion cell centroids (zero in gas)
         
+        volScalarField Ts_;           // Solid temperature field (K)
+        volScalarField TsSp_;         // Solid temperature implicit source
+        volScalarField TsSu_;         // Solid temperature explicit source
         
         // Constants read from dictionary
         dimensionedScalar rhoS_;     // Density of energetic material (kg/m^3)
         dimensionedScalar m0_;       // Constant burning rate (for now, kg/m2/s)
         dimensionedScalar alphaMin_; // Minimum alpha for full cell
+        dimensionedScalar Ac_;        // Solid arrhenius rate constant (1/s)
+        dimensionedScalar Ec_;        // Solid activation energy (J/mol)
+        dimensionedScalar Qc_;        // Solid phase heat release (J/kg)
+        dimensionedScalar kc_;        // Solid thermal conductivity (W/m-K)
+        dimensionedScalar Cpc_;       // Solid heat capacity (J/kg-K)
         dimensionedScalar reconstructTol_;
 
     // Private member functions
@@ -181,9 +190,13 @@ public:
         tmp<volScalarField> YSp(const volScalarField& Y) const;
 
         tmp<volScalarField> Sh() const;
-
-        void correct();
         
+        void solveTs();
+        void correct();
+        void recalculateInterface();
+        
+        //- Get the mesh refinement criteria field
+        tmp<volScalarField> getRefinementField() const;
 };
 
 
