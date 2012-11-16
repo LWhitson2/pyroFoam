@@ -710,8 +710,8 @@ tmp<volScalarField> Foam::burningSolid::YSu(const volScalarField& Y) const
     // 1.0 in small cells in order to force EMg to 1.
     if (Y.name() == "EMg")
     {
-        tYSu() = pos(alphaUsed() - SMALL)*m_pyro_
-                - neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
+        tYSu() = pos(alpha_ - alphaMin_)*m_pyro_
+                - neg(alpha_ - alphaMin_)*dimensionedScalar("one",dimDensity/dimTime,1.0);
     }
 
     tYSu() = pos(alpha_ - SMALL)*tYSu();
@@ -738,7 +738,7 @@ tmp<volScalarField> Foam::burningSolid::YSp(const volScalarField& Y) const
     );
 
     // Set volume fraction to 0 in solid cells
-    tYSp = neg(alphaUsed() - SMALL)*dimensionedScalar("one",dimDensity/dimTime,1.0);
+    tYSp = neg(alpha_ - alphaMin_)*dimensionedScalar("one",dimDensity/dimTime,1.0);
 
     return tYSp;
 }
