@@ -15,7 +15,7 @@ hsCombustionThermo& thermo = chemistry.thermo();
 basicMultiComponentMixture& composition = thermo.composition();
 PtrList<volScalarField>& Y = composition.Y();
 
-word inertSpecie(thermo.lookup("inertSpecie"));
+//word inertSpecie(thermo.lookup("inertSpecie"));
 
 volScalarField rho
 (
@@ -111,7 +111,11 @@ volScalarField dQ
     dimensionedScalar("dQ", dimEnergy/dimTime, 0.0)
 );
 
-// Create the burning solid object
-burningSolid solid(U, phi, thermo);
+
+// Create an immersed boundary
+immersedBoundary ib(mesh);
+
+// Create the burning solid object defined by the immersed boundary
+burningSolid solid(mesh, ib, thermo);
 
 

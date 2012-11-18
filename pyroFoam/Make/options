@@ -1,10 +1,12 @@
 EXE_INC = \
     -IburningSolid/lnInclude \
-    -IgeometryTools/lnInclude \
+    -I../utilities/geometryTools/lnInclude \
+    -I../utilities/immersedBoundary/lnInclude \
     -I$(LIB_SRC)/turbulenceModels/compressible/turbulenceModel \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basicSolidThermo/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/chemistryModel/lnInclude \
     -I$(LIB_SRC)/ODE/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
@@ -15,13 +17,14 @@ EXE_INC = \
 
 EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
-    -lpyroFoam \
+    -lburningSolid \
     -lcompressibleTurbulenceModel \
     -lcompressibleRASModels \
     -lcompressibleLESModels \
     -lreactionThermophysicalModels \
     -lspecie \
     -lbasicThermophysicalModels \
+    -lbasicSolidThermo \
     -lchemistryModel \
     -lODE \
     -lfiniteVolume \
@@ -30,4 +33,5 @@ EXE_LIBS = \
     -ltopoChangerFvMesh \
     -ldynamicFvMesh \
     -lcombustionModels \
-    -lgeometryTools
+    -lgeometryTools \
+    -limmersedBoundary

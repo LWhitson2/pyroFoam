@@ -1,15 +1,19 @@
 EXE_INC = \
-    -I../geometryTools/lnInclude \
+    -I../../utilities/geometryTools/lnInclude \
+    -I../../utilities/immersedBoundary/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
-    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude
-
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basicSolidThermo/lnInclude
+    
 LIB_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
     -lfiniteVolume \
     -lreactionThermophysicalModels \
     -lspecie \
     -lbasicThermophysicalModels \
-    -lgeometryTools
+    -lbasicSolidThermo \
+    -lgeometryTools \
+    -limmersedBoundary
 

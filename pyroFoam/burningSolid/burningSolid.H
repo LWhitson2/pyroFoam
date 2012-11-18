@@ -43,6 +43,10 @@ SourceFiles
 #include "hsCombustionThermo.H"
 #include "cuttableCell.H"
 #include "cuttableFace.H"
+#include "thermoPhysicsTypes.H"
+#include "multiComponentMixture.H"
+#include "basicSolidThermo.H"
+#include "immersedBoundary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -57,146 +61,117 @@ namespace Foam
 class burningSolid
 {
     // Private data
-
-        // Defining mesh and dictionary
-        const fvMesh& mesh_;                // Read-Only mesh
-        IOdictionary pyroDict_;             // Input dictionary
-
-        // Field references to the outside world
-
-        const volVectorField& U_;           // Read-Only velocity vector
-        surfaceScalarField& phi_;           // Read-Write face flux
-        const hsCombustionThermo& thermo_;  // Read-Only thermo properties
-
-        // Fields owned by this class
-        volScalarField alpha_;        // Volume fraction of GAS
-        surfaceScalarField alphaf_;   // Face area fraction of gas
-        volScalarField m_pyro_;       // Solid burning rate (kg/m^3-s)
-        volScalarField a_burn_;       // Burning area (m^2)
-        volVectorField burnU_;        // Burning gas velocity (m/s)
+        //- Mesh
+        const fvMesh& mesh_;
         
-        volVectorField mU_;           // Burning gas momentum
+        //- Solid thermo pointer
+        autoPtr<basicSolidThermo> solidThermo_;
+        
+        //- Immersed solid boundary
+        immersedBoundary& ib_;
+        
+        //- Gas thermo
+        const hsCombustionThermo& gasThermo_;
+        
+        //- Input dictionary
+        IOdictionary pyroDict_;
+        
+        //- Solid burning rate (kg/m^3-s)
+        volScalarField m_pyro_;
+        
+        //- Burning gas velocity (m/s)
+        volVectorField burnU_;
+        
+        //- Burning gas momentum source
+        volVectorField mU_;
+        
+        //- Momentum implicit source term
         volScalarField USp_;
+        
+        //- Momentum explicit source term
         volVectorField USu_;
+        
+        //- Pressure implicit source term
         volScalarField pSp_;
+        
+        //- Pressure explicit source term
         volScalarField pSu_;
+        
+        //- Constant burning rate (for now, kg/m2/s)
+        dimensionedScalar m0_;
+        
+        //- Name of the solid specie
+        word solidName_;
+        
+        //- Name of the pyrolized gas specie
+        word gasName_;
+        
+        //- Pointer to the thermo for the pyro gas
+        const gasThermoPhysics* EMg_;
 
-        volVectorField iNormal_;  // Interface normal vectors
-        volVectorField iPoint_;   // Interface plane defining point
-        volVectorField gasC_;     // Gas portion cell centroids (zero in solid)
-        volVectorField solidC_;   // Solid portion cell centroids (zero in gas)
-        
-        volScalarField Ts_;           // Solid temperature field (K)
-        volScalarField TsSp_;         // Solid temperature implicit source
-        volScalarField TsSu_;         // Solid temperature explicit source
-        
-        // Constants read from dictionary
-        dimensionedScalar rhoS_;     // Density of energetic material (kg/m^3)
-        dimensionedScalar m0_;       // Constant burning rate (for now, kg/m2/s)
-        dimensionedScalar alphaMin_; // Minimum alpha for full cell
-        dimensionedScalar Ac_;        // Solid arrhenius rate constant (1/s)
-        dimensionedScalar Ec_;        // Solid activation energy (J/mol)
-        dimensionedScalar Qc_;        // Solid phase heat release (J/kg)
-        dimensionedScalar kc_;        // Solid thermal conductivity (W/m-K)
-        dimensionedScalar Cpc_;       // Solid heat capacity (J/kg-K)
-        dimensionedScalar reconstructTol_;
-
-    // Private member functions
-        void calcBurnU();             // Calculate burning gas velocity
-        void fixSmallCells();         // Fix small cells
-        void calculateNewInterface(); // Move interface and update values
-        
-        // Calculate the interface normals
-        void calculateInterfaceNormal(const volScalarField& intermeds);
-        
-        // Get the outward facing normal vector from faceI relative to cellI
-        vector outwardNormal(label faceI, label cellI) const;
-        
+    // Private functions
+        void fixSmallCells();
+        void calcBurnU();
 public:
 
-    // Constructors
-
-        //- Construct from components
-        burningSolid
-        (
-            const volVectorField& U,
-            surfaceScalarField& phi,
-            const hsCombustionThermo& thermo
-        );
-
-        //- Return clone
-        autoPtr<burningSolid> clone() const;
-
-    // Public Member Functions
-
-        const surfaceScalarField& alphaf() const
-        {
-            return alphaf_;
-        }
-
-        const volScalarField& alpha() const
-        {
-            return alpha_;
-        }
-
-        const volScalarField& m_pyro() const
-        {
-            return m_pyro_;
-        }
-
-        const dimensionedScalar& rhoS() const
-        {
-            return rhoS_;
-        }
-
-        const volScalarField& a_burn() const
-        {
-            return a_burn_;
-        }
-
-        const volVectorField& burnU() const
-        {
-            return burnU_;
-        }
-
-        const volScalarField& USp() const
-        {
-            return USp_;
-        }
-
-        const volVectorField& USu() const
-        {
-            return USu_;
-        }
-
-        const volScalarField& pSp() const
-        {
-            return pSp_;
-        }
-
-        const volScalarField& pSu() const
-        {
-            return pSu_;
-        }
-
-        const volVectorField& mU() const
-        {
-            return mU_;
-        }
-
-        tmp<volScalarField> alphaUsed() const;
-
-        tmp<volScalarField> YSu(const volScalarField& Y) const;
-        tmp<volScalarField> YSp(const volScalarField& Y) const;
-
-        tmp<volScalarField> Sh() const;
-        
-        void solveTs();
-        void correct();
-        void recalculateInterface();
-        
-        //- Get the mesh refinement criteria field
-        tmp<volScalarField> getRefinementField() const;
+    // Constructor
+    burningSolid
+    (
+        const fvMesh& mesh,
+        immersedBoundary& ib,
+        const hsCombustionThermo& gasThermo
+    );
+    
+    //Functions
+    const word& gasName()
+    {
+        return gasName_;
+    }
+    
+    const word& solidName()
+    {
+        return solidName_;
+    }
+    
+    const volVectorField& mU()
+    {
+        return mU_;
+    }
+    
+    const volVectorField& USu()
+    {
+        return USu_;
+    }
+    
+    const volScalarField& USp()
+    {
+        return USp_;
+    }
+    
+    const volScalarField& pSp()
+    {
+        return pSp_;
+    }
+    
+    const volScalarField& pSu()
+    {
+        return pSu_;
+    }
+    
+    const volScalarField& m_pyro()
+    {
+        return m_pyro_;
+    }
+    
+    void correct
+    (
+        const volVectorField& U,
+        surfaceScalarField& phi
+    );
+    
+    tmp<volScalarField> YSu(const word& Yname) const;
+    
+    tmp<volScalarField> YSp() const;
 };
 
 

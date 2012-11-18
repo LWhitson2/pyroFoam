@@ -35,7 +35,7 @@ Description
 #include "psiChemistryCombustionModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
-#include "burningSolid.H"                                                 //<--
+#include "burningSolid.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -71,14 +71,14 @@ int main(int argc, char *argv[])
             volScalarField divU(fvc::div(phi));
 
             //Identify regions near ANY interface or reaction zone
-            refinementField = solid.getRefinementField();
+            refinementField = ib.getRefinementField(U);
  
             // Do any mesh changes
             mesh.update();
         
             if (mesh.changing() && correctPhi)
             {
-                solid.recalculateInterface();
+                ib.update();
                 #include "correctPhi.H"
             }
 
@@ -88,16 +88,15 @@ int main(int argc, char *argv[])
             }
         }
         
-        #include "rhoEqn.H"
+        //#include "rhoEqn.H"
 
         while (pimple.loop())
         {
-            //Evolve the solid surface and update burning rate            //<--
-            solid.correct();                                              //<--
+            // Evolve the solid surface
+            solid.correct(U, phi);
 
             #include "UEqn.H"
             #include "YEqn.H"
-            thermo.correct();
             //#include "hsEqn.H"
 
             // --- Pressure corrector loop

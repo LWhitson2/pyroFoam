@@ -18,7 +18,7 @@
                 phi.boundaryField()[patchi] =
                 (
                     U.boundaryField()[patchi] & mesh.Sf().boundaryField()[patchi]
-                )*solid.alphaf().boundaryField()[patchi];
+                )*ib.alphaf().boundaryField()[patchi];
             }
         }
     }
@@ -62,7 +62,7 @@
     {
         fvScalarMatrix pcorrEqn
         (
-            fvm::laplacian(rAUf, pcorr) == fvc::div(phi) - divU //TODO: Fix so we can include alphaf in laplacian
+            fvm::laplacian(rAUf, pcorr) == fvc::div(phi) - divU //TODO: Fix so we can include alphaf in laplacian?
         );
 
         pcorrEqn.solve();

@@ -1,5 +1,5 @@
 EXE_INC = \
-    -I../../pyroFoam/geometryTools/lnInclude \
+    -I../geometryTools/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/dynamicMesh/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \

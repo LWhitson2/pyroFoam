@@ -20,46 +20,26 @@ FoamFile
     bottom
     {
         type            patch;
-<<<<<<< HEAD
         nFaces          9;
         startFace       1041;
-=======
-        nFaces          16;
-        startFace       1984;
->>>>>>> master
     }
     sides
     {
         type            symmetryPlane;
-<<<<<<< HEAD
         nFaces          300;
         startFace       1050;
-=======
-        nFaces          400;
-        startFace       2000;
->>>>>>> master
     }
     frontAndBack
     {
         type            symmetryPlane;
-<<<<<<< HEAD
         nFaces          300;
         startFace       1350;
-=======
-        nFaces          400;
-        startFace       2400;
->>>>>>> master
     }
     top
     {
         type            patch;
-<<<<<<< HEAD
         nFaces          9;
         startFace       1650;
-=======
-        nFaces          16;
-        startFace       2800;
->>>>>>> master
     }
 )
 

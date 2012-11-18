@@ -11,11 +11,14 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      immersedBoundaryDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s) - 6.8 WSB paper, matching order of magnitude
-m0      m0   [ 1 -2 -1 0 0 0 0] 10;
+// Minimum alpha for full cell treatment
+alphaMin  alphaMin  [ 0 0 0 0 0 0 0 ] 0.1;
+
+// Minimum alpha to use planar reconstruction algorithm on
+reconstructTol  reconstructTol  [ 0 0 0 0 0 0 0 ] 1e-6;
 
 // ************************************************************************* //

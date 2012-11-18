@@ -15,21 +15,11 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-// Solid Properties
-rhoS rhoS [ 1 -3 0 0 0 0 0 ] 1800.;   // Density (kg/m^3)
-Ac   Ac [ 0 0 -1 0 0 0 0 ] 1.637E15;  // Arrhenius Rate Constant (1/s)
-Cpc  Cpc [ 0 2 -2 -1 0 0 0 ] 1.4E3;   // Heat Capacity (J/kg-K)
-Ec   Ec [ 1 2 -2 0 -1 0 0 ] 176E6;    // Activation Energy (J/kmol)
-kc   kc [ 1 0 -3 -1 0 0 0 ] 0.2;      // Thermal conductivity (W/m-K)
-Qc   Qc [ 0 2 -2 0 0 0 0 ] 400E3;     // Solid phase heat release (J/kg)
-
 //constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0]  1.0;
+m0      m0   [ 1 -2 -1 0 0 0 0] 1;
 
-// Minimum alpha for full cell treatment
-alphaMin  alphaMin  [ 0 0 0 0 0 0 0 ] 0.1;
-
-// Minimum alpha to use planar reconstruction algorithm on
-reconstructTol  reconstructTol  [ 0 0 0 0 0 0 0 ] 1e-6;
+// Solid and gas specie names
+solidName  EMs;
+gasName    EMg;
 
 // ************************************************************************* //
