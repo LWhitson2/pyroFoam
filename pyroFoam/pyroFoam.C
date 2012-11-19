@@ -30,11 +30,12 @@ Description
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
+#include "dynamicFvMesh.H"
 #include "turbulenceModel.H"
 #include "psiChemistryCombustionModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
-#include "burningSolid.H"                                                 //<--
+#include "burningSolid.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -42,7 +43,7 @@ int main(int argc, char *argv[])
 {
     #include "setRootCase.H"
     #include "createTime.H"
-    #include "createMesh.H"
+    #include "createDynamicFvMesh.H"
     #include "readGravitationalAcceleration.H"
     #include "createFields.H"
     #include "initContinuityErrs.H"
@@ -58,23 +59,44 @@ int main(int argc, char *argv[])
 
     while (runTime.run())
     {
-        #include "readTimeControls.H"
+        #include "readControls.H"
         #include "compressibleCourantNo.H"
         #include "setDeltaT.H"
 
         runTime++;
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        #include "rhoEqn.H"
+        {
+            // Store divU from the previous mesh for correctPhi
+            volScalarField divU(fvc::div(phi));
+
+            //Identify regions near ANY interface or reaction zone
+            refinementField = ib.getRefinementField(U);
+ 
+            // Do any mesh changes
+            mesh.update();
+        
+            if (mesh.changing() && correctPhi)
+            {
+                ib.update();
+                #include "correctPhi.H"
+            }
+
+            if (mesh.changing() && checkMeshCourantNo)
+            {
+                #include "meshCourantNo.H"
+            }
+        }
+        
+        //#include "rhoEqn.H"
 
         while (pimple.loop())
         {
-            //Evolve the solid surface and update burning rate            //<--
-            solid.correct();                                              //<--
+            // Evolve the solid surface
+            solid.correct(U, phi);
 
             #include "UEqn.H"
             #include "YEqn.H"
-            thermo.correct();
             //#include "hsEqn.H"
 
             // --- Pressure corrector loop

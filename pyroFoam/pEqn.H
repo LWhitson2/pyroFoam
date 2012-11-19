@@ -4,7 +4,7 @@ Info<< "Solving pEqn" << endl;
 rho = thermo.rho();
 
 volScalarField rAU(1.0/UEqn.A());
-surfaceScalarField rhorAUf(rAU.name() + 'f', fvc::interpolate(rho*rAU));
+surfaceScalarField rhorAUf(rAU.name() + 'f', ib.interpolate(rho*rAU));
 U = rAU*UEqn.H();
 
 Info<< "Min,max Uest = " << Foam::min(Foam::mag(U)).value()
@@ -50,24 +50,20 @@ else*/
 {
     surfaceScalarField phiEst
     (
-        fvc::interpolate(rho)*
+        ib.interpolate(rho)*
         (
-            (fvc::interpolate(U) & mesh.Sf())*solid.alphaf()
-          //+ fvc::ddtPhiCorr(rAU, rho, U, phi)
+            (ib.interpolate(U) & mesh.Sf())*ib.alphaf()
+          //+ ib.ddtPhiCorr(rAU, rho, U, phi)
         )
     );
-
-    // treat the solid as "slightly" compressible to avoid numerical issues
-    dimensionedScalar psiS("psiS",dimDensity/dimPressure,SMALL);
-    volScalarField psiEff = psi*solid.alpha() + psiS*(1-solid.alpha());
 
     while (pimple.correctNonOrthogonal())
     {
         fvScalarMatrix pEqn
         (
-            fvm::ddt(psi*solid.alphaUsed(), p)
+            fvm::ddt(psi*ib.alphaCorr(), p)
           + fvc::div(phiEst)
-          - fvm::laplacian(rhorAUf*solid.alphaf(), p)
+          - fvm::laplacian(rhorAUf*ib.alphaf(), p)
           + fvm::Sp(solid.pSp(), p)
          ==
             solid.m_pyro()
@@ -79,7 +75,7 @@ else*/
         if (pimple.finalNonOrthogonalIter())
         {
             phi = phiEst + pEqn.flux();
-            U += rAU*fvc::reconstruct(pEqn.flux()/rhorAUf);
+            U += rAU*ib.reconstruct(pEqn.flux()/rhorAUf);
             U.correctBoundaryConditions();
         }
     }

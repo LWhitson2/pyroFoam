@@ -2,7 +2,8 @@
 cd ${0%/*} || exit 1    # run from this directory
 set -x
 
-wmake libso geometryTools
+wmake libso ../utilities/geometryTools
+wmake libso ../utilities/immersedBoundary
 wmake libso burningSolid
 wmake
 

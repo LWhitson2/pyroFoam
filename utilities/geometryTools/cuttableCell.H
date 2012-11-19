@@ -62,6 +62,10 @@ class cuttableCell
 
         //- Centroid of the uncut cell
         point centroid_;
+        
+        //- Centroid of the cut cell
+        point cutCentroid_;
+        point lostCentroid_;
 
         //- Area of the last cut done on the cell
         scalar cutArea_;
@@ -76,7 +80,8 @@ class cuttableCell
             const label faceI,
             point& facePoint,
             vector& faceNormal,
-            DynamicList<point>& cutPoints
+            DynamicList<point>& cutPoints,
+            const labelList& vertStates
         ) const;
         
         //- Given a list of co-planar sorted points, 
@@ -116,6 +121,9 @@ class cuttableCell
         
         //- Return the area of the last cut done on the cuttableCell
         inline scalar cutArea() const { return cutArea_; }
+        
+        inline point cutCentroid() const { return cutCentroid_; }
+        inline point lostCentroid() const { return lostCentroid_; }
 };
 
 };

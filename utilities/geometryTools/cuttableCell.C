@@ -39,9 +39,9 @@ SourceFiles
 Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
  : points_(mesh.cellPoints()[cellI].size()),
    faces_(mesh.cells()[cellI].size()),
-   pointEqualTol_(1e-3),
+   pointEqualTol_(SMALL),
    baseVol_(mesh.V()[cellI]),
-   centroid_(Foam::vector::zero),
+   centroid_(mesh.C()[cellI]),
    cutArea_(0.0)
 {
     Foam::labelList pointMap(points_.size());
@@ -54,10 +54,11 @@ Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
     {
         points_[pointI] = meshPoints[cellPoints[pointI]];
         pointMap[pointI] = cellPoints[pointI];
-        centroid_ += points_[pointI];
     }
-    centroid_ /= points_.size();
 
+    cutCentroid_ = centroid_;
+    lostCentroid_ = vector::zero;
+    
     // Map faces
     const Foam::cell& faces = mesh.cells()[cellI];
     forAll(faces, faceI)
@@ -123,33 +124,66 @@ Foam::plane Foam::cuttableCell::constructInterface
     //scalar fH = 1.0-alpha;
     scalar res = 1.0; //mag(f2);
     label iters = 0;
-    scalar resmin = 1e-4;
+    scalar resmin = 1e-6;
+    
+    scalar dspan = dmax - dmin;
+    scalar dtol = dspan / 1e4;
+    
 
     if (Foam::mag(alpha) <= resmin)
     {
         dM = dL;
+        Foam::plane pl(centroid_ + n*(dM+dtol),n);
+        cut(pl); //we must still call cut so the cut area is calculated
     }
     else if (Foam::mag(alpha-1.0) <= resmin)
     {
         dM = dH;
+        Foam::plane pl(centroid_ + n*(dM-dtol),n);
+        cut(pl); //we must still call cut so the cut area is calculated
     }
     else
     {
+        DynamicList<scalar> ds(10);
+        DynamicList<scalar> fs(10);
+        
+        ds.append(dL);
+        ds.append(dH);
+        fs.append(-alpha);
+        fs.append(1.0-alpha);
+        
         while (res > resmin)
         {
+            // Bisection method
             dM = 0.5*(dL + dH);
             Foam::plane pl(centroid_ + n*dM,n);
             scalar fM = cut(pl) - alpha;
-
+            
             res = Foam::mag(fM);
+            
+            ds.append(dM);
+            fs.append(fM);
 
             dL = (fM < 0.0) ? dM : dL;
             dH = (fM < 0.0) ? dH : dM;
+            
+            
 
             if (Foam::mag(dL - dH) < SMALL)
+            {
+                Info<< "\nWARNING: Bisection method failed" << endl;
+                Info<< "  ds = " << ds << endl;
+                Info<< "  fs = " << fs << endl;
+                Info<< "  n = " << n << endl;
+                Info<< "  alpha = " << alpha << endl;
+                Info<< "  cell = " << points_ << endl;
+                Info<< "  centroid = " << centroid_ << endl;
+                FatalError << "bisection method failed " << abort(FatalError);
                 break;
+            }
 
     /*
+            // Secant method
             scalar d3 = 0.0;
 
             // Deal with inflection points (highly unlikely..., but possible)
@@ -179,13 +213,15 @@ Foam::plane Foam::cuttableCell::constructInterface
 
             if (++iters > 1000)
             {
-                Info<< "\nWARNING: Interface construction has stalled with alpha = " << alpha
-                    << " normal = " << n << " and res = " << res << endl << endl;
+                Info<< "\nWARNING: Interface construction has stalled "
+                    << "with alpha = " << alpha
+                    << " normal = " << n 
+                    << " and res = " << res << endl << endl;
                 break;
             }
         }
     }
-    
+
     return Foam::plane(centroid_ + n*dM, n);
 }
 
@@ -195,6 +231,7 @@ void Foam::cuttableCell::reduceCutPoints
 ) const
 {
     Foam::DynamicList<Foam::point> reducedPoints(cutPoints.size());
+    
     // eliminate duplicates first
     reducedPoints.append( cutPoints[0] );
     
@@ -203,7 +240,7 @@ void Foam::cuttableCell::reduceCutPoints
         bool inList = false;
         for(label j=0; j<reducedPoints.size(); ++j)
         {
-            if (reducedPoints[j] == cutPoints[p])
+            if (mag(reducedPoints[j] - cutPoints[p]) < SMALL)
             {
                 inList = true;
                 break;
@@ -216,25 +253,34 @@ void Foam::cuttableCell::reduceCutPoints
         }
     }
     
+
+    
     // Then sort points around cut face
     if (reducedPoints.size() > 3)
     {
+        point origin = sum(reducedPoints) / reducedPoints.size();
+                
         Foam::SortableList<scalar> angles( reducedPoints.size() );
         
-        angles[0] = -GREAT; //force this one to be first
-        angles[1] = 0;
-        Foam::vector v01 = reducedPoints[1] - reducedPoints[0];
+        angles[0] = 1.0; //measure from this vertex
+
+        Foam::vector vC0 = reducedPoints[0] - origin;
         
-        Foam::vector n = (v01 ^ (reducedPoints[2] - reducedPoints[0]));
+        Foam::vector n = (vC0 ^ (reducedPoints[1] - origin));
         
-        for(label i=2; i<reducedPoints.size(); ++i)
+        if (mag(n) < SMALL)
         {
-            Foam::vector v0N = reducedPoints[i] - reducedPoints[0];
-            angles[i] = (v0N & v01) / (mag(v0N)*mag(v01));
+            n = (vC0 ^ (reducedPoints[2] - origin));
+        }
+        
+        for(label i=1; i<reducedPoints.size(); ++i)
+        {
+            Foam::vector vCN = reducedPoints[i] - origin;
+            angles[i] = (vCN & vC0) / (mag(vCN)*mag(vC0)); // = cos(theta)
             
-            if ((n & (v01 ^ v0N)) < -1e-12)
+            if ((n & (vC0 ^ vCN)) < 0.0)
             {
-                angles[i] *= -1.0;
+                angles[i] = -angles[i]-2.0;
             }
         }
         
@@ -265,42 +311,36 @@ void Foam::cuttableCell::makePoints
         return;
     }
 
-
-    centroid = Foam::vector::zero;
-    areaVec = Foam::vector::zero;
+    //Find any old point inside the polygon
+    point origin = sum(pointList) / pointList.size();
     
-    // Get Centroid
-    forAll(pointList, p)
-    {
-        centroid += pointList[p];
-    }
-    centroid /= pointList.size();
-
-    //Find face area vector   
-    Foam::vector v01 = pointList[1] - pointList[0];
-    Foam::vector v02 = pointList[2] - pointList[0];
-    scalar area = 0.5*mag(v01 ^ v02);
-    areaVec = (v01 ^ v02);
-
+    
+    centroid = Foam::vector::zero;
+    scalar area = 0.0;
+    Foam::vector vCi = pointList[0] - origin;
+    Foam::vector vCj = pointList[1] - origin;
+    areaVec = (vCi ^ vCj);
+    
     if (mag(areaVec) == 0)
     {
-        Info<< "ERROR: makePoints received co-linear points ("<<pointList<<") and got a zero areaVec" << endl;
+        Info<< "ERROR: makePoints received co-linear points ("
+            << pointList << ") and got a zero areaVec" << endl;
         return;
     }
-
-
-    v01 = v02;
-    for(label i=3; i<pointList.size(); ++i)
+    
+    //Find area and centroid
+    for (label i=0; i<pointList.size(); i++)
     {
-        v02 = pointList[i] - pointList[0];
-        area += 0.5*mag(v01 ^ v02);
-        v01 = v02;
+        label j = (i == pointList.size()-1) ? 0 : i+1;
+        vCi = pointList[i] - origin;
+        vCj = pointList[j] - origin;
+        scalar tarea = 0.5*mag(vCi ^ vCj);
+        area += tarea;
+        centroid += (1.0/3.0)*(3.0*origin + vCi + vCj) * tarea;
     }
-
-
+    centroid /= area;
     areaVec /= mag(areaVec);
     areaVec *= area;
-
 }
 
 // Cuts a face and returns the centroid and normal of the resulting cut face
@@ -313,7 +353,8 @@ bool Foam::cuttableCell::cutFace
     const label faceI,
     Foam::point& facePoint,
     Foam::vector& faceArea,
-    Foam::DynamicList<Foam::point>& cutPoints
+    Foam::DynamicList<Foam::point>& cutPoints,
+    const labelList& vertStates
 ) const
 {
     const face& f = faces_[faceI];
@@ -321,19 +362,14 @@ bool Foam::cuttableCell::cutFace
     facePoint = f.centre(points_);
     faceArea = f.normal(points_);
 
-    scalar tol = Foam::sqrt(mag(faceArea)) * pointEqualTol_;
-
-    Foam::labelList pointState(f.size()); //-1 (kept side), 0 (coplanar), 1 (opposite)
+    //-1 (kept side), 0 (coplanar), 1 (opposite)
+    Foam::labelList pointState(f.size()); 
 
     forAll(f, pointI)
     {
-        Foam::vector vp = points_[f[pointI]] - cutPlane.refPoint();
-        bool inFront = (vp & cutPlane.normal()) > 0.0;
-        bool coplanar = cutPlane.distance(points_[f[pointI]]) <= tol;
-        
-        pointState[pointI] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
+        pointState[pointI] = vertStates[f[pointI]];
     }
-
+    
     //exit here if face is not cut
     if (min(pointState) > -1) //has only 0's and 1's
     { //face is completely lost
@@ -341,14 +377,24 @@ bool Foam::cuttableCell::cutFace
     }
     else if (max(pointState) < 1) //has only -1's and 0's
     { //face is kept in tact, any coplanar points are considered "cut"
+    
         forAll(pointState, p)
         {
             if (pointState[p] == 0)
             {
-                cutPoints.append(points_[ f[p] ]);
+                cutPoints.append( points_[ f[p] ] );
             }
         }
-        return true; 
+        
+        if (min(pointState) == 0) //fully co-planar cut
+        { //if the face is fully co-planar, don't return both the face, and
+          // the cut points or it is counted twice
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
     
     // If we're still here, it's a cut face. Find the new face's points.
@@ -378,7 +424,7 @@ bool Foam::cuttableCell::cutFace
             }
             cutPoints.append(pI);
         }
-        else if (pointState[ps]  == 0) //edge starts on the cutting plane
+        else if (pointState[ps] == 0) //edge starts on the cutting plane
         {
             cutPoints.append(points_[vs]);
             newFacePoints.append(points_[vs]);
@@ -396,19 +442,29 @@ bool Foam::cuttableCell::cutFace
 }
 
 
-
 scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
-{
+{    
     Foam::DynamicList<Foam::point> cutPoints(faces_.size());
     Foam::DynamicList<Foam::point> facePoints(faces_.size());
     Foam::DynamicList<Foam::vector> faceAreas(faces_.size());
+    
+    labelList vertStates(points_.size());
+    //scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
+    forAll(points_, p)
+    {
+        Foam::vector vp = points_[p] - cutPlane.refPoint();
+        bool inFront = (vp & cutPlane.normal()) > 0.0;
+        bool coplanar = cutPlane.distance(points_[p]) <= SMALL;
+        
+        vertStates[p] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
+    }
     
     forAll(faces_, faceI)
     {
         Foam::point facePoint = Foam::vector::zero;
         Foam::vector faceArea = Foam::vector::zero;
         
-        if (cutFace(cutPlane, faceI, facePoint, faceArea, cutPoints))
+        if (cutFace(cutPlane,faceI,facePoint,faceArea,cutPoints,vertStates))
         {
             facePoints.append( facePoint );
             faceAreas.append( faceArea );
@@ -416,22 +472,13 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     }
 
     cutArea_ = 0.0; //assume no cut or degenerate cut
+
     if (cutPoints.size() > 0)
     {
         reduceCutPoints( cutPoints );
-        if (cutPoints.size() < 3) //degenerate edge or point cut
-        {
-            if (facePoints.size() > 0)
-            {
-                return 1.0;
-            }
-            else
-            {
-                return 0.0;
-            }
-        }
     }
-    else
+    
+    if (cutPoints.size() < 3) //degenerate edge or point cut
     {
         if (facePoints.size() > 0)
         {
@@ -450,26 +497,34 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     cutArea_ = mag(cutNormal);
 
     //Assemble cut portion centroid
-    Foam::point polyCentroid = vector::zero;
-    forAll(facePoints, fp)
-    {
-        polyCentroid += facePoints[fp];
-    }
+    cutCentroid_ = vector::zero;
+    scalar volume = 0.0;
     
-    polyCentroid += cutPoint;
-    polyCentroid /= (facePoints.size() + 1);
+    // Pick a point inside the cut polyhedron
+    point origin = (sum(facePoints)+cutPoint)/(facePoints.size()+1);
     
     //Calculate volume by adding pyramid volumes
-    scalar volume = Foam::mag((1.0/3.0)*(cutNormal & (polyCentroid - cutPoint)));
+    scalar pvolume = Foam::mag((1.0/3.0)*(cutNormal & (origin - cutPoint)));
+    cutCentroid_ += (0.25*origin + 0.75*cutPoint)*pvolume;
+    volume += pvolume;
+    
     forAll(facePoints, fp)
     {
-        volume += Foam::mag
+        scalar pvolume = Foam::mag
         (
-            (1.0/3.0)*(faceAreas[fp] & (polyCentroid - facePoints[fp]))
+            (1.0/3.0)*(faceAreas[fp] & (origin - facePoints[fp]))
         );
+        cutCentroid_ += (0.25*origin + 0.75*facePoints[fp])*pvolume;
+        volume += pvolume;
     }
- 
-    return volume/baseVol_;
+    cutCentroid_ /= volume;
+    
+    scalar alpha = volume/baseVol_;
+    
+    lostCentroid_ = centroid_ + 
+                    (alpha - 1.0)/(alpha + SMALL)*(cutCentroid_ - centroid_);
+    
+    return alpha;
 }
 
 

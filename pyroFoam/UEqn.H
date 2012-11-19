@@ -1,14 +1,18 @@
 
     Info<< "Solving UEqn" << endl;
+    
+    surfaceScalarField muEff = ib.interpolate(turbulence->muEff())
+                               *ib.alphaf();
 
     fvVectorMatrix UEqn
     (
-        fvm::ddt(rho*solid.alphaUsed(), U)
+        fvm::ddt(rho*ib.alphaCorr(), U)
       + fvm::div(phi, U)
-      //+ turbulence->divDevRhoReff(U)
+      - fvm::laplacian(muEff, U)
+      //- fvc::div(muEff*dev2(T(fvc::grad(U))))
       - solid.mU()
-      - rho*solid.alpha()*g
-      + fvm::Sp(solid.USp(), U) //switch to set U = 0 in the solid and Uburn in small cells
+      - rho*ib.alpha()*g
+      + fvm::Sp(solid.USp(), U)
       - solid.USu()
     );
 
@@ -18,9 +22,9 @@
     {
         solve
         (
-           UEqn == fvc::reconstruct(-fvc::snGrad(p)*mesh.magSf()*solid.alphaf())
+           UEqn == ib.reconstruct(-fvc::snGrad(p)*mesh.magSf()*ib.alphaf())
         );
-        K = 0.5*magSqr(U); // scale this by solid.alpha() ?
+        K = 0.5*magSqr(U); // scale this by ib.alpha() ?
     }
 
     Info<< "Min,max U = " << Foam::min(Foam::mag(U)).value()

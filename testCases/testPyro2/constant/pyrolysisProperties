@@ -1,0 +1,30 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      pyrolysisProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Solid Properties
+rhoS    rhoS  [ 1 -3 0 0 0 0 0 ]  1800.;      // Solid density (kg/m^3)
+
+//constant burning rate (kg/m2/s) - 6.8 WSB paper, matching order of magnitude
+m0      m0   [ 1 -2 -1 0 0 0 0] 10;
+
+// Minimum alpha for full cell treatment
+alphaMin  alphaMin  [ 0 0 0 0 0 0 0 ] 0.1;
+
+// Minimum alpha to use planar reconstruction algorithm on
+reconstructTol  reconstructTol  [ 0 0 0 0 0 0 0 ] 1e-6;
+
+// ************************************************************************* //
