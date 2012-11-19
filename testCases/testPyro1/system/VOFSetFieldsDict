@@ -18,9 +18,9 @@ FoamFile
 alphaName alphaGas;
 
 mode     plane;
-point    (0 0.02 0);
+point    (0 0.03 0);
 normal   (0 1 0);
-Ugas     (0 8.44 0);
+Ugas     (0 7.287 0);
 Usolid   (0 0 0);
 
 // ************************************************************************* //

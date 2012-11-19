@@ -52,7 +52,7 @@ Foam::burningSolid::burningSolid
             "pyrolysisProperties",
             mesh_.time().constant(),
             mesh_,
-            IOobject::MUST_READ_IF_MODIFIED,
+            IOobject::MUST_READ,
             IOobject::NO_WRITE
         )
     ),
@@ -166,6 +166,10 @@ Foam::burningSolid::burningSolid
 {
     Info<< "Created burningSolid" << endl;
     
+    // Rename T in solidThermo to Ts to avoid name conflicts with the T
+    //  in gasThermo.
+    solidThermo_->T().rename("Ts");
+    
     // Find gasName in species
     const multiComponentMixture<gasThermoPhysics>& composition =
         dynamic_cast<const multiComponentMixture<gasThermoPhysics>& >
@@ -198,9 +202,11 @@ Foam::burningSolid::burningSolid
 
 void Foam::burningSolid::fixSmallCells()
 {
-    scalarField m_transferred = m_pyro_*
+    volScalarField m_transferred = m_pyro_*
         (1.0 - gasThermo_.rho()/solidThermo_->rho());
-
+        
+    volVectorField mU_transferred = m_transferred*burnU_;
+    
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
     (
@@ -221,13 +227,12 @@ void Foam::burningSolid::fixSmallCells()
     dimensionedScalar pSolid("ps",dimPressure,1e5);
     dimensionedVector USolid("Us",dimVelocity,vector::zero);
     
-    tmp<surfaceScalarField> tw = ib_.scTransferWeights(burnU_);
+    tmp<surfaceScalarField> tw = ib_.scTransferWeights();
     const surfaceScalarField& w = tw();
 
     // Transfer mass and momentum out of small cells
     ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0);
-    ib_.transfer<vector>(w, m_transferred*burnU_.internalField(), 
-                         mU_, vector::zero);
+    ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero);
     
     // Set source terms in small and solid cells to specify value
     ib_.setScValue<vector>(w, USu_, USp_, burnU_, USolid, rhordT, "fix");
@@ -287,23 +292,34 @@ void Foam::burningSolid::correct
 
 tmp<volScalarField> Foam::burningSolid::YSu(const word& Yname) const
 {
-    dimensionedScalar one("one",dimDensity/dimTime,1.0);
+    dimensionedScalar onerDt
+    (
+        "onerDt",
+        dimless/dimTime,
+        1.0/mesh_.time().deltaTValue()
+    );
     
     if (Yname == gasName_)
     {
-        return ib_.gasCells()*m_pyro_ - ib_.smallCells()*one;
+        return ib_.gasCells()*m_pyro_
+               - ib_.smallCells()*onerDt*gasThermo_.rho();
     }
     else
     {
-        return ib_.noCells()*one;
+        return ib_.noCells()*onerDt*gasThermo_.rho();
     }
 }
 
 
 tmp<volScalarField> Foam::burningSolid::YSp() const
 {
-    return ib_.smallAndSolidCells()
-            *dimensionedScalar("one",dimDensity/dimTime,1.0);
+    return ib_.smallAndSolidCells()*gasThermo_.rho()
+            *dimensionedScalar
+            (
+                "onerDt",
+                dimless/dimTime,
+                1.0/mesh_.time().deltaTValue()
+            );
 }
 
 

@@ -69,6 +69,8 @@ class immersedBoundary
         //- Face area fraction of gas
         surfaceScalarField alphaf_;
         
+        volScalarField sumalphaf_;
+        
         //- Interface area
         volScalarField iArea_;
         
@@ -154,18 +156,15 @@ public:
         ) const;
         
         //- Calculate the small cell transfer weights
-        tmp<surfaceScalarField> scTransferWeights
-        (
-            const volVectorField& dir
-        );
+        tmp<surfaceScalarField> scTransferWeights();
         
         //- Transfer a field from small cells to neighbour cells
         template<class Type>
         void transfer
         (
             const surfaceScalarField& w,
-            const Field<Type>& src,
-            Field<Type>& dest,
+            const GeometricField<Type, fvPatchField, volMesh>& src,
+            GeometricField<Type, fvPatchField, volMesh>& dest,
             Type zero
         );
         
