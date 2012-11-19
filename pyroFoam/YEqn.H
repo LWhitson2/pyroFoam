@@ -46,8 +46,6 @@ tmp<fv::convectionScheme<scalar> > mvConvection
             Yi.max(0.0);
                            
             Yt += Yi;
-            solid.YSuC() = solid.YSu(Yi);
-            solid.YSpC() = solid.YSp(Yi);
         }
     }
     
