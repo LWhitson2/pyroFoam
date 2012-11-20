@@ -184,7 +184,27 @@ Foam::autoPtr<Foam::immersedBoundary> Foam::immersedBoundary::clone() const
 // Perform a correct update of the interface after the mesh is adapted
 void Foam::immersedBoundary::update()
 {
-    notImplemented("immersedBoundary::update()");
+    //Mesh update will simply apply alpha of the parent cell to its child cells
+    // which is incorrect for the sharp interface. Fortunately, it will also
+    // write iNormal and iPoint to each child cell so that alpha can be 
+    // recalculated easily.
+    
+    // When coarsening, this gets more complicated. To alleviate this, we will
+    // require the boundary to always be refined to the maximum level. It can
+    // only unrefine when the boundary has moved away.
+
+    forAll(alpha_, cellI)
+    {
+        if (mag(iNormal_[cellI]) > SMALL && mag(iPoint_[cellI]) > SMALL)
+        {
+            cuttableCell cc(mesh_, cellI);
+            plane p(iPoint_[cellI],iNormal_[cellI]);
+            alpha_[cellI] = 1.0 - cc.cut(p);
+        }
+    }
+    alpha_.correctBoundaryConditions();
+    
+    correct();
 }
 
 
@@ -230,7 +250,7 @@ void Foam::immersedBoundary::calculateInterfaceNormal
     */
     
     // Normalize and limit iNormal only to intermediate cells
-    iNormal_ *= intermeds / (mag(iNormal_) + VSMALL);
+    iNormal_ *= intermeds / (mag(iNormal_) + SMALL);
     iNormal_.correctBoundaryConditions();
 }
 
@@ -274,7 +294,6 @@ void Foam::immersedBoundary::correct()
 
     // Step 3: Calculate the cut plane and cut area in intermediate cells
     //         setting a_burn to zero in all non-intermediate cells
-    
     forAll(iNormal_, cellI)
     {
         if (intermeds[cellI] > SMALL)
@@ -650,26 +669,9 @@ Foam::immersedBoundary::getRefinementField
     const volVectorField& U
 ) const
 {
-    tmp<volScalarField> tRefinementField
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "tRefinementField",
-                mesh_.time().timeName(),
-                mesh_
-            ),
-            mesh_,
-            dimensionedScalar("tRefinementField", dimless, 0.0)
-        )
-    );
-
-    // Normalized Gradient Method
-    //  RF = |grad alpha| * V^(1/3)
-    tRefinementField().internalField() = 
-        mag(fvc::grad(alpha_)) * Foam::pow(mesh_.V(),1.0/3.0);
-
+    // Force all cells near the interface to refine to the maximum level
+    dimensionedScalar C("C",dimLength,1e6);
+    tmp<volScalarField> tRefinementField = C*mag(fvc::grad(alpha_));
 
     //Include curl criteria from Popinet (Gerris), scaled by 0.5, to also
     // refine key fluid flow regions

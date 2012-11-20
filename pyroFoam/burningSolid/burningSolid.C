@@ -169,6 +169,7 @@ Foam::burningSolid::burningSolid
     // Rename T in solidThermo to Ts to avoid name conflicts with the T
     //  in gasThermo.
     solidThermo_->T().rename("Ts");
+    solidThermo_->rho().rename("rhos");
     
     // Find gasName in species
     const multiComponentMixture<gasThermoPhysics>& composition =

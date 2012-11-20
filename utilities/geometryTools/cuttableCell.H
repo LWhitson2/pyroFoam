@@ -86,7 +86,7 @@ class cuttableCell
         
         //- Given a list of co-planar sorted points, 
         //    find the centroid and area vector
-        void makePoints
+        bool makePoints
         (
             DynamicList<point>& pointList,
             point& centroid,

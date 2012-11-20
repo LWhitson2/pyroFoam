@@ -39,7 +39,7 @@ SourceFiles
 Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
  : points_(mesh.cellPoints()[cellI].size()),
    faces_(mesh.cells()[cellI].size()),
-   pointEqualTol_(SMALL),
+   pointEqualTol_(1e-6),
    baseVol_(mesh.V()[cellI]),
    centroid_(mesh.C()[cellI]),
    cutArea_(0.0)
@@ -253,8 +253,6 @@ void Foam::cuttableCell::reduceCutPoints
         }
     }
     
-
-    
     // Then sort points around cut face
     if (reducedPoints.size() > 3)
     {
@@ -298,7 +296,7 @@ void Foam::cuttableCell::reduceCutPoints
     }
 }
 
-void Foam::cuttableCell::makePoints
+bool Foam::cuttableCell::makePoints
 (
     Foam::DynamicList<Foam::point>& pointList,
     Foam::point& centroid,
@@ -308,7 +306,7 @@ void Foam::cuttableCell::makePoints
     if (pointList.size() == 0)
     {
         Info<< "ERROR: makePoints obtained an empty pointList" << endl;
-        return;
+        return false;
     }
 
     //Find any old point inside the polygon
@@ -321,11 +319,12 @@ void Foam::cuttableCell::makePoints
     Foam::vector vCj = pointList[1] - origin;
     areaVec = (vCi ^ vCj);
     
-    if (mag(areaVec) == 0)
+    //if point 1 happens to be diagonally opposite to point 0, the area vector
+    // will be zero. Just pick the next point then.
+    if (mag(areaVec) < SMALL)
     {
-        Info<< "ERROR: makePoints received co-linear points ("
-            << pointList << ") and got a zero areaVec" << endl;
-        return;
+        vCj = pointList[2] - origin;
+        areaVec = (vCi ^ vCj);
     }
     
     //Find area and centroid
@@ -338,9 +337,19 @@ void Foam::cuttableCell::makePoints
         area += tarea;
         centroid += (1.0/3.0)*(3.0*origin + vCi + vCj) * tarea;
     }
+    
+    if (mag(area) < SMALL || mag(areaVec) < SMALL)
+    {
+        Info<< "\n\n--> Bad point list:\n" << pointList << endl;
+        //FatalError << "makePoints encountered zero area" << abort(FatalError);
+        return false;
+    }
+    
     centroid /= area;
     areaVec /= mag(areaVec);
     areaVec *= area;
+    
+    return true;
 }
 
 // Cuts a face and returns the centroid and normal of the resulting cut face
@@ -436,7 +445,17 @@ bool Foam::cuttableCell::cutFace
     }
     //Now figure out face centroid and area vector
     // points should still be in order in newFacePoints, so no need to sort
-    makePoints(newFacePoints, facePoint, faceArea);
+    if (!makePoints(newFacePoints, facePoint, faceArea))
+    {
+        Info<<"\n\n--> Points: " << points_ << endl;
+        Info<<"\n\n--> Point state: " << vertStates << endl;
+        Info<<"\n\n--> Cut points: " << cutPoints << endl;
+        Info<<"\n\n--> Face: " << f << endl;
+        Info<<"\n\n--> Face Center: " << f.centre(points_) << endl;
+        Info<<"\n\n--> Face Area: " << f.normal(points_) << endl;
+        Info<<"\n\n--> Plane: " << cutPlane << endl;
+        FatalError << "makePoints encountered zero area" << abort(FatalError);
+    }
 
     return true;
 }
@@ -449,12 +468,12 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     Foam::DynamicList<Foam::vector> faceAreas(faces_.size());
     
     labelList vertStates(points_.size());
-    //scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
+    scalar tol = Foam::pow(baseVol_, 1.0/3.0) * pointEqualTol_;
     forAll(points_, p)
     {
         Foam::vector vp = points_[p] - cutPlane.refPoint();
         bool inFront = (vp & cutPlane.normal()) > 0.0;
-        bool coplanar = cutPlane.distance(points_[p]) <= SMALL;
+        bool coplanar = cutPlane.distance(points_[p]) <= tol;
         
         vertStates[p] = (coplanar) ? 0 : ((inFront) ? 1 : -1);
     }

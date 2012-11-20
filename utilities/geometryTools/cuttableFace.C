@@ -112,25 +112,16 @@ Foam::scalar Foam::cuttableFace::cut(const plane& p) const
         }
     }
 
+    point center = sum(newFacePoints)/newFacePoints.size();
+    
     //Find cut face area   
-    Foam::vector v01 = newFacePoints[1] - newFacePoints[0];
-    Foam::vector v02 = newFacePoints[2] - newFacePoints[0];
-    scalar area = 0.5*mag(v01 ^ v02);
-
-    if (area == 0)
+    scalar area = 0.0;
+    for(label i=0; i<newFacePoints.size(); ++i)
     {
-        Foam::Info<< "ERROR: cuttableFace::cut received co-linear points ("
-                  << newFacePoints<<") and got a zero areaVec" << Foam::endl;
-        return -1.0;
-    }
-
-
-    v01 = v02;
-    for(label i=3; i<newFacePoints.size(); ++i)
-    {
-        v02 = newFacePoints[i] - newFacePoints[0];
-        area += 0.5*mag(v01 ^ v02);
-        v01 = v02;
+        label j = (i==newFacePoints.size()-1) ? 0 : i+1;
+        vector vCi = newFacePoints[i] - center;
+        vector vCj = newFacePoints[j] - center;
+        area += 0.5*mag(vCi ^ vCj);
     }
     
     return area/faceArea;
