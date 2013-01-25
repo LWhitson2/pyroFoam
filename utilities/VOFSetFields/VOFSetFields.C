@@ -54,17 +54,18 @@ int main(int argc, char *argv[])
 
     const volVectorField& cellCenters = mesh.C();   
      
-    word mode(VOFDict.lookup("mode"));
+    word shape(VOFDict.lookup("shape"));
     label solidCells = 0;
     label gasCells = 0;
     
-    if (mode == "circle")
+    if (shape == "circle")
     {
         vector center(VOFDict.lookup("center"));
         scalar radius = readScalar(VOFDict.lookup("radius"));
         vector Usolid(VOFDict.lookup("Usolid"));
         vector Ugas(VOFDict.lookup("Ugas"));
         word planename(VOFDict.lookup("plane"));
+        word inv(VOFDict.lookup("inverse"));
     
         forAll(alpha, cellI)
         {
@@ -92,6 +93,11 @@ int main(int argc, char *argv[])
 
             cuttableCell pc(mesh, cellI);
             alpha[cellI] = 1.0 - pc.cut( plane(p, n) );
+            
+            if (inv == "yes")
+            {
+                alpha[cellI] = 1.0 - alpha[cellI];
+            }
 
             if (alpha[cellI] > SMALL)
             {
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
         }
     
     }
-    else if (mode == "plane")
+    else if (shape == "plane")
     {
         vector point(VOFDict.lookup("point"));
         vector normal(VOFDict.lookup("normal"));
@@ -135,7 +141,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        FatalError<< "Invalid mode " << mode << " specified"
+        FatalError<< "Invalid shape " << shape << " specified"
                   << abort(FatalError);
     }
 	
