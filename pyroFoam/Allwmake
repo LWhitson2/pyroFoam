@@ -4,6 +4,7 @@ set -x
 
 wmake libso ../utilities/geometryTools
 wmake libso ../utilities/immersedBoundary
+wmake ../utilities/VOFSetFields
 wmake libso burningSolid
 wmake
 

@@ -17,7 +17,7 @@ FoamFile
 
 // Change this to staticFvMesh to just use a normal mesh, 
 //  or use dynamicRefineFvMesh for a dynamic mesh
-dynamicFvMesh   dynamicRefineFvMesh;
+dynamicFvMesh   staticFvMesh;
 
 dynamicRefineFvMeshCoeffs
 {

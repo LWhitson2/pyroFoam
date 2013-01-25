@@ -9,17 +9,17 @@ cp -r 0.org 0
 blockMesh
 VOFSetFields
 
-initDynamicMesh
-cp 0.org/* 9.9990001e-07/
-rm 9.9990001e-07/alphaGas
-VOFSetFields
-initDynamicMesh
-cp 0.org/* 1.9998e-06/
-rm 1.9998e-06/alphaGas
-VOFSetFields
+# initDynamicMesh
+# cp 0.org/* 9.9990001e-07/
+# rm 9.9990001e-07/alphaGas
+# VOFSetFields
+# initDynamicMesh
+# cp 0.org/* 1.9998e-06/
+# rm 1.9998e-06/alphaGas
+# VOFSetFields
 
 #-- Run on single processor
-#pyroFoam
+pyroFoam
 
 #-- Run on 6 processors
 #decomposePar
