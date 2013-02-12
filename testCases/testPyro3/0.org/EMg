@@ -17,7 +17,7 @@ FoamFile
 
 dimensions      [0 0 0 0 0 0 0];
 
-internalField   uniform 0;
+internalField   uniform 1;
 
 boundaryField
 {
@@ -38,7 +38,8 @@ boundaryField
 
     bottom
     {
-        type            zeroGradient;
+        type            fixedValue;
+        value           uniform 1;
     }
 }
 

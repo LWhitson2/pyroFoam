@@ -72,10 +72,10 @@ int main(int argc, char *argv[])
 
             //Identify regions near ANY interface or reaction zone
             refinementField = ib.getRefinementField(U);
- 
+
             // Do any mesh changes
             mesh.update();
-        
+
             if (mesh.changing() && correctPhi)
             {
                 ib.update();
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
                 #include "meshCourantNo.H"
             }
         }
-        
+
         //#include "rhoEqn.H"
 
         while (pimple.loop())
@@ -97,7 +97,8 @@ int main(int argc, char *argv[])
 
             #include "UEqn.H"
             #include "YEqn.H"
-            //#include "hsEqn.H"
+            #include "hsEqn.H"
+            #include "TsEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
@@ -111,6 +112,7 @@ int main(int argc, char *argv[])
             }
         }
 
+        hsOut = hs;
         runTime.write();
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

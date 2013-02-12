@@ -17,7 +17,7 @@ FoamFile
 
 alphaName alphaGas;
 
-mode     plane;
+shape    plane;
 point    (0 0.03 0);
 normal   (0 1 0);
 Ugas     (0 7.287 0);

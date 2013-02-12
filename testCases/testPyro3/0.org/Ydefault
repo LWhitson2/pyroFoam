@@ -21,7 +21,7 @@ internalField   uniform 0.0;
 
 boundaryField
 {
-    top
+    bottom
     {
         type            fixedValue;
         value           uniform 0.0;
@@ -37,7 +37,7 @@ boundaryField
         type            symmetryPlane;
     }
 
-    bottom
+    top
     {
         type            zeroGradient;
     }

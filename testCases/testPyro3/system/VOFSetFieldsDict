@@ -17,7 +17,8 @@ FoamFile
 
 alphaName alphaGas;
 
-mode     circle;
+shape    circle;
+inverse  no;
 center   (0 0.06 0);
 radius   0.01;
 plane    xy;

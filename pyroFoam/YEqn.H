@@ -13,10 +13,10 @@ tmp<fv::convectionScheme<scalar> > mvConvection
     combustion->correct();
     dQ = combustion->dQ();
     volScalarField Yt(0.0*Y[0]);
-    
-    //Unity Schmidt number assumed (mu ~ rho*D)
-    surfaceScalarField DEff = ib.interpolate(turbulence->muEff())
-                               *ib.alphaf(); //unity Schmidt No.
+
+    // Calculate corrected species diffusivity
+    surfaceScalarField DEff = ib.interpolate(turbulence->alphaEff())
+                               *ib.alphaf(); // unity Lewis No.
 
     forAll(Y, i)
     {
@@ -44,20 +44,20 @@ tmp<fv::convectionScheme<scalar> > mvConvection
             YiEqn.relax();
             YiEqn.solve(mesh.solver("Yi"));
             Yi.max(0.0);
-                           
+
             Yt += Yi;
         }
     }
-    
+
     thermo.correct();
-    
+
     // Added to get sum(Yi) = 1
     //Yt += Y[inertIndex];
 
     forAll(Y, i)
     {
         Y[i] = Y[i] / Yt;
-        
+
         Info<< "Min,max for " << Y[i].name() << " = "
             << Foam::min(Y[i]).value() << ", "
             << Foam::max(Y[i]).value() << endl;

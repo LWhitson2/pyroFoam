@@ -1,14 +1,20 @@
 {
+    // Calculate corrected thermal diffusivity
+    surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff())
+                               *ib.alphaf();
+
     fvScalarMatrix hsEqn
     (
-        fvm::ddt(rho, hs)
+        fvm::ddt(ib.alphaCorr()*rho, hs)
       + mvConvection->fvmDiv(phi, hs)
-      - fvm::laplacian(turbulence->alphaEff(), hs) //needs to be adjusted
+      - fvm::laplacian(alphaEff, hs)
      ==
-        dpdt
-      - (fvc::ddt(rho, K) + fvc::div(phi, K))
-      + combustion->Sh()
-      + solid.Sh()   //<--
+        ib.alphaCorr()*dpdt
+      - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
+      //+ ib.alphaCorr()*combustion->Sh()
+      //+ solid.Sh()   //<--
+      + solid.hsSu()
+      - fvm::Sp(solid.hsSp(), hs)
     );
 
     hsEqn.relax();

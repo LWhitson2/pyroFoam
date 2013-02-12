@@ -62,6 +62,18 @@ volVectorField U
 volScalarField& p = thermo.p();
 const volScalarField& psi = thermo.psi();
 volScalarField& hs = thermo.hs();
+volScalarField hsOut
+(
+    IOobject
+    (
+        "hsOut",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    thermo.hs()
+);
 const volScalarField& T = thermo.T();
 
 #include "compressibleCreatePhi.H"
@@ -118,4 +130,8 @@ immersedBoundary ib(mesh);
 // Create the burning solid object defined by the immersed boundary
 burningSolid solid(mesh, ib, thermo);
 
-
+// Create Solid Fields
+volScalarField& Ts = solid.Ts();
+const volScalarField& rhos = solid.rhos();
+const volScalarField& Cps = solid.Cps();
+const volScalarField& Ks = solid.Ks();

@@ -59,49 +59,51 @@ class immersedBoundary
 
         //- Host mesh
         const fvMesh& mesh_;
-        
+
         //- Parameter dictionary
         IOdictionary ibDict_;
 
         //- Volume fraction of gas
         volScalarField alpha_;
-        
+
         //- Face area fraction of gas
         surfaceScalarField alphaf_;
-        
+
         volScalarField sumalphaf_;
-        
+
         //- Interface area
         volScalarField iArea_;
-        
+
         //- Interface regression velocity
         //volVectorField iU_;
 
         //- Interface normal vector
         volVectorField iNormal_;
-        
+
         //- Interface plane point
         volVectorField iPoint_;
-        
+
         //- Centroid of gas portion of a cell (zero in solid)
         volVectorField gasC_;
-        
+
         //- Centroid of solid portion of a cell (zero in gas)
         volVectorField solidC_;
-        
+
+        volScalarField intermedsOut_;
+
         //- Alpha cutoff for small cell treatment
         dimensionedScalar alphaMin_;
-        
+
         //- Alpha interface reconstruction cutoff
         dimensionedScalar reconstructTol_;
 
-    // Private member functions        
+    // Private member functions
         //- Calculate the interface normals
         void calculateInterfaceNormal(const volScalarField& intermeds);
-        
+
         //- Get the outward facing normal vector from faceI relative to cellI
         vector outwardNormal(label faceI, label cellI) const;
-        
+
 public:
 
     // Constructors
@@ -131,33 +133,33 @@ public:
         {
             return iArea_;
         }
-        
+
         const volVectorField& normal() const
         {
             return iNormal_;
         }
-        
+
         //- Get the "used" alpha (zero in small cells)
         tmp<volScalarField> alphaCorr() const;
 
         //- Evolve the interface given a solid consumption rate
         void moveInterface(const volScalarField& ddtalpha);
-        
+
         //- Calculate the interface parameters given alpha
         void correct();
-        
+
         //- Update the interface after a mesh update
         void update();
-        
+
         //- Get the mesh refinement criteria field
         tmp<volScalarField> getRefinementField
         (
             const volVectorField& U
         ) const;
-        
+
         //- Calculate the small cell transfer weights
         tmp<surfaceScalarField> scTransferWeights();
-        
+
         //- Transfer a field from small cells to neighbour cells
         template<class Type>
         void transfer
@@ -167,7 +169,7 @@ public:
             GeometricField<Type, fvPatchField, volMesh>& dest,
             Type zero
         );
-        
+
         //- Set source terms in small cells to set values in governing eqns
         template<class Type>
         void setScValue
@@ -180,30 +182,30 @@ public:
             const dimensionedScalar& diag,
             const word& mode
         );
-        
+
         //- Return a mask for small cells
         tmp<volScalarField> smallCells() const;
-        
+
         //- Return a mask for small and solid cells
         tmp<volScalarField> smallAndSolidCells() const;
-        
+
         //- Return a mask for solid cells
         tmp<volScalarField> solidCells() const;
-        
+
         //- Return a mask for gas cells
         tmp<volScalarField> gasCells() const;
-        
+
         //- Return a mask for no cells
         tmp<volScalarField> noCells() const;
-        
+
         //- IB-aware interpolation
         template<class Type>
         tmp<GeometricField<Type, fvsPatchField, surfaceMesh> > ibInterpolate
         (
             const GeometricField<Type, fvPatchField, volMesh>& vf
         ) const;
-        
-       
+
+
         template<class Type>
         tmp
         <
@@ -226,7 +228,7 @@ public:
         (
             const tmp<GeometricField<Type, fvsPatchField, surfaceMesh> >&
         ) const;
-        
+
         // Overloading
 
         inline tmp<surfaceScalarField> interpolate

@@ -45,10 +45,10 @@ void immersedBoundary::transfer
 )
 {
     volScalarField wtot = fvc::surfaceSum(w);
-    
+
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
-    
+
     forAll(w, faceI)
     {
         if (w[faceI] > 0.0)
@@ -56,42 +56,42 @@ void immersedBoundary::transfer
             label own = owner[faceI];
             label nei = neighbor[faceI];
 
-            label sc = (alpha_[own] < alphaMin_.value()) ? own : nei; 
+            label sc = (alpha_[own] < alphaMin_.value()) ? own : nei;
             label rc = (sc == own) ? nei : own;
 
             dest[rc] += w[faceI]/wtot[sc] * src[sc];
             dest[sc] = zero;
         }
     }
-    
+
     // Now do transfer at parallel patches
     const typename GeometricField<Type, fvPatchField, volMesh>::GeometricBoundaryField&
         srcBf = src.boundaryField();
-        
-    const volScalarField::GeometricBoundaryField& 
+
+    const volScalarField::GeometricBoundaryField&
         wtotBf = wtot.boundaryField();
-                  
-    const surfaceScalarField::GeometricBoundaryField& 
+
+    const surfaceScalarField::GeometricBoundaryField&
         wBf = w.boundaryField();
-    
+
     forAll(srcBf, patchI)
     {
         const fvPatchField<Type>& srcPf = srcBf[patchI];
         const fvPatchScalarField& wtotPf = wtotBf[patchI];
         const scalarField& wPf = wBf[patchI];
-        
+
         const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
-    
+
         if (srcPf.coupled())
         {
             // Get values across parallel patch
             const Field<Type> srcPNf(srcPf.patchNeighbourField());
             const scalarField wtotPNf(wtotPf.patchNeighbourField());
-            
+
             forAll(srcPf, pFaceI)
             {
                 label pfCellI = pFaceCells[pFaceI];
-                
+
                 if ( wPf[pFaceI] > 0.0)
                 {
                     if (alpha_[pfCellI] < alphaMin_.value())
@@ -124,7 +124,7 @@ void immersedBoundary::setScValue
 {
     Su = solidCells()*solidValue*diag;
     Sp = smallAndSolidCells()*diag;
-    
+
     if (mode == "fix")
     {
         Su += smallCells()*src*diag;
@@ -132,10 +132,10 @@ void immersedBoundary::setScValue
     else if (mode == "avg")
     {
         volScalarField wtot = fvc::surfaceSum(w);
-        
+
         const labelUList& owner = mesh_.owner();
         const labelUList& neighbor = mesh_.neighbour();
-        
+
         forAll(w, faceI)
         {
             if (w[faceI] > 0.0)
@@ -143,42 +143,45 @@ void immersedBoundary::setScValue
                 label own = owner[faceI];
                 label nei = neighbor[faceI];
 
-                label sc = (alpha_[own] < alphaMin_.value()) ? own : nei; 
+                label sc = (alpha_[own] < alphaMin_.value()) ? own : nei;
                 label rc = (sc == own) ? nei : own;
 
-                Su[sc] += w[faceI]/wtot[sc] * src[rc] * diag.value();
+                if (alpha_[sc] > SMALL)
+                {
+                    Su[sc] += w[faceI]/wtot[sc] * src[rc] * diag.value();
+                }
             }
         }
-        
+
         // Now do transfer at parallel patches
         const typename GeometricField
             <Type, fvPatchField, volMesh>::GeometricBoundaryField&
             srcBf = src.boundaryField();
-                      
-        const surfaceScalarField::GeometricBoundaryField& 
+
+        const surfaceScalarField::GeometricBoundaryField&
             wBf = w.boundaryField();
-        
+
         forAll(srcBf, patchI)
         {
             const fvPatchField<Type>& srcPf = srcBf[patchI];
             const scalarField& wPf = wBf[patchI];
-            
+
             const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
-        
+
             if (srcPf.coupled())
             {
                 // Get values across parallel patch
                 const Field<Type> srcPNf(srcPf.patchNeighbourField());
-                
+
                 forAll(srcPf, pFaceI)
                 {
                     label pfCellI = pFaceCells[pFaceI];
-                    
+
                     if ( wPf[pFaceI] > 0.0)
-                    {                        
+                    {
                         if (alpha_[pfCellI] < alphaMin_.value())
                         {//I own the small cell
-                            Su[pfCellI] += wPf[pFaceI]/wtot[pfCellI] 
+                            Su[pfCellI] += wPf[pFaceI]/wtot[pfCellI]
                                           * srcPNf[pFaceI] * diag.value();
                         }
                     }

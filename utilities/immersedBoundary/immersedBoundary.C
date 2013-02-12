@@ -71,7 +71,7 @@ Foam::immersedBoundary::immersedBoundary
         mesh_,
         dimensionedScalar("alphaf", dimless, 0.0)
     ),
-    
+
     sumalphaf_
     (
         IOobject
@@ -113,7 +113,7 @@ Foam::immersedBoundary::immersedBoundary
         mesh_,
         dimensionedVector("iNormal", dimless, vector::zero)
     ),
-    
+
     iPoint_
     (
         IOobject
@@ -127,7 +127,7 @@ Foam::immersedBoundary::immersedBoundary
         mesh_,
         dimensionedVector("iPoint", dimless, vector::zero)
     ),
-    
+
     gasC_
     (
         IOobject
@@ -141,7 +141,7 @@ Foam::immersedBoundary::immersedBoundary
         mesh_,
         dimensionedVector("gasC", dimless, vector::zero)
     ),
-    
+
     solidC_
     (
         IOobject
@@ -156,6 +156,20 @@ Foam::immersedBoundary::immersedBoundary
         dimensionedVector("solidC", dimless, vector::zero)
     ),
 
+    intermedsOut_
+    (
+        IOobject
+        (
+            "intermedsOut",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("iNormal", dimless, 0)
+    ),
+
     alphaMin_(ibDict_.lookup("alphaMin")),
     reconstructTol_(ibDict_.lookup("reconstructTol"))
 
@@ -164,7 +178,7 @@ Foam::immersedBoundary::immersedBoundary
 
     // Calculate new interface position and fields
     correct();
-    
+
     alpha_.oldTime();
     alphaf_.oldTime();
     iNormal_.oldTime();
@@ -186,9 +200,9 @@ void Foam::immersedBoundary::update()
 {
     //Mesh update will simply apply alpha of the parent cell to its child cells
     // which is incorrect for the sharp interface. Fortunately, it will also
-    // write iNormal and iPoint to each child cell so that alpha can be 
+    // write iNormal and iPoint to each child cell so that alpha can be
     // recalculated easily.
-    
+
     // When coarsening, this gets more complicated. To alleviate this, we will
     // require the boundary to always be refined to the maximum level. It can
     // only unrefine when the boundary has moved away.
@@ -203,7 +217,7 @@ void Foam::immersedBoundary::update()
         }
     }
     alpha_.correctBoundaryConditions();
-    
+
     correct();
 }
 
@@ -212,21 +226,21 @@ void Foam::immersedBoundary::calculateInterfaceNormal
 (
     const volScalarField& intermeds
 )
-{    
+{
     //Use a smoothing procedure to capture the interface better
-        
+
     // Get gradient
     iNormal_ = fvc::grad(alpha_)*dimensionedScalar("one",dimLength,1.0);
-        
+
     surfaceVectorField iNormalf = interpolate(iNormal_);
     iNormal_ = 0.7*fvc::average(iNormalf) + 0.3*iNormal_;
-    
+
     for (label i = 0; i < 1; ++i)
     {
         iNormalf = interpolate(iNormal_);
         iNormal_ = 0.7*fvc::average(iNormalf) + 0.3*iNormal_;
     }
-    
+
     /*
     const labelListList& cellCells = mesh_.cellCells();
     const scalarField& cellVolumes = mesh_.V();
@@ -238,7 +252,7 @@ void Foam::immersedBoundary::calculateInterfaceNormal
         scalar Vtot = cellVolumes[cellI];
 
         const labelList& nbList = cellCells[cellI];
-        
+
         forAll(nbList, nbI)
         {
             normSum += iNormal_[ nbList[nbI] ]*cellVolumes[ nbList[nbI] ];
@@ -248,7 +262,7 @@ void Foam::immersedBoundary::calculateInterfaceNormal
         iNormal_[cellI] = normSum / Vtot;
     }
     */
-    
+
     // Normalize and limit iNormal only to intermediate cells
     iNormal_ *= intermeds / (mag(iNormal_) + SMALL);
     iNormal_.correctBoundaryConditions();
@@ -268,15 +282,15 @@ Foam::vector Foam::immersedBoundary::outwardNormal
     // Calculate face normal
     vector norm = f.normal(points);
     norm /= mag(norm);
-    
+
     // Flip norm if pointed wrong way
     vector vSF = f.centre(points) - mesh_.C()[cellI];
-    
+
     if ((vSF & norm) < 0.0)
     {
         norm *= -1.0;
     }
-    
+
     return norm;
 }
 
@@ -291,6 +305,7 @@ void Foam::immersedBoundary::correct()
 
     // Step 2: Calculate interface normal in intermediate cells
     calculateInterfaceNormal(intermeds);
+    intermedsOut_ = intermeds;
 
     // Step 3: Calculate the cut plane and cut area in intermediate cells
     //         setting a_burn to zero in all non-intermediate cells
@@ -302,11 +317,11 @@ void Foam::immersedBoundary::correct()
             plane p = cc.constructInterface(iNormal_[cellI],1.0-alpha_[cellI]);
             iPoint_[cellI] = p.refPoint();
             iArea_[cellI] = cc.cutArea();
-            
+
             // Save gas and solid portion centroids
             gasC_[cellI] = cc.lostCentroid();
             solidC_[cellI] = cc.cutCentroid();
-            
+
             // DEBUGGING PURPOSES
             if (iArea_[cellI] < SMALL)
             {
@@ -330,7 +345,7 @@ void Foam::immersedBoundary::correct()
             }
         }
     }
-    
+
     iPoint_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();
 
@@ -339,11 +354,11 @@ void Foam::immersedBoundary::correct()
     //         regions away from the interface
     alphaf_ = fvc::interpolate(alpha_);
 
-    // Step 5: Use the planes in intermediate cells to correct alphaf 
+    // Step 5: Use the planes in intermediate cells to correct alphaf
     //         near the interface. Also catch solid cells that have a partial
     //         burning face as calculated from an intermediate cell cut plane.
     surfaceScalarField hasIntermeds = fvc::interpolate(intermeds);
-    
+
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
 
@@ -372,9 +387,9 @@ void Foam::immersedBoundary::correct()
                 Foam::plane p(iPoint_[own], iNormal_[own]);
                 alphafOwn = cf.cut(p);
             }
-            
+
             alphaf_[faceI] = Foam::min(alphafNei, alphafOwn);
-            
+
             // Catch the cases where:
             //
             //   +---------+
@@ -389,7 +404,7 @@ void Foam::immersedBoundary::correct()
             //
             //  The value of alphaf (===) for the face is calculated correctly,
             //  but needs to be added to the interface area of the solid cell
-            
+
             if (alpha_[own] < reconstructTol_.value()
                 && alphaf_[faceI] > SMALL)
             {
@@ -418,40 +433,40 @@ void Foam::immersedBoundary::correct()
             // Increment a_burn since a solidcell could technically have more
             // than one sharp boundary
             iArea_[solidcell] += mesh_.magSf()[faceI];
-                        
+
             // Increment iNormal_
             iNormal_[solidcell] += outwardNormal(faceI, solidcell);
         }
     }
-    
+
     // Now set alphaf on parallel patches
-    const volScalarField::GeometricBoundaryField& alphaBf = 
+    const volScalarField::GeometricBoundaryField& alphaBf =
         alpha_.boundaryField();
-    const volVectorField::GeometricBoundaryField& iPointBf = 
+    const volVectorField::GeometricBoundaryField& iPointBf =
         iPoint_.boundaryField();
-    volVectorField::GeometricBoundaryField& iNormalBf = 
+    volVectorField::GeometricBoundaryField& iNormalBf =
         iNormal_.boundaryField();
-    volScalarField::GeometricBoundaryField& iAreaBf = 
+    volScalarField::GeometricBoundaryField& iAreaBf =
         iArea_.boundaryField();
     const surfaceScalarField::GeometricBoundaryField& hasIntermedsBf =
         hasIntermeds.boundaryField();
-        
+
     surfaceScalarField::GeometricBoundaryField& alphafBf =
         alphaf_.boundaryField();
-    
+
     forAll(alphafBf, patchI)
     {
         const fvPatchScalarField& alphaPf = alphaBf[patchI];
         const fvPatchVectorField& iPointPf = iPointBf[patchI];
-        
+
         fvPatchVectorField& iNormalPf = iNormalBf[patchI];
         fvPatchScalarField& iAreaPf = iAreaBf[patchI];
-        
+
         const scalarField& hasIntermedsPf = hasIntermedsBf[patchI];
         scalarField& alphafPf = alphafBf[patchI];
 
         const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
-    
+
         if (alphaPf.coupled()) //returns true for parallel and cyclic patches
         {
             // Get values across parallel patch
@@ -459,19 +474,19 @@ void Foam::immersedBoundary::correct()
             const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
             const scalarField alphaPNf(alphaPf.patchNeighbourField());
             const scalarField iAreaPNf(iAreaPf.patchNeighbourField());
-            
+
             //patch face starting IDs in mesh.faces()
             label patchFs = alphaPf.patch().start();
             const fvPatch& meshPf = mesh_.boundary()[patchI];
-            
+
             forAll(alphafPf, pFaceI)
             {
                 label pfCellI = pFaceCells[pFaceI];
-                
+
                 if (hasIntermedsPf[pFaceI] > SMALL)
                 {
                     cuttableFace cf(mesh_, patchFs+pFaceI);
-                    
+
                     scalar alphafNei = 1.0;
                     scalar alphafOwn = 1.0;
 
@@ -486,9 +501,9 @@ void Foam::immersedBoundary::correct()
                         Foam::plane p(iPoint_[pfCellI], iNormal_[pfCellI]);
                         alphafOwn = cf.cut(p);
                     }
-                    
+
                     alphafPf[pFaceI] = Foam::min(alphafNei, alphafOwn);
-                    
+
                     // now catch sharp edges
                     if (alpha_[pfCellI] < reconstructTol_.value()
                         && alphafPf[pFaceI] > SMALL)
@@ -497,11 +512,11 @@ void Foam::immersedBoundary::correct()
                         iArea_[pfCellI] += meshPf.magSf()[pFaceI]
                                            *alphafPf[pFaceI];
 
-                        iNormal_[pfCellI] += 
+                        iNormal_[pfCellI] +=
                                 outwardNormal(patchFs+pFaceI, pfCellI)
                                 *alphafPf[pFaceI];
                     }
-                    
+
                 }
                 else if (mag(alpha_[pfCellI] - alphaPNf[pFaceI]) > 0.1)
                 {
@@ -512,21 +527,21 @@ void Foam::immersedBoundary::correct()
                     {
                         // than one sharp boundary
                         iArea_[pfCellI] += meshPf.magSf()[pFaceI];
-                                    
+
                         // Increment iNormal_
-                        iNormal_[pfCellI] += 
+                        iNormal_[pfCellI] +=
                             outwardNormal(patchFs+pFaceI, pfCellI);
                     }
                 }
             }
         }
     }
-    
+
     //Re-normalize iNormal (only needed for the cases when it is incremented)
     iNormal_ /= (mag(iNormal_) + VSMALL);
-    
+
     sumalphaf_ = fvc::surfaceSum(alphaf_);
-    
+
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();
     gasC_.correctBoundaryConditions();
@@ -560,10 +575,10 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
         )
     );
     surfaceScalarField& w = tw();
-    
+
     // If negative, alpha is a small cell
     volScalarField alphaShift = alpha_ - alphaMin_;
-    
+
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
 
@@ -582,58 +597,58 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
             (
                 iNormal_[sc] & mesh_.Sf()[faceI]
             ) * alphaf_[faceI];
-            
+
             alphaf_[faceI] = 0.0;
         }
-        
+
         // if both cells are small, zero out alphaf between then
         if (alphaShift[own] < 0.0 && alphaShift[nei] < 0.0)
         {
             alphaf_[faceI] = 0.0;
         }
     }
-    
-    
-    
+
+
+
     // Now set alphaf on parallel patches
-    const volScalarField::GeometricBoundaryField& alphaShiftBf = 
+    const volScalarField::GeometricBoundaryField& alphaShiftBf =
         alphaShift.boundaryField();
-    const volVectorField::GeometricBoundaryField& iNormalBf = 
+    const volVectorField::GeometricBoundaryField& iNormalBf =
         iNormal_.boundaryField();
-        
+
     surfaceScalarField::GeometricBoundaryField& wBf =
         w.boundaryField();
     surfaceScalarField::GeometricBoundaryField& alphafBf =
         alphaf_.boundaryField();
-    
+
     forAll(alphafBf, patchI)
     {
         const fvPatchScalarField& alphaShiftPf = alphaShiftBf[patchI];
         const fvPatchVectorField& iNormalPf = iNormalBf[patchI];
-        
+
         scalarField& alphafPf = alphafBf[patchI];
         scalarField& wPf = wBf[patchI];
-        
+
         const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
-    
+
         if (alphaShiftPf.coupled())
         {
             // Get values across parallel patch
             const scalarField alphaShiftPNf(alphaShiftPf.patchNeighbourField());
             const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
-            
+
             const fvPatch& meshPf = mesh_.boundary()[patchI];
-            
+
             forAll(alphafPf, pFaceI)
             {
                 label pfCellI = pFaceCells[pFaceI];
-                
+
                 //Calculate weight on small-large cell faces and close
                 // small cell faces
                 if ( alphaShift[pfCellI] * alphaShiftPNf[pFaceI]
                      * alphafPf[pFaceI] < 0.0)
                 {
-                
+
                     vector scNorm = (alphaShift[pfCellI] < 0.0)
                                     ? iNormal_[pfCellI]
                                     : iNormalPNf[pFaceI];
@@ -645,7 +660,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
 
                     alphafPf[pFaceI] = 0.0;
                 }
-                
+
                 //Close faces between small cells
                 if (alphaShift[pfCellI] < 0.0 && alphaShiftPNf[pFaceI] < 0.0)
                 {
@@ -654,16 +669,16 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
             }
         }
     }
-    
+
     sumalphaf_ = fvc::surfaceSum(alphaf_);
-    
+
     return tw;
 }
 
 
 
 
-Foam::tmp<Foam::volScalarField> 
+Foam::tmp<Foam::volScalarField>
 Foam::immersedBoundary::getRefinementField
 (
     const volVectorField& U
@@ -677,7 +692,7 @@ Foam::immersedBoundary::getRefinementField
     // refine key fluid flow regions
     tRefinementField().internalField() = max
     (
-        tRefinementField().internalField(), 
+        tRefinementField().internalField(),
         Foam::mag(fvc::curl(U)) * Foam::pow(mesh_.V(),1.0/3.0) * 0.5
     );
 
@@ -689,19 +704,19 @@ void Foam::immersedBoundary::moveInterface(const volScalarField& ddtalpha)
 {
     //Update alpha
     solve(fvm::ddt(alpha_) == ddtalpha);
-    
+
     //Correct the interface parameters using the new alpha
     correct();
 }
 
 
-        
+
 Foam::tmp<Foam::volScalarField>
 Foam::immersedBoundary::smallAndSolidCells() const
 {
     return neg(alpha_ - alphaMin_);
 }
-        
+
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallCells() const
 {
     return neg(alpha_ - alphaMin_)*pos(alpha_ - SMALL);

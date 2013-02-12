@@ -23,16 +23,15 @@ boundaryField
 {
     top
     {
-        type            fixedValue;
-        value           uniform 298;
+        type            zeroGradient;
     }
-    
+
     bottom
     {
         type            fixedValue;
         value           uniform 298;
     }
-    
+
     sides
     {
         type            zeroGradient;
