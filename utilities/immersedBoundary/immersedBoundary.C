@@ -72,6 +72,20 @@ Foam::immersedBoundary::immersedBoundary
         dimensionedScalar("alphaf", dimless, 0.0)
     ),
 
+    alphafs_
+    (
+        IOobject
+        (
+            "alphafs",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphafs", dimless, 0.0)
+    ),
+
     sumalphaf_
     (
         IOobject
@@ -84,6 +98,20 @@ Foam::immersedBoundary::immersedBoundary
         ),
         mesh_,
         dimensionedScalar("sumalphaf",dimless,0.0)
+    ),
+
+    sumalphafs_
+    (
+        IOobject
+        (
+            "sumalphafs",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("sumalphafs",dimless,0.0)
     ),
 
     iArea_
@@ -541,6 +569,7 @@ void Foam::immersedBoundary::correct()
     iNormal_ /= (mag(iNormal_) + VSMALL);
 
     sumalphaf_ = fvc::surfaceSum(alphaf_);
+    alphafs_ = alphaf_;
 
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();
@@ -556,9 +585,15 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphaCorr() const
     return alpha_ * pos(alpha_ - alphaMin_);
 }
 
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphasCorr() const
+{
+    return alphas() * pos(alphas() - alphaMin_);
+}
+
 
 //If no dir is available, this could use iNormal_ instead
-Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
+Foam::tmp<Foam::surfaceScalarField>
+Foam::immersedBoundary::scTransferWeights(const std::string& input)
 {
     tmp<surfaceScalarField> tw
     (
@@ -574,10 +609,22 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
             dimensionedScalar("tw", dimless, 0.0)
         )
     );
+
     surfaceScalarField& w = tw();
 
+    const tmp<volScalarField> alphastmp = 1.0 - alpha_;
+    const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
+    surfaceScalarField& alphaf = (input == "gas") ? alphaf_:alphafs_;
+    volScalarField& sumalphaf = (input == "gas") ? sumalphaf_:sumalphafs_;
+    dimensionedScalar iFlip("iFlip", dimless, -1.0);
+
+    if (input == "gas")
+    {
+        iFlip = 1.0;
+    }
+
     // If negative, alpha is a small cell
-    volScalarField alphaShift = alpha_ - alphaMin_;
+    volScalarField alphaShift = alpha - alphaMin_;
 
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
@@ -588,7 +635,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
         label own = owner[faceI];
         label nei = neighbor[faceI];
 
-        if (alphaShift[own] * alphaShift[nei] * alphaf_[faceI] < 0.0)
+        if (alphaShift[own] * alphaShift[nei] * alphaf[faceI] < 0.0)
         { //one is small, one is not, and they share a gas boundary
 
             label sc = (alphaShift[own] < 0.0) ? own : nei;
@@ -596,15 +643,15 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
             w[faceI] = mag
             (
                 iNormal_[sc] & mesh_.Sf()[faceI]
-            ) * alphaf_[faceI];
+            ) * alphaf[faceI] * iFlip.value();
 
-            alphaf_[faceI] = 0.0;
+            alphaf[faceI] = 0.0;
         }
 
         // if both cells are small, zero out alphaf between then
         if (alphaShift[own] < 0.0 && alphaShift[nei] < 0.0)
         {
-            alphaf_[faceI] = 0.0;
+            alphaf[faceI] = 0.0;
         }
     }
 
@@ -616,10 +663,11 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
     const volVectorField::GeometricBoundaryField& iNormalBf =
         iNormal_.boundaryField();
 
+
     surfaceScalarField::GeometricBoundaryField& wBf =
         w.boundaryField();
     surfaceScalarField::GeometricBoundaryField& alphafBf =
-        alphaf_.boundaryField();
+        alphaf.boundaryField();
 
     forAll(alphafBf, patchI)
     {
@@ -635,7 +683,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
         {
             // Get values across parallel patch
             const scalarField alphaShiftPNf(alphaShiftPf.patchNeighbourField());
-            const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
+            const vectorField iNormalPNf(iNormalPf.patchNeighbourField()*iFlip.value());
 
             const fvPatch& meshPf = mesh_.boundary()[patchI];
 
@@ -649,7 +697,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
                      * alphafPf[pFaceI] < 0.0)
                 {
 
-                    vector scNorm = (alphaShift[pfCellI] < 0.0)
+                    vector scNorm = iFlip.value()*(alphaShift[pfCellI] < 0.0)
                                     ? iNormal_[pfCellI]
                                     : iNormalPNf[pFaceI];
 
@@ -670,7 +718,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::immersedBoundary::scTransferWeights()
         }
     }
 
-    sumalphaf_ = fvc::surfaceSum(alphaf_);
+    sumalphaf = fvc::surfaceSum(alphaf);
 
     return tw;
 }
@@ -717,6 +765,11 @@ Foam::immersedBoundary::smallAndSolidCells() const
     return neg(alpha_ - alphaMin_);
 }
 
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::fullGasCells() const
+{
+    return neg(alphas() - SMALL);
+}
+
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallCells() const
 {
     return neg(alpha_ - alphaMin_)*pos(alpha_ - SMALL);
@@ -726,6 +779,11 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallCells() const
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::solidCells() const
 {
     return neg(alpha_ - SMALL);
+}
+
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallSolidCells() const
+{
+    return neg(alphas() - alphaMin_)*pos(alphas() - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::gasCells() const

@@ -215,6 +215,11 @@ public:
     tmp<volScalarField> TsSu() const;
 
     tmp<volScalarField> TsSp() const;
+
+    void correctSolidThermo()
+    {
+      solidThermo_->correct();
+    }
 };
 
 
