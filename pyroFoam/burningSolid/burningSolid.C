@@ -270,9 +270,13 @@ void Foam::burningSolid::fixSmallCells()
     dimensionedScalar pSolid("ps",dimPressure,1e5);
     dimensionedVector USolid("Us",dimVelocity,vector::zero);
     dimensionedScalar hsSolid("hsSolid",dimEnergy/dimMass,0.0);
+    dimensionedScalar TsGas("TsGas",dimTemperature,298.0);
 
-    tmp<surfaceScalarField> tw = ib_.scTransferWeights();
+    tmp<surfaceScalarField> tw = ib_.scTransferWeights("gas");
     const surfaceScalarField& w = tw();
+
+    tmp<surfaceScalarField> tws = ib_.scTransferWeights("solid");
+    const surfaceScalarField& ws = tws();
 
     // Transfer mass and momentum out of small cells
     ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0);
@@ -384,14 +388,14 @@ tmp<volScalarField> Foam::burningSolid::TsSu() const
         298.0
     );
 
-    return neg(1. - ib_.alpha() - SMALL)*solidThermo_->rho()*solidThermo_->Cp()*
+    return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()*
             onerDt*tmpTg;
 }
 
 
 tmp<volScalarField> Foam::burningSolid::TsSp() const
 {
-    return neg(1. - ib_.alpha() - SMALL)*solidThermo_->rho()*solidThermo_->Cp()
+    return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()
             *dimensionedScalar
             (
                 "onerDt",

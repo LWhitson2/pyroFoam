@@ -144,6 +144,8 @@ immersedBoundary ib(mesh);
 burningSolid solid(mesh, ib, thermo);
 
 // Create Solid Fields
+solid.Ts() = Ts;
+solid.correctSolidThermo();
 const volScalarField& rhos = solid.rhos();
 const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();

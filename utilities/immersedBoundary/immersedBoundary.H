@@ -69,7 +69,10 @@ class immersedBoundary
         //- Face area fraction of gas
         surfaceScalarField alphaf_;
 
+        surfaceScalarField alphafs_;
+
         volScalarField sumalphaf_;
+        volScalarField sumalphafs_;
 
         //- Interface area
         volScalarField iArea_;
@@ -124,9 +127,19 @@ public:
             return alphaf_;
         }
 
+        const surfaceScalarField& alphafs() const
+        {
+            return alphafs_;
+        }
+
         const volScalarField& alpha() const
         {
             return alpha_;
+        }
+
+        const tmp<volScalarField> alphas() const
+        {
+            return (1. - alpha_);
         }
 
         const volScalarField& area() const
@@ -141,6 +154,7 @@ public:
 
         //- Get the "used" alpha (zero in small cells)
         tmp<volScalarField> alphaCorr() const;
+        tmp<volScalarField> alphasCorr() const;
 
         //- Evolve the interface given a solid consumption rate
         void moveInterface(const volScalarField& ddtalpha);
@@ -158,7 +172,7 @@ public:
         ) const;
 
         //- Calculate the small cell transfer weights
-        tmp<surfaceScalarField> scTransferWeights();
+        tmp<surfaceScalarField> scTransferWeights(const std::string& input);
 
         //- Transfer a field from small cells to neighbour cells
         template<class Type>
@@ -183,14 +197,20 @@ public:
             const word& mode
         );
 
-        //- Return a mask for small cells
+        //- Return a mask for small gas cells
         tmp<volScalarField> smallCells() const;
+
+        //- Return a mask for full gas cells
+        tmp<volScalarField> fullGasCells() const;
 
         //- Return a mask for small and solid cells
         tmp<volScalarField> smallAndSolidCells() const;
 
         //- Return a mask for solid cells
         tmp<volScalarField> solidCells() const;
+
+        //- Return a mask for small solid cells
+        tmp<volScalarField> smallSolidCells() const;
 
         //- Return a mask for gas cells
         tmp<volScalarField> gasCells() const;
