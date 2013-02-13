@@ -30,6 +30,19 @@ volScalarField rho
     thermo.rho()
 );
 
+volScalarField Ts
+(
+    IOobject
+    (
+        "Ts",
+        runTime.timeName(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh
+);
+
 volScalarField refinementField
 (
     IOobject
@@ -131,7 +144,6 @@ immersedBoundary ib(mesh);
 burningSolid solid(mesh, ib, thermo);
 
 // Create Solid Fields
-volScalarField& Ts = solid.Ts();
 const volScalarField& rhos = solid.rhos();
-const volScalarField& Cps = solid.Cps();
+const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();

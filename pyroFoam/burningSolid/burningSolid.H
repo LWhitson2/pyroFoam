@@ -207,7 +207,7 @@ public:
         return solidThermo_->K();
     }
 
-    const volScalarField& Cps()
+    const tmp<volScalarField> Cps()
     {
         return solidThermo_->Cp();
     }
