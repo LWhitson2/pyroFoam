@@ -592,6 +592,8 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphasCorr() const
 
 
 //If no dir is available, this could use iNormal_ instead
+// Use a const word& input
+//  word is an openfoam type (to be consistent)
 Foam::tmp<Foam::surfaceScalarField>
 Foam::immersedBoundary::scTransferWeights(const std::string& input)
 {
@@ -622,6 +624,9 @@ Foam::immersedBoundary::scTransferWeights(const std::string& input)
     {
         iFlip = 1.0;
     }
+    
+    // no need to make this a dimensioned scalar. do it in one line with
+    // scalar iFlip = (input=="gas") ? 1 : -1;
 
     // If negative, alpha is a small cell
     volScalarField alphaShift = alpha - alphaMin_;
