@@ -202,18 +202,7 @@ Foam::burningSolid::burningSolid
 
     // Rename T in solidThermo to Ts to avoid name conflicts with the T
     //  in gasThermo.
-    solidThermo_->T() = volScalarField
-    (
-        IOobject
-        (
-            "Ts",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_
-    );
+    solidThermo_->T().rename("Ts");
     solidThermo_->rho().rename("rhos");
 
     // Find gasName in species
@@ -391,18 +380,18 @@ tmp<volScalarField> Foam::burningSolid::TsSu() const
     dimensionedScalar tmpTg
     (
         "tmpTg",
-        dimless,
+        dimTemperature,
         298.0
     );
 
-    return neg(1. - SMALL - ib_.alpha())*solidThermo_->rho()*solidThermo_->Cp()*
+    return neg(1. - ib_.alpha() - SMALL)*solidThermo_->rho()*solidThermo_->Cp()*
             onerDt*tmpTg;
 }
 
 
 tmp<volScalarField> Foam::burningSolid::TsSp() const
 {
-    return neg(1. - SMALL - ib_.alpha())*solidThermo_->rho()*solidThermo_->Cp()
+    return neg(1. - ib_.alpha() - SMALL)*solidThermo_->rho()*solidThermo_->Cp()
             *dimensionedScalar
             (
                 "onerDt",
