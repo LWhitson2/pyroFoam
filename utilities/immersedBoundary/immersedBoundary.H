@@ -172,7 +172,7 @@ public:
         ) const;
 
         //- Calculate the small cell transfer weights
-        tmp<surfaceScalarField> scTransferWeights(const std::string& input);
+        tmp<surfaceScalarField> scTransferWeights(const word& input);
 
         //- Transfer a field from small cells to neighbour cells
         template<class Type>
@@ -181,7 +181,8 @@ public:
             const surfaceScalarField& w,
             const GeometricField<Type, fvPatchField, volMesh>& src,
             GeometricField<Type, fvPatchField, volMesh>& dest,
-            Type zero
+            Type zero,
+            const word& input
         );
 
         //- Set source terms in small cells to set values in governing eqns
@@ -194,7 +195,8 @@ public:
             const GeometricField<Type, fvPatchField, volMesh>& src,
             const dimensioned<Type>& solidValue,
             const dimensionedScalar& diag,
-            const word& mode
+            const word& mode,
+            const word& input
         );
 
         //- Return a mask for small gas cells
@@ -205,6 +207,9 @@ public:
 
         //- Return a mask for small and solid cells
         tmp<volScalarField> smallAndSolidCells() const;
+
+        //- Return a mask for small solid and gas cells
+        tmp<volScalarField> smallSolidAndGasCells() const;
 
         //- Return a mask for solid cells
         tmp<volScalarField> solidCells() const;
