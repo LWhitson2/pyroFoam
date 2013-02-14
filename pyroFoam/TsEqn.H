@@ -20,6 +20,6 @@
         << max(Ts).value() << endl;
 
     // Update solidThermo
-    solid.Ts() = Ts;
-    solid.correctSolidThermo();
+    solid.solidThermo().T() = Ts;
+    solid.solidThermo().correct();
 }

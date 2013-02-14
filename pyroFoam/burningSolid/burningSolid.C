@@ -106,6 +106,19 @@ Foam::burningSolid::burningSolid
         dimensionedVector("mU", dimDensity*dimVelocity/dimTime, vector::zero)
     ),
 
+    Ts_
+    (
+        IOobject
+        (
+            "Ts",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_
+    ),
+
     USp_
     (
         IOobject
@@ -190,6 +203,34 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("hsSu", dimDensity*dimPower/dimMass, 0.0)
     ),
 
+    TsSp_
+    (
+        IOobject
+        (
+            "TsSp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("TsSp", dimPower/dimVolume/dimTemperature, 0.0)
+    ),
+
+    TsSu_
+    (
+        IOobject
+        (
+            "TsSu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("hsSu", dimPower/dimVolume, 0.0)
+    ),
+
     m0_(pyroDict_.lookup("m0")),
 
     solidName_(pyroDict_.lookup("solidName")),
@@ -266,6 +307,14 @@ void Foam::burningSolid::fixSmallCells()
         1.0/mesh_.time().deltaTValue()
     );
 
+    // Value to force gas cells to designated temperature
+    dimensionedScalar TsrdT
+    (
+        "TsrdT",
+        dimPower/dimVolume/dimTemperature,
+        1.0/mesh_.time().deltaTValue()
+    );
+
     // Values to set in the solid region
     dimensionedScalar pSolid("ps",dimPressure,1e5);
     dimensionedVector USolid("Us",dimVelocity,vector::zero);
@@ -279,15 +328,18 @@ void Foam::burningSolid::fixSmallCells()
     const surfaceScalarField& ws = tws();
 
     // Transfer mass and momentum out of small cells
-    ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0);
-    ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero);
+    ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
+    ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
 
     // Set source terms in small and solid cells to specify value
-    ib_.setScValue<vector>(w, USu_, USp_, burnU_, USolid, rhordT, "fix");
+    ib_.setScValue<vector>(w, USu_, USp_, burnU_,
+                           USolid, rhordT, "fix", "gas");
     ib_.setScValue<scalar>(w, pSu_, pSp_, gasThermo_.p(),
-                           pSolid, psirdT, "avg");
+                           pSolid, psirdT, "avg", "gas");
     ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.hs(),
-                           hsSolid, hsrdT, "avg");
+                           hsSolid, hsrdT, "avg", "gas");
+    ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
+                           TsGas, TsrdT, "avg", "solid");
 }
 
 // Calculate the burn gas velocity
@@ -372,36 +424,36 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
             );
 }
 
-tmp<volScalarField> Foam::burningSolid::TsSu() const
-{
-    dimensionedScalar onerDt
-    (
-        "onerDt",
-        dimless/dimTime,
-        1.0/mesh_.time().deltaTValue()
-    );
-
-    dimensionedScalar tmpTg
-    (
-        "tmpTg",
-        dimTemperature,
-        298.0
-    );
-
-    return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()*
-            onerDt*tmpTg;
-}
-
-
-tmp<volScalarField> Foam::burningSolid::TsSp() const
-{
-    return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()
-            *dimensionedScalar
-            (
-                "onerDt",
-                dimless/dimTime,
-                1.0/mesh_.time().deltaTValue()
-            );
-}
+// tmp<volScalarField> Foam::burningSolid::TsSu() const
+// {
+//     dimensionedScalar onerDt
+//     (
+//         "onerDt",
+//         dimless/dimTime,
+//         1.0/mesh_.time().deltaTValue()
+//     );
+//
+//     dimensionedScalar tmpTg
+//     (
+//         "tmpTg",
+//         dimTemperature,
+//         298.0
+//     );
+//
+//     return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()*
+//             onerDt*tmpTg;
+// }
+//
+//
+// tmp<volScalarField> Foam::burningSolid::TsSp() const
+// {
+//     return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()
+//             *dimensionedScalar
+//             (
+//                 "onerDt",
+//                 dimless/dimTime,
+//                 1.0/mesh_.time().deltaTValue()
+//             );
+// }
 
 // ************************************************************************* //

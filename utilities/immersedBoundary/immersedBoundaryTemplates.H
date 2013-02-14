@@ -41,9 +41,12 @@ void immersedBoundary::transfer
     const surfaceScalarField& w,
     const GeometricField<Type, fvPatchField, volMesh>& src,
     GeometricField<Type, fvPatchField, volMesh>& dest,
-    Type zero
+    Type zero,
+    const word& input
 )
 {
+    const volScalarField& alpha = (input == "gas") ? alpha_:alphas()();
+
     volScalarField wtot = fvc::surfaceSum(w);
 
     const labelUList& owner = mesh_.owner();
@@ -56,7 +59,7 @@ void immersedBoundary::transfer
             label own = owner[faceI];
             label nei = neighbor[faceI];
 
-            label sc = (alpha_[own] < alphaMin_.value()) ? own : nei;
+            label sc = (alpha[own] < alphaMin_.value()) ? own : nei;
             label rc = (sc == own) ? nei : own;
 
             dest[rc] += w[faceI]/wtot[sc] * src[sc];
@@ -94,7 +97,7 @@ void immersedBoundary::transfer
 
                 if ( wPf[pFaceI] > 0.0)
                 {
-                    if (alpha_[pfCellI] < alphaMin_.value())
+                    if (alpha[pfCellI] < alphaMin_.value())
                     {//I own the small cell
                         dest[pfCellI] = zero;
                     }
@@ -119,11 +122,14 @@ void immersedBoundary::setScValue
     const GeometricField<Type, fvPatchField, volMesh>& src,
     const dimensioned<Type>& solidValue,
     const dimensionedScalar& diag,
-    const word& mode
+    const word& mode,
+    const word& input
 )
 {
-    Su = solidCells()*solidValue*diag;
-    Sp = smallAndSolidCells()*diag;
+    const volScalarField& alpha = (input == "gas") ? alpha_:alphas()();
+
+    Su = ((input == "gas") ? solidCells():fullGasCells())*solidValue*diag;
+    Sp = ((input == "gas") ? smallAndSolidCells():smallSolidAndGasCells())*diag;
 
     if (mode == "fix")
     {
@@ -143,10 +149,10 @@ void immersedBoundary::setScValue
                 label own = owner[faceI];
                 label nei = neighbor[faceI];
 
-                label sc = (alpha_[own] < alphaMin_.value()) ? own : nei;
+                label sc = (alpha[own] < alphaMin_.value()) ? own : nei;
                 label rc = (sc == own) ? nei : own;
 
-                if (alpha_[sc] > SMALL)
+                if (alpha[sc] > SMALL)
                 {
                     Su[sc] += w[faceI]/wtot[sc] * src[rc] * diag.value();
                 }
@@ -179,7 +185,7 @@ void immersedBoundary::setScValue
 
                     if ( wPf[pFaceI] > 0.0)
                     {
-                        if (alpha_[pfCellI] < alphaMin_.value())
+                        if (alpha[pfCellI] < alphaMin_.value())
                         {//I own the small cell
                             Su[pfCellI] += wPf[pFaceI]/wtot[pfCellI]
                                           * srcPNf[pFaceI] * diag.value();

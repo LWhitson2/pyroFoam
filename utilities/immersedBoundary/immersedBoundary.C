@@ -592,10 +592,8 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphasCorr() const
 
 
 //If no dir is available, this could use iNormal_ instead
-// Use a const word& input
-//  word is an openfoam type (to be consistent)
 Foam::tmp<Foam::surfaceScalarField>
-Foam::immersedBoundary::scTransferWeights(const std::string& input)
+Foam::immersedBoundary::scTransferWeights(const word& input)
 {
     tmp<surfaceScalarField> tw
     (
@@ -618,15 +616,7 @@ Foam::immersedBoundary::scTransferWeights(const std::string& input)
     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
     surfaceScalarField& alphaf = (input == "gas") ? alphaf_:alphafs_;
     volScalarField& sumalphaf = (input == "gas") ? sumalphaf_:sumalphafs_;
-    dimensionedScalar iFlip("iFlip", dimless, -1.0);
-
-    if (input == "gas")
-    {
-        iFlip = 1.0;
-    }
-    
-    // no need to make this a dimensioned scalar. do it in one line with
-    // scalar iFlip = (input=="gas") ? 1 : -1;
+    scalar iFlip = (input=="gas") ? 1 : -1;
 
     // If negative, alpha is a small cell
     volScalarField alphaShift = alpha - alphaMin_;
@@ -648,7 +638,7 @@ Foam::immersedBoundary::scTransferWeights(const std::string& input)
             w[faceI] = mag
             (
                 iNormal_[sc] & mesh_.Sf()[faceI]
-            ) * alphaf[faceI] * iFlip.value();
+            ) * alphaf[faceI] * iFlip;
 
             alphaf[faceI] = 0.0;
         }
@@ -688,7 +678,7 @@ Foam::immersedBoundary::scTransferWeights(const std::string& input)
         {
             // Get values across parallel patch
             const scalarField alphaShiftPNf(alphaShiftPf.patchNeighbourField());
-            const vectorField iNormalPNf(iNormalPf.patchNeighbourField()*iFlip.value());
+            const vectorField iNormalPNf(iNormalPf.patchNeighbourField()*iFlip);
 
             const fvPatch& meshPf = mesh_.boundary()[patchI];
 
@@ -702,8 +692,8 @@ Foam::immersedBoundary::scTransferWeights(const std::string& input)
                      * alphafPf[pFaceI] < 0.0)
                 {
 
-                    vector scNorm = iFlip.value()*(alphaShift[pfCellI] < 0.0)
-                                    ? iNormal_[pfCellI]
+                    vector scNorm = (alphaShift[pfCellI] < 0.0)
+                                    ? iFlip*iNormal_[pfCellI]
                                     : iNormalPNf[pFaceI];
 
                     wPf[pFaceI] = mag
@@ -768,6 +758,12 @@ Foam::tmp<Foam::volScalarField>
 Foam::immersedBoundary::smallAndSolidCells() const
 {
     return neg(alpha_ - alphaMin_);
+}
+
+Foam::tmp<Foam::volScalarField>
+Foam::immersedBoundary::smallSolidAndGasCells() const
+{
+    return neg(alphas() - alphaMin_);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::fullGasCells() const

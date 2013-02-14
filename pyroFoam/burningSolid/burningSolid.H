@@ -88,6 +88,9 @@ class burningSolid
         //- Burning gas momentum source
         volVectorField mU_;
 
+        //- solid Temperature field
+        volScalarField Ts_;
+
         //- Momentum implicit source term
         volScalarField USp_;
 
@@ -105,6 +108,12 @@ class burningSolid
 
         //- Gas Enthalpy explicit source term
         volScalarField hsSu_;
+
+        //- Solid Temperature implicit source term
+        volScalarField TsSp_;
+
+        //- Solid Temperature explicit source term
+        volScalarField TsSu_;
 
         //- Constant burning rate (for now, kg/m2/s)
         dimensionedScalar m0_;
@@ -192,9 +201,19 @@ public:
         return hsSp_;
     }
 
+    const volScalarField& TsSu()
+    {
+        return TsSu_;
+    }
+
+    const volScalarField& TsSp()
+    {
+        return TsSp_;
+    }
+
     volScalarField& Ts()
     {
-        return solidThermo_->T();
+        return Ts_;
     }
 
     const volScalarField& rhos()
@@ -212,13 +231,13 @@ public:
         return solidThermo_->Cp();
     }
 
-    tmp<volScalarField> TsSu() const;
+//     tmp<volScalarField> TsSu() const;
+//
+//     tmp<volScalarField> TsSp() const;
 
-    tmp<volScalarField> TsSp() const;
-
-    void correctSolidThermo()
+    basicSolidThermo& solidThermo()
     {
-      solidThermo_->correct();
+      return solidThermo_();
     }
 };
 
