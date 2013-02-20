@@ -22,6 +22,8 @@
 
     thermo.correct(); //we may need to create a 'specie' for the solid so that this works
 
-    Info<< "T gas min/max   = " << min(T).value() << ", "
-        << max(T).value() << endl;
+    Info<< "T gas min/max   = " <<
+        min(ib.solidCells()*dimensionedScalar("tmpT", dimTemperature, 1000.0)
+        + ib.gasCells()*T).value() << ", " << max(ib.gasCells()*T).value()
+        << endl;
 }

@@ -16,8 +16,10 @@
     TsEqn.relax();
     TsEqn.solve();
 
-    Info<< "T solid min/max   = " << min(Ts).value() << ", "
-        << max(Ts).value() << endl;
+    Info<< "T solid min/max   = " <<
+        min(ib.gasCells()*dimensionedScalar("tmpT", dimTemperature, 1000.0)
+        + ib.solidCells()*Ts).value() << ", " << max(ib.solidCells()*Ts).value()
+        << endl;
 
     // Update solidThermo
     solid.solidThermo().T() = Ts;

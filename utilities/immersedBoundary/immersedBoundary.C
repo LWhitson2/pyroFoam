@@ -184,6 +184,34 @@ Foam::immersedBoundary::immersedBoundary
         dimensionedVector("solidC", dimless, vector::zero)
     ),
 
+    gasL_
+    (
+        IOobject
+        (
+            "gasC",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("gasL", dimLength, 0.0)
+    ),
+
+    solidL_
+    (
+        IOobject
+        (
+            "solidL",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("solidL", dimLength, 0.0)
+    ),
+
     intermedsOut_
     (
         IOobject
@@ -350,6 +378,14 @@ void Foam::immersedBoundary::correct()
             gasC_[cellI] = cc.lostCentroid();
             solidC_[cellI] = cc.cutCentroid();
 
+            // Calculate gas and solid interface lengths
+            gasL_[cellI] = mag(
+                (gasC_[cellI] - iPoint_[cellI]) & iNormal_[cellI]
+                );
+            solidL_[cellI] = mag(
+                (solidC_[cellI] - iPoint_[cellI]) & iNormal_[cellI]
+                );
+
             // DEBUGGING PURPOSES
             if (iArea_[cellI] < SMALL)
             {
@@ -365,11 +401,15 @@ void Foam::immersedBoundary::correct()
             { //gas cell
                 gasC_[cellI] = mesh_.C()[cellI];
                 solidC_[cellI] = vector::zero;
+                gasL_[cellI] = 0.0;
+                solidL_[cellI] = 0.0;
             }
             else
             { //solid cell
                 gasC_[cellI] = vector::zero;
                 solidC_[cellI] = mesh_.C()[cellI];
+                gasL_[cellI] = 0.0;
+                solidL_[cellI] = 0.0;
             }
         }
     }
@@ -790,6 +830,11 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallSolidCells() const
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::gasCells() const
 {
     return pos(alpha_ - alphaMin_);
+}
+
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::mixedCells() const
+{
+    return neg(alpha_ - SMALL) + neg(alphas() - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::noCells() const

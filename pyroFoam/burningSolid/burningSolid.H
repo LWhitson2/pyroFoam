@@ -82,6 +82,9 @@ class burningSolid
         //- Solid burning rate (kg/m^3-s)
         volScalarField m_pyro_;
 
+        //- Interface temperature (K)
+        volScalarField Ti_;
+
         //- Burning gas velocity (m/s)
         volVectorField burnU_;
 
@@ -130,6 +133,7 @@ class burningSolid
     // Private functions
         void fixSmallCells();
         void calcBurnU();
+
 public:
 
     // Constructor
@@ -239,6 +243,8 @@ public:
     {
       return solidThermo_();
     }
+
+    void interfaceBalance();
 };
 
 
