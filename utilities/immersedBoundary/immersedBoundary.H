@@ -92,6 +92,13 @@ class immersedBoundary
         //- Centroid of solid portion of a cell (zero in gas)
         volVectorField solidC_;
 
+        //- Distance from gas centroid to interface centroid (zero otherwise)
+        volScalarField gasL_;
+
+        //- Distance from solid centroid to interface centroid (zero otherwise)
+        volScalarField solidL_;
+
+        //- Mixed cells that are solid and gas
         volScalarField intermedsOut_;
 
         //- Alpha cutoff for small cell treatment
@@ -150,6 +157,16 @@ public:
         const volVectorField& normal() const
         {
             return iNormal_;
+        }
+
+        const volScalarField& gasL() const
+        {
+            return gasL_;
+        }
+
+        const volScalarField& solidL() const
+        {
+            return solidL_;
         }
 
         //- Get the "used" alpha (zero in small cells)
@@ -219,6 +236,9 @@ public:
 
         //- Return a mask for gas cells
         tmp<volScalarField> gasCells() const;
+
+        //- Return a mask for mixed cells
+        tmp<volScalarField> mixedCells() const;
 
         //- Return a mask for no cells
         tmp<volScalarField> noCells() const;

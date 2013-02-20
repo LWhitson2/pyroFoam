@@ -34,7 +34,7 @@ Description
 #include "turbulenceModel.H"
 #include "psiChemistryCombustionModel.H"
 #include "multivariateScheme.H"
-#incude "pimpleControl.H"
+#include "pimpleControl.H"
 #include "burningSolid.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

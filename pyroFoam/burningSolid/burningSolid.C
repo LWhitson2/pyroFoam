@@ -78,6 +78,20 @@ Foam::burningSolid::burningSolid
         zeroGradientFvPatchScalarField::typeName
     ),
 
+    Ti_
+    (
+        IOobject
+        (
+            "Ti",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("Ti", dimTemperature, 298.0)
+    ),
+
     burnU_
     (
         IOobject
@@ -321,15 +335,17 @@ void Foam::burningSolid::fixSmallCells()
     dimensionedScalar hsSolid("hsSolid",dimEnergy/dimMass,0.0);
     dimensionedScalar TsGas("TsGas",dimTemperature,298.0);
 
+    // Calculate transfer weights
     tmp<surfaceScalarField> tw = ib_.scTransferWeights("gas");
-    const surfaceScalarField& w = tw();
-
     tmp<surfaceScalarField> tws = ib_.scTransferWeights("solid");
+    const surfaceScalarField& w = tw();
     const surfaceScalarField& ws = tws();
 
-    // Transfer mass and momentum out of small cells
+    // Transfer mass, momentum, and energy out of small cells
     ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
     ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
+    ib_.transfer<scalar>(w, Qtg_transferred, Qtg_, 0.0, "gas");
+    ib_.transfer<scalar>(ws, Qts_transferred, Qts_, 0.0, "solid");
 
     // Set source terms in small and solid cells to specify value
     ib_.setScValue<vector>(w, USu_, USp_, burnU_,
@@ -367,7 +383,7 @@ void Foam::burningSolid::correct
 {
     Foam::Info << "Correcting burningSolid" << Foam::endl;
 
-    // Step 1: Calculate mass flux (m0) using current P and T
+    // Step 1: Calculate mass flux (m0) using current P and Ts
     // *** Assumed constant for now ***
 
     // Step 2: Calculate mass density source using original cell area
@@ -379,6 +395,9 @@ void Foam::burningSolid::correct
 
     // Step 4: Calculate momentum source
     mU_ = burnU_ * m_pyro_;
+
+    // Step 4b: Calculate heat transfer sources
+    calcHeatTransfer();
 
     // Step 5: Evolve interface using calculated burning rate (vol frac/s)
     ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
@@ -455,5 +474,52 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
 //                 1.0/mesh_.time().deltaTValue()
 //             );
 // }
+
+void Foam::burningSolid::interfaceBalance()
+{
+    // Conduction coefficients
+    tmp<volScalarField> Ks = solidThermo_->K();
+    tmp<volScalarField> Kg = gasThermo_.alpha()*gasThermo_.Cp();
+
+    // Conduction lengths
+    const volScalarField& Lg = ib_.gasL().oldTime();
+    const volScalarField& Ls = ib_.solidL().oldTime();
+
+    // Interface area and volume
+    const volScalarField& Ai = ib_.area().oldTime();
+    const volScalarField& Vc = mesh_.V();
+
+    // Initialize cells to no heat transfer
+    Qt_g_ = dimensionedScalar("zero", dimEnergy/dimVolume, 0.0);
+    Qt_s_ = dimensionedScalar("zero", dimEnergy/dimVolume, 0.0);
+
+    forAll(Ts_,cellI)
+    {
+        // Normal mixed cell conduction transfer
+        if (ib_.mixedCells())
+        {
+            // Calculate transfer to gas from constant temperature solid
+            Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
+                         * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
+            Qt_s_[cellI] = -Qt_g_[cellI];
+        }
+        // Full solid cell to gas cell conduction transfer
+        else if (ib_.solidCells()[cellI]*pos(Ai[cellI] - SMALL))
+        {
+            forAll(mesh_.cellCells()[cellI], cellJ)
+            {
+                if (!ib_.solidCells()[cellJ])
+                {
+                    dimensionedScalar tmpA = ;
+                    dimensionedScalar tmpL = ;
+                    Qt_g_[cellJ] += Kg[cellJ]*(Ts_[cellI] - gasThermo_.T()[cellJ])
+                         * tmpA/(tmpL*Vc[cellJ]);
+                    Qt_s_[cellI] -= Qt_g_[cellJ];
+                }
+            }
+        }
+
+    }
+}
 
 // ************************************************************************* //
