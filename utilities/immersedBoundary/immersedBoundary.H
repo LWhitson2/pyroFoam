@@ -158,6 +158,11 @@ public:
         {
             return iNormal_;
         }
+        
+        const volVectorField& point() const
+        {
+            return iPoint_;
+        }
 
         const volScalarField& gasL() const
         {
@@ -167,6 +172,16 @@ public:
         const volScalarField& solidL() const
         {
             return solidL_;
+        }
+        
+        const volVectorField& gasC() const
+        {
+            return gasC_;
+        }
+
+        const volVectorField& solidC() const
+        {
+            return solidC_;
         }
 
         //- Get the "used" alpha (zero in small cells)

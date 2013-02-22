@@ -47,6 +47,7 @@ SourceFiles
 #include "multiComponentMixture.H"
 #include "basicSolidThermo.H"
 #include "immersedBoundary.H"
+#include "pyrolysisModel.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -78,7 +79,10 @@ class burningSolid
 
         //- Input dictionary
         IOdictionary pyroDict_;
-
+        
+        //- Pyrolysis model
+        autoPtr<pyrolysisModel> pyroModel_;
+        
         //- Solid burning rate (kg/m^3-s)
         volScalarField m_pyro_;
 
