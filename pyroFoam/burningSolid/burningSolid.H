@@ -130,9 +130,16 @@ class burningSolid
         //- Pointer to the thermo for the pyro gas
         const gasThermoPhysics* EMg_;
 
+        //- Gas heat transfer source
+        volScalarField Qt_g_;
+
+        //- Solid heat transfer source
+        volScalarField Qt_s_;
+
     // Private functions
         void fixSmallCells();
         void calcBurnU();
+        void calcHeatTransfer();
 
 public:
 
@@ -244,7 +251,15 @@ public:
       return solidThermo_();
     }
 
-    void interfaceBalance();
+    const volScalarField& Qts()
+    {
+        return Qt_s_;
+    }
+
+    const volScalarField& Qtg()
+    {
+        return Qt_g_;
+    }
 };
 
 

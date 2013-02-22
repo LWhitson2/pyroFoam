@@ -17,7 +17,7 @@ FoamFile
 
 solvers
 {
-    rho
+    "(rho|alphaGas|Ts)"
     {
         solver          PCG;
         preconditioner  DIC;
@@ -25,24 +25,10 @@ solvers
         relTol          0.1;
     }
 
-    rhoFinal
-    {
-        $rho;
-        tolerance       1e-06;
-        relTol          0;
-    }
-
-    alphaGas
+    "(rho|alphaGas|Ts)Final"
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-06;
-        relTol          0.1;
-    }
-
-    alphaGasFinal
-    {
-        $alphaGas;
         tolerance       1e-09;
         relTol          0;
     }
@@ -85,7 +71,7 @@ solvers
         relTol          0;
         maxIter         50;
     }
-    
+
     pcorr
     {
         solver          PCG;
@@ -108,7 +94,7 @@ solvers
         relTol          0;
         maxIter         100;
     }
-    
+
     "(U|hs||k|epsilon)"
     {
         solver          PBiCG;

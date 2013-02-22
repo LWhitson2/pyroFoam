@@ -30,7 +30,7 @@ boundaryField
     bottom
     {
         type            fixedValue;
-        value           uniform 500;
+        value           uniform 1000;
     }
 
     sides
