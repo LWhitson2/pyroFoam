@@ -150,7 +150,7 @@ Foam::immersedBoundary::immersedBoundary
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedVector("iPoint", dimless, vector::zero)
@@ -164,7 +164,7 @@ Foam::immersedBoundary::immersedBoundary
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedVector("gasC", dimless, vector::zero)
@@ -178,7 +178,7 @@ Foam::immersedBoundary::immersedBoundary
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedVector("solidC", dimless, vector::zero)
@@ -188,11 +188,11 @@ Foam::immersedBoundary::immersedBoundary
     (
         IOobject
         (
-            "gasC",
+            "gasL",
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("gasL", dimLength, 0.0)
@@ -206,7 +206,7 @@ Foam::immersedBoundary::immersedBoundary
             mesh_.time().timeName(),
             mesh_,
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         mesh_,
         dimensionedScalar("solidL", dimLength, 0.0)
