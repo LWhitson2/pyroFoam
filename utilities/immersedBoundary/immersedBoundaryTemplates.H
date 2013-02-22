@@ -45,9 +45,11 @@ void immersedBoundary::transfer
     const word& input
 )
 {
-    const volScalarField& alpha = (input == "gas") ? alpha_:alphas()();
+    const tmp<volScalarField> alphastmp = 1.0 - alpha_;
+    const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
 
     volScalarField wtot = fvc::surfaceSum(w);
+
 
     const labelUList& owner = mesh_.owner();
     const labelUList& neighbor = mesh_.neighbour();
@@ -126,7 +128,8 @@ void immersedBoundary::setScValue
     const word& input
 )
 {
-    const volScalarField& alpha = (input == "gas") ? alpha_:alphas()();
+    const tmp<volScalarField> alphastmp = 1.0 - alpha_;
+    const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
 
     Su = ((input == "gas") ? solidCells():fullGasCells())*solidValue*diag;
     Sp = ((input == "gas") ? smallAndSolidCells():smallSolidAndGasCells())*diag;

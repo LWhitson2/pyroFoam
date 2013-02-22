@@ -15,6 +15,7 @@
       //+ solid.Sh()   //<--
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), hs)
+      + solid.Qtg()
     );
 
     hsEqn.relax();

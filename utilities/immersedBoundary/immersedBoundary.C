@@ -656,7 +656,6 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
     surfaceScalarField& alphaf = (input == "gas") ? alphaf_:alphafs_;
     volScalarField& sumalphaf = (input == "gas") ? sumalphaf_:sumalphafs_;
-    scalar iFlip = (input=="gas") ? 1 : -1;
 
     // If negative, alpha is a small cell
     volScalarField alphaShift = alpha - alphaMin_;
@@ -678,7 +677,7 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
             w[faceI] = mag
             (
                 iNormal_[sc] & mesh_.Sf()[faceI]
-            ) * alphaf[faceI] * iFlip;
+            ) * alphaf[faceI];
 
             alphaf[faceI] = 0.0;
         }
@@ -718,7 +717,7 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
         {
             // Get values across parallel patch
             const scalarField alphaShiftPNf(alphaShiftPf.patchNeighbourField());
-            const vectorField iNormalPNf(iNormalPf.patchNeighbourField()*iFlip);
+            const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
 
             const fvPatch& meshPf = mesh_.boundary()[patchI];
 
@@ -733,7 +732,7 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
                 {
 
                     vector scNorm = (alphaShift[pfCellI] < 0.0)
-                                    ? iFlip*iNormal_[pfCellI]
+                                    ? iNormal_[pfCellI]
                                     : iNormalPNf[pFaceI];
 
                     wPf[pFaceI] = mag
@@ -834,7 +833,7 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::gasCells() const
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::mixedCells() const
 {
-    return neg(alpha_ - SMALL) + neg(alphas() - SMALL);
+    return pos(alpha_ - SMALL)*pos(alphas() - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::noCells() const

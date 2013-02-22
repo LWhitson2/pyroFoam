@@ -11,6 +11,7 @@
      ==
         solid.TsSu()
       - fvm::Sp(solid.TsSp(), Ts)
+      + solid.Qts()
     );
 
     TsEqn.relax();
