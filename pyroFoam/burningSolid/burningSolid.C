@@ -50,7 +50,7 @@ Foam::burningSolid::burningSolid
         dynamic_cast<const multiComponentMixture<gasThermoPhysics>& >
         ( gasThermo_.composition() )
     ),
-
+    
     pyroDict_
     (
         IOobject
@@ -62,7 +62,9 @@ Foam::burningSolid::burningSolid
             IOobject::NO_WRITE
         )
     ),
-
+    
+    pyroModel_(pyrolysisModel::New(pyroDict_)),
+    
     m_pyro_
     (
         IOobject
@@ -508,8 +510,8 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
 void Foam::burningSolid::calcHeatTransfer()
 {
     // Conduction coefficients
-    tmp<volScalarField> Ks = solidThermo_->K();
-    tmp<volScalarField> Kg = gasThermo_.alpha()*gasThermo_.Cp();
+    //volScalarField Ks = solidThermo_->K();
+    volScalarField Kg = gasThermo_.alpha()*gasThermo_.Cp();
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL().oldTime();
@@ -524,50 +526,60 @@ void Foam::burningSolid::calcHeatTransfer()
     Qt_s_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
 
     // Cell identification
-    const tmp<volScalarField> normalCell = ib_.mixedCells();
-    const tmp<volScalarField> solidCell = ib_.solidCells();
-    const tmp<volScalarField> fullCell = solidCell
-                                       * pos(Ai
-                                       - dimensionedScalar("tmp", dimArea, SMALL));
-
+    volScalarField normalCell = ib_.mixedCells();
+    volScalarField solidCell = ib_.solidCells();
+    volScalarField fullCell = solidCell* pos(Ai
+                                - dimensionedScalar("tmp", dimArea, SMALL));
+    volScalarField solidCells = ib_.solidCells();
+    
     forAll(Ts_,cellI)
     {
         // Normal mixed cell conduction transfer
-        if (normalCell()[cellI])
+        if (normalCell[cellI])
         {
-//             Info << "Normal Cell" << endl;
-//             Info << "alpha: " << ib_.alpha()[cellI] << endl;
-//             Info << "Kg: " << Kg()[cellI] << endl;
-//             Info << "Ts: " << Ts_[cellI] << endl;
-//             Info << "Tg: " << gasThermo_.T()[cellI] << endl;
-//             Info << "Ai: " << Ai[cellI] << endl;
-//             Info << "Lg: " << Lg[cellI] << endl;
-//             Info << "Vc: " << Vc[cellI] << endl;
+            /*if( Lg[cellI] > 0.002 )
+            {
+                Info << "Normal Cell " << cellI << endl;
+                Info << "  alpha: " << ib_.alpha()[cellI] << endl;
+                Info << "  Kg: " << Kg[cellI] << endl;
+                Info << "  Ts: " << Ts_[cellI] << endl;
+                Info << "  Tg: " << gasThermo_.T()[cellI] << endl;
+                Info << "  Ai: " << Ai[cellI] << endl;
+                Info << "  Lg: " << Lg[cellI] << endl;
+                Info << "  Vc: " << Vc[cellI] << endl;
+                Info << "  Cg: " << ib_.gasC()[cellI] << endl;
+                Info << "  Cs: " << ib_.solidC()[cellI] << endl;
+                Info << "  C: " << mesh_.C()[cellI] << endl;
+                Info << "  P: " << ib_.point()[cellI] << endl;
+                Info << "  N: " << ib_.normal()[cellI] << endl;
+            }*/
+             
             // Calculate transfer to gas from constant temperature solid
-            Qt_g_[cellI] = Kg()[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
+            Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
                          * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
             Qt_s_[cellI] = -Qt_g_[cellI];
+
         }
         // Full solid cell to gas cell conduction transfer
-        else if (fullCell()[cellI])
+        else if (fullCell[cellI])
         {
-            Info << "Full Cell" << endl;
+            //Info << "Full Cell" << endl;
             forAll(mesh_.cells()[cellI], faceI)
             {
                 label own = mesh_.owner()[faceI];
                 label nei = mesh_.neighbour()[faceI];
 
-                label& sc = (ib_.solidCells()()[own]) ? own:nei;
-                label& mc = (sc == own) ? nei:own;
+                label sc = (solidCells[own]) ? own:nei;
+                label mc = (sc == own) ? nei:own;
 
-                if (!solidCell()[mc])
+                if (!solidCell[mc])
                 {
                     scalar tmpA = ib_.alphafs()[faceI]
                                            * mesh_.magSf()[faceI];
                     scalar tmpL = mag((mesh_.Cf()[faceI]
                                            - mesh_.C()[mc])
                                            & mesh_.Sf()[mc])/mesh_.magSf()[mc];
-                    Qt_g_[mc] += Kg()[mc]*(Ts_[sc] - gasThermo_.T()[mc])
+                    Qt_g_[mc] += Kg[mc]*(Ts_[sc] - gasThermo_.T()[mc])
                                * tmpA/(tmpL*Vc[mc]);
                     Qt_s_[sc] -= Qt_g_[mc]*Vc[mc]/Vc[sc];
                 }

@@ -1,3 +1,7 @@
 burningSolid.C
+pyrolysisModels/pyrolysisModel/pyrolysisModel.C
+pyrolysisModels/pyrolysisModel/newPyrolysisModel.C
+pyrolysisModels/NoPyrolysis/NoPyrolysis.C
+pyrolysisModels/Arrhenius/Arrhenius.C
 
 LIB = $(FOAM_USER_LIBBIN)/libburningSolid

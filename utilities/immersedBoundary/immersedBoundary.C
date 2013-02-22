@@ -609,7 +609,7 @@ void Foam::immersedBoundary::correct()
     iNormal_ /= (mag(iNormal_) + VSMALL);
 
     sumalphaf_ = fvc::surfaceSum(alphaf_);
-    alphafs_ = alphaf_;
+    alphafs_ = 1.0 - alphaf_;
 
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();

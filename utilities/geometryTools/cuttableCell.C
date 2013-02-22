@@ -540,8 +540,7 @@ scalar Foam::cuttableCell::cut(const Foam::plane& cutPlane)
     
     scalar alpha = volume/baseVol_;
     
-    lostCentroid_ = centroid_ + 
-                    (alpha - 1.0)/(alpha + SMALL)*(cutCentroid_ - centroid_);
+    lostCentroid_ = (centroid_ - alpha*cutCentroid_)/(1.0 - alpha + SMALL);
     
     return alpha;
 }
