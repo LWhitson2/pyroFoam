@@ -399,6 +399,7 @@ void Foam::immersedBoundary::correct()
             iPoint_[cellI] = vector::zero;
             if (alpha_[cellI] > 0.5)
             { //gas cell
+                alpha_[cellI] = 1.0;
                 gasC_[cellI] = mesh_.C()[cellI];
                 solidC_[cellI] = vector::zero;
                 gasL_[cellI] = 0.0;
@@ -406,6 +407,7 @@ void Foam::immersedBoundary::correct()
             }
             else
             { //solid cell
+                alpha_[cellI] = 0.0;
                 gasC_[cellI] = vector::zero;
                 solidC_[cellI] = mesh_.C()[cellI];
                 gasL_[cellI] = 0.0;
@@ -609,7 +611,7 @@ void Foam::immersedBoundary::correct()
     iNormal_ /= (mag(iNormal_) + VSMALL);
 
     sumalphaf_ = fvc::surfaceSum(alphaf_);
-    alphafs_ = alphaf_;
+    alphafs_ = 1.0 - alphaf_;
 
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();

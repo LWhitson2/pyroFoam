@@ -325,6 +325,9 @@ void Foam::burningSolid::fixSmallCells()
 
     volVectorField mU_transferred = m_transferred*burnU_;
 
+    volScalarField Qtg_transferred = Qt_g_;
+    volScalarField Qts_transferred = Qt_s_;
+
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
     (
@@ -374,8 +377,8 @@ void Foam::burningSolid::fixSmallCells()
     // Transfer mass, momentum, and energy out of small cells
     ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
     ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
-    ib_.transfer<scalar>(w, Qt_g_, Qt_g_, 0.0, "gas");
-    ib_.transfer<scalar>(ws, Qt_s_, Qt_s_, 0.0, "solid");
+    ib_.transfer<scalar>(w, Qtg_transferred, Qt_g_, 0.0, "gas");
+    ib_.transfer<scalar>(ws, Qts_transferred, Qt_s_, 0.0, "solid");
 
     // Set source terms in small and solid cells to specify value
     ib_.setScValue<vector>(w, USu_, USp_, burnU_,
@@ -508,8 +511,8 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
 void Foam::burningSolid::calcHeatTransfer()
 {
     // Conduction coefficients
-    tmp<volScalarField> Ks = solidThermo_->K();
-    tmp<volScalarField> Kg = gasThermo_.alpha()*gasThermo_.Cp();
+    // volScalarField Ks = solidThermo_->K();
+    volScalarField Kg = gasThermo_.alpha()*gasThermo_.Cp();
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL().oldTime();
@@ -524,57 +527,95 @@ void Foam::burningSolid::calcHeatTransfer()
     Qt_s_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
 
     // Cell identification
-    const tmp<volScalarField> normalCell = ib_.mixedCells();
-    const tmp<volScalarField> solidCell = ib_.solidCells();
-    const tmp<volScalarField> fullCell = solidCell
-                                       * pos(Ai
-                                       - dimensionedScalar("tmp", dimArea, SMALL));
+    volScalarField normalCell = ib_.mixedCells();
+    volScalarField solidCell = ib_.solidCells();
+    volScalarField fullCell = solidCell*pos(Ai
+                            - dimensionedScalar("tmp", dimArea, SMALL));
 
     forAll(Ts_,cellI)
     {
         // Normal mixed cell conduction transfer
-        if (normalCell()[cellI])
+        if (normalCell[cellI])
         {
 //             Info << "Normal Cell" << endl;
-//             Info << "alpha: " << ib_.alpha()[cellI] << endl;
+//             Info << "alpha: " << (ib_.alphas()()[cellI] - SMALL) << endl;
 //             Info << "Kg: " << Kg()[cellI] << endl;
 //             Info << "Ts: " << Ts_[cellI] << endl;
 //             Info << "Tg: " << gasThermo_.T()[cellI] << endl;
 //             Info << "Ai: " << Ai[cellI] << endl;
+//             Info << "iNormal: " << ib_.normal()[cellI] << endl;
 //             Info << "Lg: " << Lg[cellI] << endl;
 //             Info << "Vc: " << Vc[cellI] << endl;
             // Calculate transfer to gas from constant temperature solid
-            Qt_g_[cellI] = Kg()[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
+            Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
                          * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
             Qt_s_[cellI] = -Qt_g_[cellI];
         }
-        // Full solid cell to gas cell conduction transfer
-        else if (fullCell()[cellI])
-        {
-            Info << "Full Cell" << endl;
-            forAll(mesh_.cells()[cellI], faceI)
-            {
-                label own = mesh_.owner()[faceI];
-                label nei = mesh_.neighbour()[faceI];
-
-                label& sc = (ib_.solidCells()()[own]) ? own:nei;
-                label& mc = (sc == own) ? nei:own;
-
-                if (!solidCell()[mc])
-                {
-                    scalar tmpA = ib_.alphafs()[faceI]
-                                           * mesh_.magSf()[faceI];
-                    scalar tmpL = mag((mesh_.Cf()[faceI]
-                                           - mesh_.C()[mc])
-                                           & mesh_.Sf()[mc])/mesh_.magSf()[mc];
-                    Qt_g_[mc] += Kg()[mc]*(Ts_[sc] - gasThermo_.T()[mc])
-                               * tmpA/(tmpL*Vc[mc]);
-                    Qt_s_[sc] -= Qt_g_[mc]*Vc[mc]/Vc[sc];
-                }
-            }
-        }
-
     }
+
+    // Full solid cell to face neighbor conduction transfer
+    forAll(mesh_.faces(), faceI)
+    {
+        label own = mesh_.owner()[faceI];
+        label nei = mesh_.neighbour()[faceI];
+
+        label sc = (solidCell[own]) ? own:nei;
+        label mc = (sc == own) ? nei:own;
+
+        if (!solidCell[mc])
+        {
+            scalar tmpA = ib_.alphafs()[faceI]
+                                    * mesh_.magSf()[faceI];
+            scalar tmpL = mag((mesh_.Cf()[faceI]
+                        - mesh_.C()[mc]) & mesh_.Sf()[faceI])
+                        / mesh_.magSf()[faceI];
+//                     Info << "tmpA: " << tmpA << endl;
+//                     Info << "tmpL: " << tmpL << endl;
+//                     Info << "Sf: " << mesh_.Sf()[faceI] << endl;
+//                     Info << "Cf-C: " << (mesh_.Cf()[faceI] - mesh_.C()[mc]) << endl;
+//                     Info << "V: " << Vc[mc] << endl;
+//                     Info << "Kg: " << Kg[mc] << endl;
+//                     Info << "Ts: " << Ts_[sc] << endl;
+//                     Info << "Tg: " << gasThermo_.T()[mc] << endl;
+            Qt_g_[mc] += Kg[mc]*(Ts_[sc] - gasThermo_.T()[mc])
+                        * tmpA/(tmpL*Vc[mc]);
+            Qt_s_[sc] -= Qt_g_[mc]*Vc[mc]/Vc[sc];
+        }
+    }
+
+    // Full solid cell to parallel neighbor conduction transfer
+//     const volScalarField::GeometricBoundaryField& QtgBf = Qt_g_.boundaryField();
+//     const volScalarField::GeometricBoundaryField& QtsBf = Qt_s_.boundaryField();
+//     const volScalarField::GeometricBoundaryField& fullCellBf = fullCell.boundaryField();
+//
+//     forAll(QtgBf, patchI)
+//     {
+//         const fvPatchScalarField& QtgPf = QtgBf[patchI];
+//         const fvPatchScalarField& QtsPf = QtsBf[patchI];
+//         const scalarField& fullCellPf= fullCellBf[patchI];
+//         const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
+//
+//         if (QtgPf.coupled()) //returns true for parallel and cyclic patches
+//         {
+//             // Get values across parallel patch
+//             const scalarField QtgPNf(QtgPf.patchNeighbourField());
+//             const scalarField QtsPNf(QtsPf.patchNeighbourField());
+//
+//             //patch face starting IDs in mesh.faces()
+//             label patchFs = QtgPf.patch().start();
+//             const fvPatch& meshPf = mesh_.boundary()[patchI];
+//
+//             forAll(QtgPf, pFaceI)
+//             {
+//                 label pfCellI = pFaceCells[pFaceI];
+//
+//                 if (fullCellPf[pFaceI] > SMALL)
+//                 {
+//
+//                 }
+//             }
+//         }
+//     }
 }
 
 // ************************************************************************* //
