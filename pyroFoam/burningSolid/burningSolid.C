@@ -63,6 +63,8 @@ Foam::burningSolid::burningSolid
         )
     ),
 
+    pyroModel_(pyrolysisModel::New(pyroDict_)),
+
     m_pyro_
     (
         IOobject
@@ -550,6 +552,7 @@ void Foam::burningSolid::calcHeatTransfer()
             Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
                          * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
             Qt_s_[cellI] = -Qt_g_[cellI];
+
         }
     }
 
