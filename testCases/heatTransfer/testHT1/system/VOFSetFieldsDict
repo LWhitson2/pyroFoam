@@ -10,19 +10,19 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      pyrolysisProperties;
+    location    "system";
+    object      VOFSetFieldsDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+alphaName alphaGas;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
-
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+shape    circle;
+inverse  no;
+center   (0 0.06 0);
+radius   0.01;
+plane    xy;
+Ugas     (0 1 0);
+Usolid   (0 0 0);
 
 // ************************************************************************* //

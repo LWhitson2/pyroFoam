@@ -11,18 +11,11 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      turbulenceProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+simulationType  laminar;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
-
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
 
 // ************************************************************************* //

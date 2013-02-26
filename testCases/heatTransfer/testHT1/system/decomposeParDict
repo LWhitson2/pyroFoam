@@ -10,19 +10,36 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      pyrolysisProperties;
+    location    "system";
+    object      decomposeParDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+numberOfSubdomains 6;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+method          simple;
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+simpleCoeffs
+{
+    n               ( 2 3 1 );
+    delta           0.001;
+}
+
+hierarchicalCoeffs
+{
+    n               ( 1 1 1 );
+    delta           0.001;
+    order           xyz;
+}
+
+manualCoeffs
+{
+    dataFile        "";
+}
+
+distributed     no;
+
+roots           ( );
+
 
 // ************************************************************************* //

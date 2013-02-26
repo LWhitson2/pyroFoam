@@ -10,19 +10,29 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      pyrolysisProperties;
+    location    "system";
+    object      setFieldsDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+defaultFieldValues
+(
+    volScalarFieldValue alphaGas 1
+    volVectorFieldValue U (0 8.8447 0)
+);
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+regions
+(
+    boxToCell
+    {
+        box (-1 0 -1) (1 0.0201 1);
+        fieldValues
+        (
+            volScalarFieldValue alphaGas 0
+            volVectorFieldValue U (0 0 0)
+        );
+    }
+);
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
 
 // ************************************************************************* //

@@ -10,19 +10,44 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "constant";
-    object      pyrolysisProperties;
+    location    "system";
+    object      controlDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+application     pyroFoam;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+startFrom       latestTime;
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+startTime       0;
+
+stopAt          endTime;
+
+endTime         10.0;
+
+deltaT          1e-5;
+
+writeControl    adjustableRunTime;
+
+writeInterval   1e-4;
+
+purgeWrite      0;
+
+writeFormat     binary;
+
+writePrecision  8;
+
+writeCompression on;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+adjustTimeStep  yes;
+
+maxCo           0.3;
+
 
 // ************************************************************************* //

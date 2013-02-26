@@ -11,18 +11,19 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      thermophysicalProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+thermoType hsPsiMixtureThermo<reactingMixture<gasThermoPhysics>>;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+inertSpecie N2;
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+chemistryReader foamChemistryReader;
+
+foamChemistryFile "$FOAM_CASE/constant/reactions";
+
+foamChemistryThermoFile "$FOAM_CASE/constant/thermo.compressibleGas";
+
 
 // ************************************************************************* //

@@ -11,18 +11,24 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      combustionProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+combustionModel  PaSR<psiChemistryCombustionModel>;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+active  false;
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+infinitelyFastChemistryCoeffs
+{
+    C       10.0;
+}
+
+PaSRCoeffs
+{
+    Cmix                Cmix [ 0 0 0 0 0 0 0 ] 0.1;
+    turbulentReaction   on;
+}
+
 
 // ************************************************************************* //

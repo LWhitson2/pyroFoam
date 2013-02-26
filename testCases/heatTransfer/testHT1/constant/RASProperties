@@ -11,18 +11,15 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      RASProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+RASModel        kEpsilon;
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+turbulence      on;
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+printCoeffs     on;
+
 
 // ************************************************************************* //

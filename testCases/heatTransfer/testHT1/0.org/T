@@ -9,20 +9,39 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      pyrolysisProperties;
+    class       volScalarField;
+    location    "0";
+    object      T;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-//constant burning rate (kg/m2/s)
-m0      m0   [ 1 -2 -1 0 0 0 0] 0;
+dimensions      [0 0 0 1 0 0 0];
 
-// Solid and gas specie names
-solidName  EMs;
-gasName    EMg;
+internalField   uniform 298;
 
-// Pyrolysis Model Selection
-pyrolysisModel    NoPyrolysis;
+boundaryField
+{
+    top
+    {
+        type            zeroGradient;
+    }
+
+    bottom
+    {
+        type            fixedValue;
+        value           uniform 500;
+    }
+
+    sides
+    {
+        type            zeroGradient;
+    }
+
+    frontAndBack
+    {
+        type            symmetryPlane;
+    }
+}
+
 
 // ************************************************************************* //

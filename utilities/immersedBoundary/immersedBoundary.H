@@ -158,11 +158,6 @@ public:
         {
             return iNormal_;
         }
-        
-        const volVectorField& point() const
-        {
-            return iPoint_;
-        }
 
         const volVectorField& point() const
         {
@@ -177,16 +172,6 @@ public:
         const volScalarField& solidL() const
         {
             return solidL_;
-        }
-        
-        const volVectorField& gasC() const
-        {
-            return gasC_;
-        }
-
-        const volVectorField& solidC() const
-        {
-            return solidC_;
         }
 
         const volVectorField& gasC() const
