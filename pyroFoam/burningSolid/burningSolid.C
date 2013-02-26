@@ -557,7 +557,7 @@ void Foam::burningSolid::calcHeatTransfer()
     }
 
     // Full solid cell to face neighbor conduction transfer
-    forAll(mesh_.faces(), faceI)
+    forAll(mesh_.magSf(), faceI)
     {
         label own = mesh_.owner()[faceI];
         label nei = mesh_.neighbour()[faceI];
@@ -565,24 +565,30 @@ void Foam::burningSolid::calcHeatTransfer()
         label sc = (solidCell[own]) ? own:nei;
         label mc = (sc == own) ? nei:own;
 
-        if (!solidCell[mc])
+        if (fullCell[sc] && !solidCell[mc])
         {
+//             Info << "Full Cell" << endl;
+//             Info << "Sf: " << mesh_.Sf()[faceI] << endl;
+//             Info << "magSf: " << mesh_.magSf()[faceI] << endl;
+//             Info << "mag(Sf): " << mag(mesh_.Sf()[faceI]) << endl;
+//             Info << "Cf-C: " << (mesh_.Cf()[faceI] - mesh_.C()[mc]) << endl;
+//             Info << "Vm: " << Vc[mc] << endl;
+//             Info << "Vs: " << Vc[sc] << endl;
+//             Info << "Kg: " << Kg[mc] << endl;
+//             Info << "Ts: " << Ts_[sc] << endl;
+//             Info << "Tg: " << gasThermo_.T()[mc] << endl;
             scalar tmpA = ib_.alphafs()[faceI]
                                     * mesh_.magSf()[faceI];
             scalar tmpL = mag((mesh_.Cf()[faceI]
                         - mesh_.C()[mc]) & mesh_.Sf()[faceI])
                         / mesh_.magSf()[faceI];
-//                     Info << "tmpA: " << tmpA << endl;
-//                     Info << "tmpL: " << tmpL << endl;
-//                     Info << "Sf: " << mesh_.Sf()[faceI] << endl;
-//                     Info << "Cf-C: " << (mesh_.Cf()[faceI] - mesh_.C()[mc]) << endl;
-//                     Info << "V: " << Vc[mc] << endl;
-//                     Info << "Kg: " << Kg[mc] << endl;
-//                     Info << "Ts: " << Ts_[sc] << endl;
-//                     Info << "Tg: " << gasThermo_.T()[mc] << endl;
+//             Info << "tmpA: " << tmpA << endl;
+//             Info << "tmpL: " << tmpL << endl;
             Qt_g_[mc] += Kg[mc]*(Ts_[sc] - gasThermo_.T()[mc])
                         * tmpA/(tmpL*Vc[mc]);
+//             Info << "Qg: " << Qt_g_[mc] << endl;
             Qt_s_[sc] -= Qt_g_[mc]*Vc[mc]/Vc[sc];
+//             Info << "Qs: " << Qt_s_[sc] << endl;
         }
     }
 

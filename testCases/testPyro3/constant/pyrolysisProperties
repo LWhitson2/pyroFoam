@@ -22,4 +22,7 @@ m0      m0   [ 1 -2 -1 0 0 0 0] 0;
 solidName  EMs;
 gasName    EMg;
 
+// Pyrolysis Model Selection
+pyrolysisModel    NoPyrolysis;
+
 // ************************************************************************* //
