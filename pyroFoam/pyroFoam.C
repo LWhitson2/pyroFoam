@@ -36,6 +36,7 @@ Description
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
 #include "burningSolid.H"
+#include "OFstream.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,6 +57,8 @@ int main(int argc, char *argv[])
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
+
+    dimensionedScalar TsAvg = dimensionedScalar("TsAvg", dimTemperature, 300.0);
 
     while (runTime.run())
     {
@@ -112,8 +115,9 @@ int main(int argc, char *argv[])
             }
         }
 
-        hsOut = hs;
         runTime.write();
+        log << runTime.value() << token::TAB
+            << Ts.weightedAverage(ib.alphas()).value() << endl;
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

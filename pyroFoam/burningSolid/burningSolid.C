@@ -539,15 +539,6 @@ void Foam::burningSolid::calcHeatTransfer()
         // Normal mixed cell conduction transfer
         if (normalCell[cellI])
         {
-//             Info << "Normal Cell" << endl;
-//             Info << "alpha: " << (ib_.alphas()()[cellI] - SMALL) << endl;
-//             Info << "Kg: " << Kg()[cellI] << endl;
-//             Info << "Ts: " << Ts_[cellI] << endl;
-//             Info << "Tg: " << gasThermo_.T()[cellI] << endl;
-//             Info << "Ai: " << Ai[cellI] << endl;
-//             Info << "iNormal: " << ib_.normal()[cellI] << endl;
-//             Info << "Lg: " << Lg[cellI] << endl;
-//             Info << "Vc: " << Vc[cellI] << endl;
             // Calculate transfer to gas from constant temperature solid
             Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
                          * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
@@ -567,64 +558,83 @@ void Foam::burningSolid::calcHeatTransfer()
 
         if (fullCell[sc] && !solidCell[mc])
         {
-//             Info << "Full Cell" << endl;
-//             Info << "Sf: " << mesh_.Sf()[faceI] << endl;
-//             Info << "magSf: " << mesh_.magSf()[faceI] << endl;
-//             Info << "mag(Sf): " << mag(mesh_.Sf()[faceI]) << endl;
-//             Info << "Cf-C: " << (mesh_.Cf()[faceI] - mesh_.C()[mc]) << endl;
-//             Info << "Vm: " << Vc[mc] << endl;
-//             Info << "Vs: " << Vc[sc] << endl;
-//             Info << "Kg: " << Kg[mc] << endl;
-//             Info << "Ts: " << Ts_[sc] << endl;
-//             Info << "Tg: " << gasThermo_.T()[mc] << endl;
             scalar tmpA = ib_.alphafs()[faceI]
                                     * mesh_.magSf()[faceI];
             scalar tmpL = mag((mesh_.Cf()[faceI]
                         - mesh_.C()[mc]) & mesh_.Sf()[faceI])
                         / mesh_.magSf()[faceI];
-//             Info << "tmpA: " << tmpA << endl;
-//             Info << "tmpL: " << tmpL << endl;
             Qt_g_[mc] += Kg[mc]*(Ts_[sc] - gasThermo_.T()[mc])
                         * tmpA/(tmpL*Vc[mc]);
-//             Info << "Qg: " << Qt_g_[mc] << endl;
             Qt_s_[sc] -= Qt_g_[mc]*Vc[mc]/Vc[sc];
-//             Info << "Qs: " << Qt_s_[sc] << endl;
         }
     }
 
     // Full solid cell to parallel neighbor conduction transfer
-//     const volScalarField::GeometricBoundaryField& QtgBf = Qt_g_.boundaryField();
-//     const volScalarField::GeometricBoundaryField& QtsBf = Qt_s_.boundaryField();
-//     const volScalarField::GeometricBoundaryField& fullCellBf = fullCell.boundaryField();
-//
-//     forAll(QtgBf, patchI)
-//     {
-//         const fvPatchScalarField& QtgPf = QtgBf[patchI];
-//         const fvPatchScalarField& QtsPf = QtsBf[patchI];
-//         const scalarField& fullCellPf= fullCellBf[patchI];
-//         const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
-//
-//         if (QtgPf.coupled()) //returns true for parallel and cyclic patches
-//         {
-//             // Get values across parallel patch
-//             const scalarField QtgPNf(QtgPf.patchNeighbourField());
-//             const scalarField QtsPNf(QtsPf.patchNeighbourField());
-//
-//             //patch face starting IDs in mesh.faces()
-//             label patchFs = QtgPf.patch().start();
-//             const fvPatch& meshPf = mesh_.boundary()[patchI];
-//
-//             forAll(QtgPf, pFaceI)
-//             {
-//                 label pfCellI = pFaceCells[pFaceI];
-//
-//                 if (fullCellPf[pFaceI] > SMALL)
-//                 {
-//
-//                 }
-//             }
-//         }
-//     }
+    const fvPatchList& patches = mesh_.boundary();
+
+    // Get boundary fields for required values
+    const volScalarField::GeometricBoundaryField& KgBf = Kg.boundaryField();
+    const volScalarField::GeometricBoundaryField& fullCellBf = fullCell.boundaryField();
+    const volScalarField::GeometricBoundaryField& solidCellBf = solidCell.boundaryField();
+    const volVectorField::GeometricBoundaryField& meshCBf = mesh_.C().boundaryField();
+    const volScalarField::GeometricBoundaryField& TBf = gasThermo_.T().boundaryField();
+    const volScalarField::GeometricBoundaryField& TsBf = Ts_.boundaryField();
+
+    forAll(patches, patchI)
+    {
+        const fvPatch& curPatch = patches[patchI];
+        const labelList& pFaceCells = patches[patchI].faceCells();
+
+        // Get values for current patch
+        const fvPatchScalarField& KgPf = KgBf[patchI];
+        const fvPatchScalarField& fullCellPf = fullCellBf[patchI];
+        const fvPatchScalarField& solidCellPf = solidCellBf[patchI];
+        const fvPatchVectorField& meshCPf = meshCBf[patchI];
+        const fvPatchScalarField& TPf = TBf[patchI];
+        const fvPatchScalarField& TsPf = TsBf[patchI];
+
+        if (curPatch.coupled()) //returns true for parallel and cyclic patches
+        {
+            // Get values across parallel patch
+            const scalarField KgPNf(KgPf.patchNeighbourField());
+            const scalarField fullCellPNf(fullCellPf.patchNeighbourField());
+            const scalarField solidCellPNf(solidCellPf.patchNeighbourField());
+            const vectorField meshCPNf(meshCPf.patchNeighbourField());
+            const scalarField TPNf(TPf.patchNeighbourField());
+            const scalarField TsPNf(TsPf.patchNeighbourField());
+
+            forAll(curPatch, pFaceI)
+            {
+                label pfCellI = pFaceCells[pFaceI];
+
+                scalar tmpA = ib_.alphafs()[pFaceI]
+                                    * mesh_.magSf()[pFaceI];
+
+                // Boundary cell solid, neighbor cell mixed
+                if (fullCell[pfCellI] && !solidCellPNf[pFaceI])
+                {
+                    Info << "Parallel Solid Cell" << endl;
+                    scalar tmpL = mag((mesh_.Cf()[pFaceI]
+                                - meshCPNf[pFaceI]) & mesh_.Sf()[pFaceI])
+                                / mesh_.magSf()[pFaceI];
+                    Qt_s_[pfCellI] -= KgPNf[pFaceI]*(Ts_[pfCellI]
+                                    - TPNf[pFaceI])
+                                    * tmpA/(tmpL*Vc[pfCellI]);
+                }
+                // Boundary cell mixed, neighbor cell solid
+                else if (fullCellPNf[pFaceI] && !solidCell[pfCellI])
+                {
+                    Info << "Parallel Mixed Cell" << endl;
+                    scalar tmpL = mag((mesh_.Cf()[pFaceI]
+                                - mesh_.C()[pfCellI]) & mesh_.Sf()[pFaceI])
+                                / mesh_.magSf()[pFaceI];
+                    Qt_g_[pfCellI] += Kg[pfCellI]*(TsPNf[pFaceI]
+                                    - gasThermo_.T()[pfCellI])
+                                    * tmpA/(tmpL*Vc[pfCellI]);
+                }
+            }
+        }
+    }
 }
 
 // ************************************************************************* //

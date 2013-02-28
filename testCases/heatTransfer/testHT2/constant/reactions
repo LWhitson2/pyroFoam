@@ -1,0 +1,11 @@
+species
+(
+    N2
+    EMs
+    EMg
+);
+
+reactions
+{
+
+}

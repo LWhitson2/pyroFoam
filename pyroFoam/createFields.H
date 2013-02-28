@@ -62,18 +62,6 @@ volVectorField U
 volScalarField& p = thermo.p();
 const volScalarField& psi = thermo.psi();
 volScalarField& hs = thermo.hs();
-volScalarField hsOut
-(
-    IOobject
-    (
-        "hsOut",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::AUTO_WRITE
-    ),
-    thermo.hs()
-);
 const volScalarField& T = thermo.T();
 
 #include "compressibleCreatePhi.H"
@@ -137,3 +125,6 @@ solid.solidThermo().correct();
 const volScalarField& rhos = solid.rhos();
 const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();
+OFstream log(args.path()/"TsAvg.out");
+    log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
+        << endl;
