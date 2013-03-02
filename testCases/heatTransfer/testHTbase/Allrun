@@ -6,11 +6,11 @@ cd ${0%/*} || exit 1    # run from this directory
 . $WM_PROJECT_DIR/bin/tools/RunFunctions
 
 cp -r 0.org 0
-blockMesh
-VOFSetFields
+runApplication blockMesh
+runApplication VOFSetFields
 
 #-- Decompose and run in parallel
-decomposePar
+runApplication decomposePar
 runParallel `getApplication` 4
 #if this uses foamJob, then all the cases can be run at once
 
