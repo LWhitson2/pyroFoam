@@ -413,7 +413,8 @@ void Foam::burningSolid::calcBurnU()
 void Foam::burningSolid::correct
 (
     const volVectorField& U,
-    surfaceScalarField& phi
+    surfaceScalarField& phi,
+    bool allowHtx
 )
 {
     Foam::Info << "Correcting burningSolid" << Foam::endl;
@@ -432,8 +433,11 @@ void Foam::burningSolid::correct
     mU_ = burnU_ * m_pyro_;
 
     // Step 4b: Calculate heat transfer sources
-    calcHeatTransfer();
-
+    if (allowHtx)
+    {
+        calcHeatTransfer();
+    }
+    
     // Step 5: Evolve interface using calculated burning rate (vol frac/s)
     ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
 
@@ -512,6 +516,10 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
 
 void Foam::burningSolid::calcHeatTransfer()
 {
+    // Initialize cells to no heat transfer
+    Qt_g_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
+    Qt_s_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
+        
     // Conduction coefficients
     // volScalarField Ks = solidThermo_->K();
     volScalarField Kg = gasThermo_.alpha()*gasThermo_.Cp();
@@ -523,10 +531,6 @@ void Foam::burningSolid::calcHeatTransfer()
     // Interface area and volume
     const volScalarField& Ai = ib_.area().oldTime();
     const volScalarField::DimensionedInternalField& Vc = mesh_.V();
-
-    // Initialize cells to no heat transfer
-    Qt_g_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
-    Qt_s_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
 
     // Cell identification
     volScalarField normalCell = ib_.mixedCells();
@@ -613,10 +617,11 @@ void Foam::burningSolid::calcHeatTransfer()
                 // Boundary cell solid, neighbor cell mixed
                 if (fullCell[pfCellI] && !solidCellPNf[pFaceI])
                 {
-                    Info << "Parallel Solid Cell" << endl;
+                    //Info << "Parallel Solid Cell" << endl;
                     scalar tmpL = mag((mesh_.Cf()[pFaceI]
                                 - meshCPNf[pFaceI]) & mesh_.Sf()[pFaceI])
-                                / mesh_.magSf()[pFaceI];
+                                / mesh_.magSf()[pFaceI];        
+                                
                     Qt_s_[pfCellI] -= KgPNf[pFaceI]*(Ts_[pfCellI]
                                     - TPNf[pFaceI])
                                     * tmpA/(tmpL*Vc[pfCellI]);
@@ -624,10 +629,11 @@ void Foam::burningSolid::calcHeatTransfer()
                 // Boundary cell mixed, neighbor cell solid
                 else if (fullCellPNf[pFaceI] && !solidCell[pfCellI])
                 {
-                    Info << "Parallel Mixed Cell" << endl;
+                    //Info << "Parallel Mixed Cell" << endl;
                     scalar tmpL = mag((mesh_.Cf()[pFaceI]
                                 - mesh_.C()[pfCellI]) & mesh_.Sf()[pFaceI])
                                 / mesh_.magSf()[pFaceI];
+                                
                     Qt_g_[pfCellI] += Kg[pfCellI]*(TsPNf[pFaceI]
                                     - gasThermo_.T()[pfCellI])
                                     * tmpA/(tmpL*Vc[pfCellI]);
@@ -635,6 +641,7 @@ void Foam::burningSolid::calcHeatTransfer()
             }
         }
     }
+
 }
 
 // ************************************************************************* //

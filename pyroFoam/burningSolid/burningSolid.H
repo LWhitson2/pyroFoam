@@ -199,7 +199,8 @@ public:
     void correct
     (
         const volVectorField& U,
-        surfaceScalarField& phi
+        surfaceScalarField& phi,
+        bool allowHtx = true
     );
 
     tmp<volScalarField> YSu(const word& Yname) const;
