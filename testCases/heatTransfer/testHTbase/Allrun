@@ -11,7 +11,7 @@ VOFSetFields
 
 #-- Decompose and run in parallel
 decomposePar
-runParallel `getApplication` 6
+runParallel `getApplication` 4
 #if this uses foamJob, then all the cases can be run at once
 
 # ----------------------------------------------------------------- end-of-file

@@ -146,8 +146,6 @@ const volScalarField& Ks = solid.Ks();
 
 OFstream log(args.path()/"TsAvg.out");
 
-if(Pstream::master())
-{
-    log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
-        << endl;
-}
+log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
+    << endl;
+

@@ -123,11 +123,10 @@ int main(int argc, char *argv[])
         
         runTime.write();
         
-        if(Pstream::master())
-        {
-            log << runTime.value() << token::TAB
-                << Ts.weightedAverage(ib.alphas()).value() << endl;
-        }
+
+        log << runTime.value() << token::TAB
+            << Ts.weightedAverage(ib.alphas()).value() << endl;
+
         
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
