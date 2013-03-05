@@ -52,6 +52,10 @@ int main(int argc, char *argv[])
     #include "compressibleCourantNo.H"
     #include "setInitialDeltaT.H"
 
+    //Time for fluid flow to run before enableing heat transfer to solid
+    scalar flowRelaxTime =
+        runTime.controlDict().lookupOrDefault<scalar>("flowRelaxTime", -1.0);
+
     pimpleControl pimple(mesh);
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -96,7 +100,7 @@ int main(int argc, char *argv[])
         while (pimple.loop())
         {
             // Evolve the solid surface
-            solid.correct(U, phi);
+            solid.correct(U, phi, runTime.timeOutputValue() > flowRelaxTime);
 
             #include "UEqn.H"
             #include "YEqn.H"
@@ -115,9 +119,13 @@ int main(int argc, char *argv[])
             }
         }
 
+        Tall = Ts*ib.alphas() + T*ib.alpha();
+
         runTime.write();
+
         log << runTime.value() << token::TAB
             << Ts.weightedAverage(ib.alphas()).value() << endl;
+
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

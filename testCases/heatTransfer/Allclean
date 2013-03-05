@@ -1,0 +1,8 @@
+#!/bin/sh
+
+rm -rf testHT1
+rm -rf testHT2
+rm -rf testHT3
+rm -rf testHT4
+rm -f *~
+

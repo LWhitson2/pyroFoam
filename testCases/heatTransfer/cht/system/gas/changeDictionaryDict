@@ -1,0 +1,167 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      changeDictionaryDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dictionaryReplacement
+{
+    boundary
+    {
+        FrontAndBack
+        {
+            type            empty;
+        }
+        
+        Sides
+        {
+            type            patch;
+        }
+        
+        Inlet
+        {
+            type            patch;
+        }
+        
+        Outlet
+        {
+            type            patch;
+        }
+    }
+    
+    U
+    {
+        internalField   uniform (0 10 0);
+
+        boundaryField
+        {
+            Sides
+            {
+                type            zeroGradient;
+            }
+
+            Inlet
+            {
+                type            fixedValue;
+                value           uniform (0 10 0);
+            }
+
+            Outlet
+            {
+                type            zeroGradient;
+            }
+
+            FrontAndBack
+            {
+                type            empty;
+            }
+
+            "gas_to_.*"
+            {
+                type            fixedValue;
+                value           uniform (0 0 0);
+            }
+        }
+    }
+
+
+
+    T
+    {
+        internalField   uniform 300;
+
+        boundaryField
+        {
+            Outlet
+            {
+                type            zeroGradient;
+            }
+
+            Inlet
+            {
+                type            fixedValue;
+                value           uniform 300.;
+            }
+
+            Sides
+            {
+                type            zeroGradient;
+            }
+
+            FrontAndBack
+            {
+                type            empty;
+            }
+            
+            "gas_to_.*"
+            {
+                type            compressible::turbulentTemperatureCoupledBaffleMixed;
+                neighbourFieldName T;
+                K               basicThermo;
+                KName           none;
+                value           uniform 300;
+            }
+        }
+    }
+
+    p_rgh
+    {
+        internalField   uniform 1e5;
+
+        boundaryField
+        {
+            Sides
+            {
+                type            zeroGradient;
+            }
+
+            Inlet
+            {
+                type            waveTransmissive;
+                gamma           1.4;
+                fieldInf        uniform 1e5;
+            }
+
+            Outlet
+            {
+                type            zeroGradient;
+            }
+
+            FrontAndBack
+            {
+                type            empty;
+            }
+        
+            "gas_to_.*"
+            {
+                type            zeroGradient;
+            }
+        }
+    }
+
+    p
+    {
+        internalField   uniform 1e5;
+
+        boundaryField
+        {
+            ".*"
+            {
+                type            calculated;
+                value           uniform 1e5;
+            }
+        }
+    }
+}
+
+// ************************************************************************* //

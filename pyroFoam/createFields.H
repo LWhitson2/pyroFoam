@@ -112,6 +112,8 @@ volScalarField dQ
 );
 
 
+
+
 // Create an immersed boundary
 immersedBoundary ib(mesh);
 
@@ -122,9 +124,25 @@ burningSolid solid(mesh, ib, thermo);
 volScalarField& Ts = solid.Ts();
 solid.solidThermo().T() = Ts;
 solid.solidThermo().correct();
+
+volScalarField Tall
+(
+    IOobject
+    (
+        "Tall",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    Ts*ib.alphas() + T*ib.alpha()
+);
+
 const volScalarField& rhos = solid.rhos();
 const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();
+
 OFstream log(args.path()/"TsAvg.out");
-    log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
-        << endl;
+
+log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
+    << endl;

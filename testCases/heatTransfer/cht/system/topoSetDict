@@ -1,0 +1,79 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      topoSetDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+actions
+(
+    // Solid cylinder
+    {
+        name    cylinder;
+        type    cellSet;
+        action  new;
+        source  cylinderToCell;
+        sourceInfo
+        {
+            p1 (0 0.06 0);
+            p2 (0 0.06 0.002);
+            radius 0.01;
+        }
+    }    
+    
+    {
+        name    cylinder;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+        sourceInfo
+        {
+            set cylinder;
+        }
+    }
+
+
+    // gas region
+    {
+        name    gas;
+        type    cellZoneSet;
+        action  clear;
+    }
+    {
+        name    gas;
+        type    cellSet;
+        action  add;
+        source  cellToCell;
+        sourceInfo
+        {
+            set cylinder;
+        }
+    }
+    {
+        name    gas;
+        type    cellSet;
+        action  invert;
+    }
+    {
+        name    gas;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+        sourceInfo
+        {
+            set gas;
+        }
+    }
+);
+
+// ************************************************************************* //
