@@ -79,10 +79,10 @@ class burningSolid
 
         //- Input dictionary
         IOdictionary pyroDict_;
-        
+
         //- Pyrolysis model
         autoPtr<pyrolysisModel> pyroModel_;
-        
+
         //- Solid burning rate (kg/m^3-s)
         volScalarField m_pyro_;
 
@@ -140,10 +140,15 @@ class burningSolid
         //- Solid heat transfer source
         volScalarField Qt_s_;
 
+        //- Solid stress term
+        volScalarField surfStress_;
+//         volVectorField surfStress_;
+
     // Private functions
         void fixSmallCells();
         void calcBurnU();
         void calcHeatTransfer();
+        void calcSurfaceStress();
 
 public:
 
@@ -264,6 +269,16 @@ public:
     {
         return Qt_g_;
     }
+
+    const volScalarField& Stress()
+    {
+        return surfStress_;
+    }
+
+//     const volVectorField& Stress()
+//     {
+//         return surfStress_;
+//     }
 };
 
 

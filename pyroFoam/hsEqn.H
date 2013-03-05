@@ -25,6 +25,6 @@
 
     Info<< "T gas min/max   = " <<
         min(ib.solidCells()*dimensionedScalar("tmpT", dimTemperature, 1000.0)
-        + ib.gasCells()*T).value() << ", " << max(ib.gasCells()*T).value()
+        + T).value() << ", " << max(ib.gasCells()*T).value()
         << endl;
 }

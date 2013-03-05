@@ -1,19 +1,23 @@
 
     Info<< "Solving UEqn" << endl;
-    
+
     surfaceScalarField muEff = ib.interpolate(turbulence->muEff())
                                *ib.alphaf();
+    surfaceVectorField gradUeff = fvc::interpolate(dev2(Foam::T(fvc::grad(U))))
+                                & mesh.Sf();
 
     fvVectorMatrix UEqn
     (
         fvm::ddt(rho*ib.alphaCorr(), U)
       + fvm::div(phi, U)
       - fvm::laplacian(muEff, U)
-      //- fvc::div(muEff*dev2(T(fvc::grad(U))))
+      - fvc::div(muEff*gradUeff)
+      //- fvc::div(muEff*fvc::interpolate(Foam::dev2(Foam::T(fvc::grad(U)))))
       - solid.mU()
       - rho*ib.alpha()*g
       + fvm::Sp(solid.USp(), U)
       - solid.USu()
+      + fvm::Sp(turbulence->muEff()*solid.Stress(), U)
     );
 
     UEqn.relax();
