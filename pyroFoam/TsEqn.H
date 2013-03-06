@@ -2,7 +2,7 @@
     // Calculate corrected thermal conductivity
     tmp<volScalarField> Cps = solid.Cps();
     surfaceScalarField KEff = ib.interpolate(Ks)
-                               *(1. - ib.alphaf());
+                               *ib.alphafs();
 
     fvScalarMatrix TsEqn
     (
@@ -18,7 +18,7 @@
     TsEqn.solve();
 
     Info<< "T solid min/max   = " <<
-        min(ib.fullGasCells()*dimensionedScalar("tmpT", dimTemperature, 1000.0)
+        min(ib.fullGasCells()*dimensionedScalar("tmpT", dimTemperature, 100000.0)
         + Ts).value() << ", " << max(ib.solidCells()*Ts).value()
         << endl;
 

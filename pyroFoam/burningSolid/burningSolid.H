@@ -79,17 +79,10 @@ class burningSolid
 
         //- Input dictionary
         IOdictionary pyroDict_;
-<<<<<<< HEAD
 
         //- Pyrolysis model
         autoPtr<pyrolysisModel> pyroModel_;
 
-=======
-
-        //- Pyrolysis model
-        autoPtr<pyrolysisModel> pyroModel_;
-
->>>>>>> faf1e7240448b2e8fbca2aa20c3784e2b3be984c
         //- Solid burning rate (kg/m^3-s)
         volScalarField m_pyro_;
 

@@ -281,7 +281,6 @@ Foam::burningSolid::burningSolid
         ),
         mesh_,
         dimensionedScalar("Qts", dimPower/dimVolume, 0.0)
-<<<<<<< HEAD
     ),
 
     surfStress_
@@ -297,8 +296,6 @@ Foam::burningSolid::burningSolid
         mesh_,
 //         dimensionedVector("surfStress", dimless/(dimLength*dimTime), vector::zero)
         dimensionedScalar("surfStress", dimless/dimArea, 0.0)
-=======
->>>>>>> faf1e7240448b2e8fbca2aa20c3784e2b3be984c
     )
 {
     Info<< "Created burningSolid" << endl;
@@ -450,14 +447,14 @@ void Foam::burningSolid::correct
     // Step 4: Calculate momentum source
     mU_ = burnU_ * m_pyro_;
 
+    // Step 5: Evolve interface using calculated burning rate (vol frac/s)
+    ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
+
     // Step 4b: Calculate heat transfer sources
     if (allowHtx)
     {
         calcHeatTransfer();
     }
-
-    // Step 5: Evolve interface using calculated burning rate (vol frac/s)
-    ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
 
     // Step 6: Fix small cells by transferring momentum (mU) and mass (m_pyro)
     //         to neighbouring larger cells
@@ -503,19 +500,18 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
             );
 }
 
-<<<<<<< HEAD
 void Foam::burningSolid::calcHeatTransfer()
 {
     // Conduction coefficients
-    // volScalarField Ks = solidThermo_->K();
+    volScalarField Ks = solidThermo_->K();
     volScalarField Kg = gasThermo_.alpha()*gasThermo_.Cp();
 
     // Conduction lengths
-    const volScalarField& Lg = ib_.gasL().oldTime();
-    //const volScalarField& Ls = ib_.solidL().oldTime();
+    const volScalarField& Lg = ib_.gasL();//.oldTime();
+    const volScalarField& Ls = ib_.solidL();//.oldTime();
 
     // Interface area and volume
-    const volScalarField& Ai = ib_.area().oldTime();
+    const volScalarField& Ai = ib_.area();//.oldTime();
     const volScalarField::DimensionedInternalField& Vc = mesh_.V();
 
     // Initialize cells to no heat transfer
@@ -533,9 +529,13 @@ void Foam::burningSolid::calcHeatTransfer()
         // Normal mixed cell conduction transfer
         if (normalCell[cellI])
         {
+            // Calculate Thermal Resistances
+            scalar Rg = Lg[cellI]/(Kg[cellI]*Ai[cellI]);
+            scalar Rs = Ls[cellI]/(Ks[cellI]*Ai[cellI]);
+            scalar Req = Rg + Rs;
+
             // Calculate transfer to gas from constant temperature solid
-            Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
-                         * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
+            Qt_g_[cellI] = (Ts_[cellI] - gasThermo_.T()[cellI])/(Req*Vc[cellI]);
             Qt_s_[cellI] = -Qt_g_[cellI];
 
         }
