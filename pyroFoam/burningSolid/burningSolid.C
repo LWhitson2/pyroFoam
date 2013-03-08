@@ -368,6 +368,8 @@ void Foam::burningSolid::fixSmallCells()
         dimDensity/dimTime,
         1.0/mesh_.time().deltaTValue()
     );
+//     volScalarField TSu = hsSu_;
+
 
     // Value to force gas cells to designated temperature
     dimensionedScalar TsrdT
@@ -391,12 +393,6 @@ void Foam::burningSolid::fixSmallCells()
     Info << "Min/Max Gas Transfer Weights: " << min(w).value() << ", " << max(w).value() << endl;
     Info << "Min/Max Solid Transfer Weights: " << min(ws).value() << ", " << max(ws).value() << endl;
 
-    // Transfer mass, momentum, and energy out of small cells
-    ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
-    ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
-    ib_.transfer<scalar>(w, Qtg_transferred, Qt_g_, 0.0, "gas");
-    ib_.transfer<scalar>(ws, Qts_transferred, Qt_s_, 0.0, "solid");
-
     // Set source terms in small and solid cells to specify value
     ib_.setScValue<vector>(w, USu_, USp_, burnU_,
                            USolid, rhordT, "fix", "gas");
@@ -406,6 +402,38 @@ void Foam::burningSolid::fixSmallCells()
                            hsSolid, hsrdT, "avg", "gas");
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
+
+    // Account for energy generation/destruction from setting small cells
+    tmp<volScalarField> rhog = gasThermo_.rho();
+    forAll(hsSu_, cellI)
+    {
+        if(hsSu_[cellI] > 0.0)
+        {
+            Qtg_transferred[cellI] -= rhog()[cellI]*(hsSu_[cellI]
+                                   - gasThermo_.hs()[cellI]*hsrdT.value())
+                                   * ib_.alpha()[cellI];
+        }
+    }
+
+//     ib_.setScValue<scalar>(w, TSu, hsSp_, gasThermo_.T(),
+//                            hsSolid, hsrdT, "avg", "gas");
+//
+//     hsSu_ = dimensionedScalar("hsSutmp", dimDensity*dimPower/dimMass, 0.0);
+//     forAll(TSu, cellI)
+//     {
+//         if(TSu[cellI] > 0.0)
+//         {
+//             hsSu_[cellI] = mCM_.cellMixture(cellI).Hs(TSu[cellI]/hsrdT.value())
+//                          * hsrdT.value();
+//         }
+//     }
+
+    // Transfer mass and momentum out of small cells
+    ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
+    ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
+    ib_.transfer<scalar>(w, Qtg_transferred, Qt_g_, 0.0, "gas");
+    ib_.transfer<scalar>(ws, Qts_transferred, Qt_s_, 0.0, "solid");
+
 }
 
 // Calculate the burn gas velocity
@@ -662,5 +690,34 @@ void Foam::burningSolid::calcSurfaceStress()
         }
     }
 }
+
+// void Foam::burningSolid::calcSurfaceStress2()
+// {
+//     // Centroid lengths
+//     volVectorField Lg = ib_.gasL()*ib_.iNormal();
+//
+//     // Interface area and volume
+//     volScalarField& Ai = ib_.area();
+//     const volScalarField::DimensionedInternalField& Vc = mesh_.V();
+//
+//     // Initialize cells to no heat transfer
+//     surfStress_ = dimensionedScalar("tmpSurfStress", dimless/dimArea, 0.0);
+//
+//     // Cell identification
+//     volScalarField normalCell = ib_.mixedCells();
+//     volScalarField solidCell = ib_.solidCells();
+//     volScalarField fullCell = solidCell*pos(Ai
+//                             - dimensionedScalar("tmp", dimArea, SMALL));
+//
+//     forAll(Ts_,cellI)
+//     {
+//         // Normal mixed cell surface stress
+//         if (normalCell[cellI])
+//         {
+//             // Calculate transfer to gas from constant temperature solid
+//             surfStress_[cellI] = Ai[cellI]/(Lg[cellI]*Vc[cellI]);
+//         }
+//     }
+// }
 
 // ************************************************************************* //
