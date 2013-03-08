@@ -21,3 +21,4 @@ linux64GccDPOpt/
 
 # Log files
 *.log
+*.gz
