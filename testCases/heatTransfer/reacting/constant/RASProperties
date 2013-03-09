@@ -10,47 +10,16 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      controlDict;
+    location    "constant";
+    object      RASProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+RASModel        kEpsilon;
 
-startFrom       latestTime;
+turbulence      on;
 
-startTime       0;
+printCoeffs     on;
 
-stopAt          endTime;
-
-endTime         1.2;
-
-deltaT          1e-6;
-
-writeControl    adjustableRunTime;
-
-writeInterval   1e-3;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  8;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
-
-maxCo           0.3;
-
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
 
 // ************************************************************************* //

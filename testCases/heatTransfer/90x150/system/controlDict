@@ -15,7 +15,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+application     pyroFoam;
 
 startFrom       latestTime;
 
@@ -23,9 +23,11 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         1.2;
+endTime         0.2;
 
-deltaT          1e-6;
+flowRelaxTime   0.0;
+
+deltaT          1e-5;
 
 writeControl    adjustableRunTime;
 
@@ -33,7 +35,7 @@ writeInterval   1e-3;
 
 purgeWrite      0;
 
-writeFormat     ascii;
+writeFormat     binary;
 
 writePrecision  8;
 
@@ -43,14 +45,11 @@ timeFormat      general;
 
 timePrecision   6;
 
-runTimeModifiable yes;
+runTimeModifiable true;
+
+adjustTimeStep  yes;
 
 maxCo           0.3;
 
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
 
 // ************************************************************************* //

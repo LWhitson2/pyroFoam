@@ -11,46 +11,18 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      controlDict;
+    object      VOFSetFieldsDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+alphaName alphaGas;
 
-startFrom       latestTime;
-
-startTime       0;
-
-stopAt          endTime;
-
-endTime         1.2;
-
-deltaT          1e-6;
-
-writeControl    adjustableRunTime;
-
-writeInterval   1e-3;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  8;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
-
-maxCo           0.3;
-
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
+shape    circle;
+inverse  no;
+center   (0 0.06 0);
+radius   0.01;
+plane    xy;
+Ugas     (0 10 0);
+Usolid   (0 0 0);
 
 // ************************************************************************* //

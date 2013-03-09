@@ -125,7 +125,6 @@ volScalarField& Ts = solid.Ts();
 solid.solidThermo().T() = Ts;
 solid.solidThermo().correct();
 
-
 volScalarField Tall
 (
     IOobject
@@ -139,7 +138,6 @@ volScalarField Tall
     Ts*ib.alphas() + T*ib.alpha()
 );
 
-
 const volScalarField& rhos = solid.rhos();
 const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();
@@ -148,4 +146,3 @@ OFstream log(args.path()/"TsAvg.out");
 
 log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
     << endl;
-

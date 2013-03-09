@@ -33,21 +33,23 @@ done
 
 
 #-- Run on single processor
-chtMultiRegionFoam
+#chtMultiRegionFoam
 
-exit
+#exit
 # run in parallel
 
 # Decompose
-for i in htx hydride
+for i in gas cylinder
 do
    decomposePar -region $i
 done
 
 # Run
 #runParallel `getApplication` 4
-#mpirun -np 4 hydrideBedFoam -parallel
-foamJob -screen -parallel chtMultiRegionFoam
+#exit
+mpirun -np 4 chtMultiRegionFoam -parallel
+exit
+#foamJob -screen -parallel chtMultiRegionFoam
 
 # Reconstruct
 for i in htx hydride

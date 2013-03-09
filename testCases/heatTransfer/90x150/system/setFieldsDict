@@ -11,46 +11,28 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "system";
-    object      controlDict;
+    object      setFieldsDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+defaultFieldValues
+(
+    volScalarFieldValue alphaGas 1
+    volVectorFieldValue U (0 8.8447 0)
+);
 
-startFrom       latestTime;
+regions
+(
+    boxToCell
+    {
+        box (-1 0 -1) (1 0.0201 1);
+        fieldValues
+        (
+            volScalarFieldValue alphaGas 0
+            volVectorFieldValue U (0 0 0)
+        );
+    }
+);
 
-startTime       0;
-
-stopAt          endTime;
-
-endTime         1.2;
-
-deltaT          1e-6;
-
-writeControl    adjustableRunTime;
-
-writeInterval   1e-3;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  8;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
-
-maxCo           0.3;
-
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
 
 // ************************************************************************* //

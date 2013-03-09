@@ -18,3 +18,7 @@ linux64GccDPOpt/
 
 # Text backup files
 *~
+
+# Log files
+*.log
+*.gz

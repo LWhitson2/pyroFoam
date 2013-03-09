@@ -10,47 +10,35 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      controlDict;
+    location    "constant";
+    object      chemistryProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+psiChemistryModel  ODEChemistryModel<gasThermoPhysics>;
 
-startFrom       latestTime;
+chemistry           off;
 
-startTime       0;
+chemistrySolver     ode;
 
-stopAt          endTime;
+initialChemicalTimeStep 1e-07;
 
-endTime         1.2;
+sequentialCoeffs
+{
+    cTauChem        0.001;
+}
 
-deltaT          1e-6;
+EulerImplicitCoeffs
+{
+    cTauChem        0.05;
+    equilibriumRateLimiter off;
+}
 
-writeControl    adjustableRunTime;
-
-writeInterval   1e-3;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  8;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
-
-maxCo           0.3;
-
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
+odeCoeffs
+{
+    solver          SIBS;
+    eps             0.05;
+    scale           1;
+}
 
 // ************************************************************************* //

@@ -281,6 +281,21 @@ Foam::burningSolid::burningSolid
         ),
         mesh_,
         dimensionedScalar("Qts", dimPower/dimVolume, 0.0)
+    ),
+
+    surfStress_
+    (
+        IOobject
+        (
+            "surfStress_",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+//         dimensionedVector("surfStress", dimless/(dimLength*dimTime), vector::zero)
+        dimensionedScalar("surfStress", dimless/dimArea, 0.0)
     )
 {
     Info<< "Created burningSolid" << endl;
@@ -432,14 +447,14 @@ void Foam::burningSolid::correct
     // Step 4: Calculate momentum source
     mU_ = burnU_ * m_pyro_;
 
+    // Step 5: Evolve interface using calculated burning rate (vol frac/s)
+    ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
+
     // Step 4b: Calculate heat transfer sources
     if (allowHtx)
     {
         calcHeatTransfer();
     }
-    
-    // Step 5: Evolve interface using calculated burning rate (vol frac/s)
-    ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
 
     // Step 6: Fix small cells by transferring momentum (mU) and mass (m_pyro)
     //         to neighbouring larger cells
@@ -447,6 +462,9 @@ void Foam::burningSolid::correct
 
     // Step 7: Calculate mass flux field that includes alphaf
     phi = (ib_.interpolate(U*gasThermo_.rho()) & mesh_.Sf())*ib_.alphaf();
+
+    // Step 8: Calculate surface stress in interface cells
+    calcSurfaceStress();
 }
 
 
@@ -482,55 +500,23 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
             );
 }
 
-// tmp<volScalarField> Foam::burningSolid::TsSu() const
-// {
-//     dimensionedScalar onerDt
-//     (
-//         "onerDt",
-//         dimless/dimTime,
-//         1.0/mesh_.time().deltaTValue()
-//     );
-//
-//     dimensionedScalar tmpTg
-//     (
-//         "tmpTg",
-//         dimTemperature,
-//         298.0
-//     );
-//
-//     return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()*
-//             onerDt*tmpTg;
-// }
-//
-//
-// tmp<volScalarField> Foam::burningSolid::TsSp() const
-// {
-//     return ib_.fullGasCells()*solidThermo_->rho()*solidThermo_->Cp()
-//             *dimensionedScalar
-//             (
-//                 "onerDt",
-//                 dimless/dimTime,
-//                 1.0/mesh_.time().deltaTValue()
-//             );
-// }
-
 void Foam::burningSolid::calcHeatTransfer()
 {
-    // Initialize cells to no heat transfer
-    Qt_g_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
-    Qt_s_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
-        
     // Conduction coefficients
-    // volScalarField Ks = solidThermo_->K();
+    volScalarField Ks = solidThermo_->K();
     volScalarField Kg = gasThermo_.alpha()*gasThermo_.Cp();
 
     // Conduction lengths
-    const volScalarField& Lg = ib_.gasL().oldTime();
-    //const volScalarField& Ls = ib_.solidL().oldTime();
+    const volScalarField& Lg = ib_.gasL();//.oldTime();
+    const volScalarField& Ls = ib_.solidL();//.oldTime();
 
     // Interface area and volume
-    const volScalarField& Ai = ib_.area().oldTime();
+    const volScalarField& Ai = ib_.area();//.oldTime();
     const volScalarField::DimensionedInternalField& Vc = mesh_.V();
+
+    // Initialize cells to no heat transfer
+    Qt_g_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
+    Qt_s_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
 
     // Cell identification
     volScalarField normalCell = ib_.mixedCells();
@@ -543,9 +529,13 @@ void Foam::burningSolid::calcHeatTransfer()
         // Normal mixed cell conduction transfer
         if (normalCell[cellI])
         {
+            // Calculate Thermal Resistances
+            scalar Rg = Lg[cellI]/(Kg[cellI]*Ai[cellI]);
+            scalar Rs = Ls[cellI]/(Ks[cellI]*Ai[cellI]);
+            scalar Req = Rg + Rs;
+
             // Calculate transfer to gas from constant temperature solid
-            Qt_g_[cellI] = Kg[cellI]*(Ts_[cellI] - gasThermo_.T()[cellI])
-                         * Ai[cellI]/(Lg[cellI]*Vc[cellI]);
+            Qt_g_[cellI] = (Ts_[cellI] - gasThermo_.T()[cellI])/(Req*Vc[cellI]);
             Qt_s_[cellI] = -Qt_g_[cellI];
 
         }
@@ -556,7 +546,6 @@ void Foam::burningSolid::calcHeatTransfer()
     {
         label own = mesh_.owner()[faceI];
         label nei = mesh_.neighbour()[faceI];
-
         label sc = (solidCell[own]) ? own:nei;
         label mc = (sc == own) ? nei:own;
 
@@ -617,11 +606,13 @@ void Foam::burningSolid::calcHeatTransfer()
                 // Boundary cell solid, neighbor cell mixed
                 if (fullCell[pfCellI] && !solidCellPNf[pFaceI])
                 {
+
                     //Info << "Parallel Solid Cell" << endl;
                     scalar tmpL = mag((mesh_.Cf()[pFaceI]
                                 - meshCPNf[pFaceI]) & mesh_.Sf()[pFaceI])
-                                / mesh_.magSf()[pFaceI];        
-                                
+                                / mesh_.magSf()[pFaceI];
+
+
                     Qt_s_[pfCellI] -= KgPNf[pFaceI]*(Ts_[pfCellI]
                                     - TPNf[pFaceI])
                                     * tmpA/(tmpL*Vc[pfCellI]);
@@ -633,7 +624,7 @@ void Foam::burningSolid::calcHeatTransfer()
                     scalar tmpL = mag((mesh_.Cf()[pFaceI]
                                 - mesh_.C()[pfCellI]) & mesh_.Sf()[pFaceI])
                                 / mesh_.magSf()[pFaceI];
-                                
+
                     Qt_g_[pfCellI] += Kg[pfCellI]*(TsPNf[pFaceI]
                                     - gasThermo_.T()[pfCellI])
                                     * tmpA/(tmpL*Vc[pfCellI]);
@@ -641,7 +632,35 @@ void Foam::burningSolid::calcHeatTransfer()
             }
         }
     }
+}
 
+void Foam::burningSolid::calcSurfaceStress()
+{
+    // Centroid lengths
+    const volScalarField& Lg = ib_.gasL();
+
+    // Interface area and volume
+    const volScalarField& Ai = ib_.area();
+    const volScalarField::DimensionedInternalField& Vc = mesh_.V();
+
+    // Initialize cells to no heat transfer
+    surfStress_ = dimensionedScalar("tmpSurfStress", dimless/dimArea, 0.0);
+
+    // Cell identification
+    volScalarField normalCell = ib_.mixedCells();
+    volScalarField solidCell = ib_.solidCells();
+    volScalarField fullCell = solidCell*pos(Ai
+                            - dimensionedScalar("tmp", dimArea, SMALL));
+
+    forAll(Ts_,cellI)
+    {
+        // Normal mixed cell surface stress
+        if (normalCell[cellI])
+        {
+            // Calculate transfer to gas from constant temperature solid
+            surfStress_[cellI] = Ai[cellI]/(Lg[cellI]*Vc[cellI]);
+        }
+    }
 }
 
 // ************************************************************************* //

@@ -9,48 +9,39 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "system";
-    object      controlDict;
+    class       volScalarField;
+    location    "0";
+    object      Ts;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
+dimensions      [0 0 0 1 0 0 0];
 
-startFrom       latestTime;
+internalField   uniform 1000.;
 
-startTime       0;
+boundaryField
+{
+    top
+    {
+        type            zeroGradient;
+    }
 
-stopAt          endTime;
+    bottom
+    {
+        type            fixedValue;
+        value           uniform 1000.;
+    }
 
-endTime         1.2;
+    sides
+    {
+        type            zeroGradient;
+    }
 
-deltaT          1e-6;
+    frontAndBack
+    {
+        type            symmetryPlane;
+    }
+}
 
-writeControl    adjustableRunTime;
-
-writeInterval   1e-3;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  8;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
-
-maxCo           0.3;
-
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
 
 // ************************************************************************* //

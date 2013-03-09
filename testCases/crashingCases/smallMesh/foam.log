@@ -1,0 +1,198 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : 2.1.x-0cda3c01b8ed
+Exec   : blockMesh
+Date   : Feb 27 2013
+Time   : 08:34:47
+Host   : "simon.localdomain"
+PID    : 6743
+Case   : /home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/applications/pyroFoam/testCases/heatTransfer/testHT5
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster
+allowSystemOperations : Disallowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Creating block mesh from
+    "/home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/applications/pyroFoam/testCases/heatTransfer/testHT5/constant/polyMesh/blockMeshDict"
+Creating curved edges
+Creating topology blocks
+Creating topology patches
+
+Creating block mesh topology
+
+Check topology
+
+	Basic statistics
+		Number of internal faces : 0
+		Number of boundary faces : 6
+		Number of defined boundary faces : 6
+		Number of undefined boundary faces : 0
+	Checking patch -> block consistency
+
+Creating block offsets
+Creating merge list .
+
+Creating polyMesh from blockMesh
+Creating patches
+Creating cells
+Creating points with scale 1
+
+Writing polyMesh
+----------------
+Mesh Information
+----------------
+  boundingBox: (-0.06 0 -0.001) (0.06 0.2 0.001)
+  nPoints: 6992
+  nCells: 3375
+  nFaces: 13620
+  nInternalFaces: 6630
+----------------
+Patches
+----------------
+  patch 0 (start: 6630 size: 45) name: bottom
+  patch 1 (start: 6675 size: 150) name: sides
+  patch 2 (start: 6825 size: 6750) name: frontAndBack
+  patch 3 (start: 13575 size: 45) name: top
+
+End
+
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : 2.1.x-0cda3c01b8ed
+Exec   : VOFSetFields
+Date   : Feb 27 2013
+Time   : 08:34:47
+Host   : "simon.localdomain"
+PID    : 6744
+Case   : /home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/applications/pyroFoam/testCases/heatTransfer/testHT5
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster
+allowSystemOperations : Disallowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+Set 3346 gas and mixed cells and 29 solid cells
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : 2.1.x-0cda3c01b8ed
+Exec   : pyroFoam
+Date   : Feb 27 2013
+Time   : 08:34:47
+Host   : "simon.localdomain"
+PID    : 6745
+Case   : /home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/applications/pyroFoam/testCases/heatTransfer/testHT5
+nProcs : 1
+sigFpe : Enabling floating point exception trapping (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster
+allowSystemOperations : Disallowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 0
+
+Selecting dynamicFvMesh staticFvMesh
+
+Reading g
+Creating combustion model
+
+Selecting combustion model PaSR<psiChemistryCombustionModel>
+Selecting psiChemistryModel ODEChemistryModel<gasThermoPhysics>
+Selecting thermodynamics package hsPsiMixtureThermo<reactingMixture<gasThermoPhysics>>
+Selecting chemistryReader foamChemistryReader
+ODEChemistryModel: Number of species = 3 and reactions = 0
+Selecting ODE solver SIBS
+Reading field U
+
+Reading/calculating face flux field phi
+
+Creating turbulence model.
+
+Selecting turbulence model type laminar
+Creating field dpdt
+
+Creating field kinetic energy K
+
+Created immersed boundary
+Constructed constSolidThermo with
+    rho        : rho [1 -3 0 0 0 0 0] 90
+    Cp         : Cp [0 2 -2 -1 0 0 0] 45
+    K          : K [1 1 -3 -1 0 0 0] 500
+    Hf         : Hf [0 2 -2 0 0 0 0] 0
+    emissivity : emissivity [0 0 0 0 0 0 0] 0
+    kappa      : kappa [0 -1 0 0 0 0 0] 0
+    sigmaS     : sigmaS [0 -1 0 0 0 0 0] 0
+
+Selecting pyrolysis model NoPyrolysis
+Created burningSolid
+  Linked burningSolid with gas specie
+Courant Number mean: 0.0039427778 max: 0.020625
+
+PIMPLE: Operating solver in PISO mode
+
+
+Starting time loop
+
+Courant Number mean: 0.0039427778 max: 0.020625
+deltaT = 1.1990408e-05
+Time = 1.19904e-05
+
+Correcting burningSolid
+diagonal:  Solving for alphaGas, Initial residual = 0, Final residual = 0, No Iterations 0
+Min/Max Gas Transfer Weights: 0, 0
+Min/Max Solid Transfer Weights: 0, 1.143812e-06
+Solving UEqn
+Min,max U = 0, 10
+DILUPBiCG:  Solving for N2, Initial residual = 0, Final residual = 0, No Iterations 0
+DILUPBiCG:  Solving for EMg, Initial residual = 1, Final residual = 1.0813917e-08, No Iterations 1
+Min,max for N2 = 0, 0
+Min,max for EMs = 0, 1
+Min,max for EMg = 3.9857007e-14, 1
+DILUPBiCG:  Solving for hs, Initial residual = 1, Final residual = 9.8422473e-09, No Iterations 1
+T gas min/max   = 0, 300.07667
+DICPCG:  Solving for Ts, Initial residual = 1, Final residual = 2.8107353e-10, No Iterations 5
+T solid min/max   = 0, 300
+Solving pEqn
+Min,max Uest = 0, 10
+GAMG:  Solving for p, Initial residual = 1, Final residual = 0.02839563, No Iterations 2
+Min,max p = -3.561985e-39, 102068.29
+time step continuity errors : sum local = 0.0029822379, global = 0.0018612955, cumulative = 0.0018612955
+Min,max U = 0, 10
+Solving pEqn
+Min,max Uest = 0, 10
+GAMGPCG:  Solving for p, Initial residual = 0.0093551087, Final residual = 4.4012111e-09, No Iterations 3
+#0  Foam::error::printStack(Foam::Ostream&) in "/home/bryce.whitson/OpenFOAM/OpenFOAM-2.1.x/platforms/linux64GccDPOpt/lib/libOpenFOAM.so"
+#1  Foam::sigFpe::sigHandler(int) in "/home/bryce.whitson/OpenFOAM/OpenFOAM-2.1.x/platforms/linux64GccDPOpt/lib/libOpenFOAM.so"
+#2  
+ at sigaction.c:0
+#3  Foam::divide(Foam::Field<double>&, Foam::UList<double> const&, Foam::UList<double> const&) in "/home/bryce.whitson/OpenFOAM/OpenFOAM-2.1.x/platforms/linux64GccDPOpt/lib/libOpenFOAM.so"
+#4  void Foam::divide<Foam::fvsPatchField, Foam::surfaceMesh>(Foam::GeometricField<double, Foam::fvsPatchField, Foam::surfaceMesh>&, Foam::GeometricField<double, Foam::fvsPatchField, Foam::surfaceMesh> const&, Foam::GeometricField<double, Foam::fvsPatchField, Foam::surfaceMesh> const&) in "/home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/platforms/linux64GccDPOpt/bin/pyroFoam"
+#5  Foam::tmp<Foam::GeometricField<double, Foam::fvsPatchField, Foam::surfaceMesh> > Foam::operator/<Foam::fvsPatchField, Foam::surfaceMesh>(Foam::tmp<Foam::GeometricField<double, Foam::fvsPatchField, Foam::surfaceMesh> > const&, Foam::GeometricField<double, Foam::fvsPatchField, Foam::surfaceMesh> const&) in "/home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/platforms/linux64GccDPOpt/bin/pyroFoam"
+#6  
+ in "/home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/platforms/linux64GccDPOpt/bin/pyroFoam"
+#7  __libc_start_main in "/lib64/libc.so.6"
+#8  
+ in "/home/bryce.whitson/OpenFOAM/bryce.whitson-2.1.x/platforms/linux64GccDPOpt/bin/pyroFoam"
+./Allrun: line 22:  6745 Floating point exception(core dumped) pyroFoam

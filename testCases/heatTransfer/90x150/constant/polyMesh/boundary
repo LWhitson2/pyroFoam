@@ -8,49 +8,39 @@
 FoamFile
 {
     version     2.0;
-    format      ascii;
-    class       dictionary;
-    location    "system";
-    object      controlDict;
+    format      binary;
+    class       polyBoundaryMesh;
+    location    "constant/polyMesh";
+    object      boundary;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     chtMultiRegionFoam;
-
-startFrom       latestTime;
-
-startTime       0;
-
-stopAt          endTime;
-
-endTime         1.2;
-
-deltaT          1e-6;
-
-writeControl    adjustableRunTime;
-
-writeInterval   1e-3;
-
-purgeWrite      0;
-
-writeFormat     ascii;
-
-writePrecision  8;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable yes;
-
-maxCo           0.3;
-
-// Maximum diffusion number
-maxDi           0.3;
-maxDeltaT       1.0;
-
-adjustTimeStep  yes;
+4
+(
+    bottom
+    {
+        type            patch;
+        nFaces          90;
+        startFace       26760;
+    }
+    sides
+    {
+        type            patch;
+        nFaces          300;
+        startFace       26850;
+    }
+    frontAndBack
+    {
+        type            symmetryPlane;
+        nFaces          27000;
+        startFace       27150;
+    }
+    top
+    {
+        type            patch;
+        nFaces          90;
+        startFace       54150;
+    }
+)
 
 // ************************************************************************* //
