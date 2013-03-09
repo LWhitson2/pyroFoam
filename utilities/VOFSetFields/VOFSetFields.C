@@ -26,11 +26,7 @@ Application
 
 Description
     Set volume fraction fields that are not aligned with the mesh
-    
-    Future development as it becomes useful:
-       * Be able to set multiple planes, circles, and spheres, and specify
-          build up more complex shapes
-       * Add quadratic planes for curved surfaces
+
 
 \*---------------------------------------------------------------------------*/
 
@@ -39,7 +35,8 @@ Description
 #include "Time.H"
 #include "fvMesh.H"
 #include "fvCFD.H"
-#include "cuttableCell.H"
+#include "dynamicFvMesh.H"
+#include "shape.H"
 
 using namespace Foam;
 
@@ -49,106 +46,57 @@ int main(int argc, char *argv[])
 {
     #include "setRootCase.H"
     #include "createTime.H"
-    #include "createMesh.H"
+    #include "createDynamicFvMesh.H"
     #include "createFields.H"
-
-    const volVectorField& cellCenters = mesh.C();   
-     
-    word shape(VOFDict.lookup("shape"));
-    label solidCells = 0;
-    label gasCells = 0;
+    #include "createPhi.H" //needed to do boundary corrections.
     
-    if (shape == "circle")
+    // Set drop species and liquid fraction
+    forAllIter(PtrDictionary<shape>, shapes, shapeI)
     {
-        vector center(VOFDict.lookup("center"));
-        scalar radius = readScalar(VOFDict.lookup("radius"));
-        vector Usolid(VOFDict.lookup("Usolid"));
-        vector Ugas(VOFDict.lookup("Ugas"));
-        word planename(VOFDict.lookup("plane"));
-        word inv(VOFDict.lookup("inverse"));
-    
-        forAll(alpha, cellI)
-        {
-            vector r = cellCenters[cellI] - center;
-            if (planename=="xy")
-            {
-                r.z() = 0.0;
-            }
-            else if (planename=="yz")
-            {
-                r.x() = 0.0;
-            }
-            else if (planename=="xz")
-            {
-                r.y() = 0.0;
-            }
-            else
-            {
-                FatalError<< "Invalid circle plane "<<planename<<" specified"
-                          << "\n  Use 'xy', 'yz', or 'xz'"<<abort(FatalError);
-            }
-
-            vector n = r / mag(r);
-            point p = center + n*radius;
-
-            cuttableCell pc(mesh, cellI);
-            alpha[cellI] = 1.0 - pc.cut( plane(p, n) );
-            
-            if (inv == "yes")
-            {
-                alpha[cellI] = 1.0 - alpha[cellI];
-            }
-
-            if (alpha[cellI] > SMALL)
-            {
-                U[cellI] = Ugas;
-                gasCells++;
-            }
-            else
-            {
-                U[cellI] = Usolid;
-                solidCells++;
-            }
-        }
-    
+        shapeI().set(alphaLiquid, U, species);
     }
-    else if (shape == "plane")
+    
+    alphaLiquid.correctBoundaryConditions();
+    
+    // Set vapor fraction if applicable
+    if( alphaVaporPtr != NULL )
     {
-        vector point(VOFDict.lookup("point"));
-        vector normal(VOFDict.lookup("normal"));
-        vector Usolid(VOFDict.lookup("Usolid"));
-        vector Ugas(VOFDict.lookup("Ugas"));
+        volScalarField& alphaVapor = *alphaVaporPtr;
+        alphaVapor = 1.0 - alphaLiquid;
+        alphaVapor.correctBoundaryConditions();
+    }
+    
+    // Set surrounding species
+    forAll(species, i)
+    {
+        Yremaining -= species[i];
+    }
+    Yremaining.max(0.0);
+    
+    for(label i = 0; i < defaultSpecieValues.size(); ++i)
+    {
+        word name = defaultSpecieValues.toc()[i];
+        scalar value = defaultSpecieValues[name];
         
-        plane p(point, normal);
-    
-        forAll(alpha, cellI)
+        forAll(species, j)
         {
-            cuttableCell pc(mesh, cellI);
-            alpha[cellI] = 1.0 - pc.cut( p );
-
-            if (alpha[cellI] > SMALL)
+            if( species[j].name() == name )
             {
-                U[cellI] = Ugas;
-                gasCells++;
-            }
-            else
-            {
-                U[cellI] = Usolid;
-                solidCells++;
+                species[j] += (1.0 - alphaLiquid) * Yremaining * value;
+                break;
             }
         }
-    
+        
     }
-    else
+    
+    forAll(species, j)
     {
-        FatalError<< "Invalid shape " << shape << " specified"
-                  << abort(FatalError);
+        species[j].max(0.0);
+        species[j].correctBoundaryConditions();
     }
 	
 	runTime.writeNow();
 	
-	Info<< "Set " << gasCells << " gas and mixed cells and "
-	    << solidCells << " solid cells" << endl;
 
     return 0;
 }

@@ -1,4 +1,5 @@
-// * * * * * ALPHA FIELDS * * * * * * * * * * * * * * * * * * * * * * * * //
+
+    // Load VOFSetFields dictionary
     IOdictionary VOFDict
     (
         IOobject
@@ -11,16 +12,14 @@
         )
     );
     
+    word liquidPhaseName = VOFDict.lookup("liquidPhaseName");
+    word vaporPhaseName = VOFDict.lookup("vaporPhaseName");
     
-    word alphaName(VOFDict.lookup("alphaName"));
-
-
-
-    volScalarField alpha
+    volScalarField alphaLiquid
     (
         IOobject
         (
-            alphaName,
+            liquidPhaseName,
             runTime.timeName(),
             mesh,
             IOobject::MUST_READ,
@@ -28,10 +27,26 @@
         ),
         mesh
     );
-
-
-
-// * * * * * VELOCITY FIELDS * * * * * * * * * * * * * * * * * * * * * * * * //
+    
+    volScalarField* alphaVaporPtr = NULL;
+    
+    if( vaporPhaseName != "none" )
+    {
+        alphaVaporPtr = new volScalarField
+        (
+            IOobject
+            (
+                vaporPhaseName,
+                runTime.timeName(),
+                mesh,
+                IOobject::MUST_READ,
+                IOobject::AUTO_WRITE
+            ),
+            mesh
+        );
+    }
+    
+    
     volVectorField U
     (
         IOobject
@@ -44,5 +59,119 @@
         ),
         mesh
     );
+    
+    volScalarField Yremaining
+    (
+        IOobject
+        (
+            "Yremaining",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("Yr",dimless,1.0)
+    );
+    
+    
+    // Read entries from dictionary
+    
+    PtrDictionary<shape> shapes
+    (
+        VOFDict.lookup("shapes"),
+        shape::iNew(mesh)
+    );
+    
+    HashTable<scalar> defaultSpecieValues(VOFDict.lookup("defaultSpecies"));
+    
+    
+    List<word> specieNames = defaultSpecieValues.toc();
+    
+    forAllConstIter(PtrDictionary<shape>, shapes, shapeI)
+    {
+        specieNames.append( shapeI().species() );
+    }
+    
+    
+    PtrList<volScalarField> species(specieNames.size());
+    
+    Info<< "Loading species " << specieNames << endl;
+    
+    for(label i = 0; i < specieNames.size(); ++i)
+    {
+        //Follow basicMultiComponentMixture
+        Info<< "Loading specie " << specieNames[i] << endl;
+        
+        IOobject header
+        (
+            specieNames[i],
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ
+        );
+        
+        if (header.headerOk())
+        {
+            species.set
+            (
+                i,
+                new volScalarField
+                (
+                    IOobject
+                    (
+                        specieNames[i],
+                        runTime.timeName(),
+                        mesh,
+                        IOobject::MUST_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    mesh
+                )  
+            );
+        }
+        else
+        {
+            volScalarField Ydefault
+            (
+                IOobject
+                (
+                    "Ydefault",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::MUST_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh
+            );
 
+            species.set
+            (
+                i,
+                new volScalarField
+                (
+                    IOobject
+                    (
+                        specieNames[i],
+                        mesh.time().timeName(),
+                        mesh,
+                        IOobject::NO_READ,
+                        IOobject::AUTO_WRITE
+                    ),
+                    Ydefault
+                )
+            );
+        }
+    }
+    
+    
+    alphaLiquid = dimensionedScalar("alphaLiquid",dimless,0.0);
+    U = dimensionedVector("U",dimVelocity,vector::zero);
+    forAll(species, i)
+    {
+        species[i] = dimensionedScalar(species[i].name(),dimless,0.0);
+    }
+    
+    
 
+    

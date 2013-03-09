@@ -1,0 +1,177 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermo.compressibleGas;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Energetic Material Gas Definition
+EMg
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       34.200;
+    }
+    thermodynamics
+    {
+        // Taken from Caltech ASCI Technical Report 108, Tlow should be 398.15
+        // 0H 8C 4N 8O 8G
+        Tlow            200;
+        Thigh           3998.150;
+        Tcommon         1000;
+        highCpCoeffs    ( 0.44706383E+02 0.23770308E-01 -0.23496857E-05 -0.13309834E-08 0.24969374E-12 0.96820439E+04 -0.20686334E+03 );
+        lowCpCoeffs     ( 0.14581933E+02 0.59781540E-01 0.14615893E-04 -0.22798060E-07 -0.11355850E-11 0.21789510E+05 -0.35763046E+02 );
+    }
+    transport
+    {
+        As              1.67212e-03; //TEMPORARY: very viscous
+        Ts              170.672;
+    }
+}
+
+// Energetic Material Solid Placeholder
+EMs
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       28.0134;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           5000;
+        Tcommon         1000;
+        highCpCoeffs    ( 2.92664 0.00148798 -5.68476e-07 1.0097e-10 -6.75335e-15 -922.798 5.98053 );
+        lowCpCoeffs     ( 3.29868 0.00140824 -3.96322e-06 5.64152e-09 -2.44486e-12 -1020.9 3.95037 );
+    }
+    transport
+    {
+        As              1.67212e-06;
+        Ts              170.672;
+    }
+}
+
+O2
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       31.9988;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           5000;
+        Tcommon         1000;
+        highCpCoeffs    ( 3.69758 0.00061352 -1.25884e-07 1.77528e-11 -1.13644e-15 -1233.93 3.18917 );
+        lowCpCoeffs     ( 3.21294 0.00112749 -5.75615e-07 1.31388e-09 -8.76855e-13 -1005.25 6.03474 );
+    }
+    transport
+    {
+        As              1.67212e-06;
+        Ts              170.672;
+    }
+}
+
+H2O
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       18.0153;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           5000;
+        Tcommon         1000;
+        highCpCoeffs    ( 2.67215 0.00305629 -8.73026e-07 1.201e-10 -6.39162e-15 -29899.2 6.86282 );
+        lowCpCoeffs     ( 3.38684 0.00347498 -6.3547e-06 6.96858e-09 -2.50659e-12 -30208.1 2.59023 );
+    }
+    transport
+    {
+        As              1.67212e-06;
+        Ts              170.672;
+    }
+}
+
+CH4
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       16.0428;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           6000;
+        Tcommon         1000;
+        highCpCoeffs    ( 1.63543 0.0100844 -3.36924e-06 5.34973e-10 -3.15528e-14 -10005.6 9.9937 );
+        lowCpCoeffs     ( 5.14988 -0.013671 4.91801e-05 -4.84744e-08 1.66694e-11 -10246.6 -4.64132 );
+    }
+    transport
+    {
+        As              1.67212e-06;
+        Ts              170.672;
+    }
+}
+
+CO2
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       44.01;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           5000;
+        Tcommon         1000;
+        highCpCoeffs    ( 4.45362 0.00314017 -1.27841e-06 2.394e-10 -1.66903e-14 -48967 -0.955396 );
+        lowCpCoeffs     ( 2.27572 0.00992207 -1.04091e-05 6.86669e-09 -2.11728e-12 -48373.1 10.1885 );
+    }
+    transport
+    {
+        As              1.67212e-06;
+        Ts              170.672;
+    }
+}
+
+N2
+{
+    specie
+    {
+        nMoles          1;
+        molWeight       28.0134;
+    }
+    thermodynamics
+    {
+        Tlow            200;
+        Thigh           5000;
+        Tcommon         1000;
+        highCpCoeffs    ( 2.92664 0.00148798 -5.68476e-07 1.0097e-10 -6.75335e-15 -922.798 5.98053 );
+        lowCpCoeffs     ( 3.29868 0.00140824 -3.96322e-06 5.64152e-09 -2.44486e-12 -1020.9 3.95037 );
+    }
+    transport
+    {
+        As              1.67212e-06;
+        Ts              170.672;
+    }
+}
+
+
+// ************************************************************************* //
