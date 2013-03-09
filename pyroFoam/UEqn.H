@@ -1,6 +1,7 @@
 
     Info<< "Solving UEqn" << endl;
 
+    muE = turbulence->muEff();
     surfaceScalarField muEff = ib.interpolate(turbulence->muEff())
                                *ib.alphaf();
     surfaceVectorField gradUeff = fvc::interpolate(dev2(Foam::T(fvc::grad(U))))

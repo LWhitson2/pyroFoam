@@ -652,6 +652,7 @@ void Foam::burningSolid::calcSurfaceStress()
     volScalarField fullCell = solidCell*pos(Ai
                             - dimensionedScalar("tmp", dimArea, SMALL));
 
+    
     forAll(Ts_,cellI)
     {
         // Normal mixed cell surface stress

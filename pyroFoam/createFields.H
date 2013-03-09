@@ -138,6 +138,19 @@ volScalarField Tall
     Ts*ib.alphas() + T*ib.alpha()
 );
 
+volScalarField muE
+(
+    IOobject
+    (
+        "muE",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    turbulence->muEff()
+);
+
 const volScalarField& rhos = solid.rhos();
 const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();
