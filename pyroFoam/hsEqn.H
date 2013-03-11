@@ -1,7 +1,13 @@
 {
+    solid.calcHeatTransfer();
     // Calculate corrected thermal diffusivity
     surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff())
                                *ib.alphaf();
+
+//     forAll(hs, cellI)
+//     {
+//         if (ib.smallCells()()[cellI]) Info << solid.QgSu()[cellI] << ", " << solid.QgSp()[cellI] << endl;
+//     }
 
     fvScalarMatrix hsEqn
     (
@@ -11,11 +17,12 @@
      ==
         ib.alphaCorr()*dpdt
       - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
-      //+ ib.alphaCorr()*combustion->Sh()
-      //+ solid.Sh()   //<--
+//       + ib.alphaCorr()*combustion->Sh()
+//       + solid.Sh()   //<--
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), hs)
-      + solid.Qtg()
+      + solid.QgSu()
+      - fvm::Sp(solid.QgSp()/thermo.Cp(), hs)
     );
 
     hsEqn.relax();
