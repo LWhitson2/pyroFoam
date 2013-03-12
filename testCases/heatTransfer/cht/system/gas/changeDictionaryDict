@@ -22,26 +22,26 @@ dictionaryReplacement
         {
             type            empty;
         }
-        
+
         Sides
         {
             type            patch;
         }
-        
+
         Inlet
         {
             type            patch;
         }
-        
+
         Outlet
         {
             type            patch;
         }
     }
-    
+
     U
     {
-        internalField   uniform (0 10 0);
+        internalField   uniform (0 1 0);
 
         boundaryField
         {
@@ -53,7 +53,7 @@ dictionaryReplacement
             Inlet
             {
                 type            fixedValue;
-                value           uniform (0 10 0);
+                value           uniform (0 1 0);
             }
 
             Outlet
@@ -102,7 +102,7 @@ dictionaryReplacement
             {
                 type            empty;
             }
-            
+
             "gas_to_.*"
             {
                 type            compressible::turbulentTemperatureCoupledBaffleMixed;
@@ -141,7 +141,7 @@ dictionaryReplacement
             {
                 type            empty;
             }
-        
+
             "gas_to_.*"
             {
                 type            zeroGradient;

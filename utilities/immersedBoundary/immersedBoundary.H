@@ -71,6 +71,11 @@ class immersedBoundary
 
         surfaceScalarField alphafs_;
 
+        surfaceScalarField alphafCorr_;
+
+        surfaceScalarField alphafsCorr_;
+
+
         volScalarField sumalphaf_;
         volScalarField sumalphafs_;
 
@@ -137,6 +142,16 @@ public:
         const surfaceScalarField& alphafs() const
         {
             return alphafs_;
+        }
+
+        const surfaceScalarField& alphafU() const
+        {
+            return alphafCorr_;
+        }
+
+        const surfaceScalarField& alphafsU() const
+        {
+            return alphafsCorr_;
         }
 
         const volScalarField& alpha() const
@@ -257,6 +272,9 @@ public:
 
         //- Return a mask for no cells
         tmp<volScalarField> noCells() const;
+
+        //- Return a mask for large solid cells
+        tmp<volScalarField> largeSolidCells() const;
 
         //- IB-aware interpolation
         template<class Type>

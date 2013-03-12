@@ -134,11 +134,17 @@ class burningSolid
         //- Pointer to the thermo for the pyro gas
         const gasThermoPhysics* EMg_;
 
-        //- Gas heat transfer source
-        volScalarField Qt_g_;
+        //- Gas heat transfer implicit source
+        volScalarField QgSp_;
 
-        //- Solid heat transfer source
-        volScalarField Qt_s_;
+        //- Solid heat transfer implicit source
+        volScalarField QsSp_;
+
+        //- Gas heat transfer explicit source
+        volScalarField QgSu_;
+
+        //- Solid heat transfer explicit source
+        volScalarField QsSu_;
 
         //- Solid stress term
         volScalarField surfStress_;
@@ -146,7 +152,7 @@ class burningSolid
     // Private functions
         void fixSmallCells();
         void calcBurnU();
-        void calcHeatTransfer();
+//         void calcHeatTransfer();
         void calcSurfaceStress();
 
 public:
@@ -256,20 +262,32 @@ public:
       return solidThermo_();
     }
 
-    const volScalarField& Qts()
+    const volScalarField& QgSp()
     {
-        return Qt_s_;
+        return QgSp_;
     }
 
-    const volScalarField& Qtg()
+    const volScalarField& QsSp()
     {
-        return Qt_g_;
+        return QsSp_;
+    }
+
+    const volScalarField& QgSu()
+    {
+        return QgSu_;
+    }
+
+    const volScalarField& QsSu()
+    {
+        return QsSu_;
     }
 
     const volScalarField& Stress()
     {
         return surfStress_;
     }
+
+    void calcHeatTransfer();
 
 };
 

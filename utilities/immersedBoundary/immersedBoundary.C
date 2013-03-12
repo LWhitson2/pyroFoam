@@ -86,6 +86,34 @@ Foam::immersedBoundary::immersedBoundary
         dimensionedScalar("alphafs", dimless, 0.0)
     ),
 
+    alphafCorr_
+    (
+        IOobject
+        (
+            "alphafCorr",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphafCorr", dimless, 0.0)
+    ),
+
+    alphafsCorr_
+    (
+        IOobject
+        (
+            "alphafsCorr",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphafsCorr", dimless, 0.0)
+    ),
+
     sumalphaf_
     (
         IOobject
@@ -612,6 +640,8 @@ void Foam::immersedBoundary::correct()
 
     sumalphaf_ = fvc::surfaceSum(alphaf_);
     alphafs_ = 1.0 - alphaf_;
+    alphafsCorr_ = alphafs_;
+    alphafCorr_ = alphaf_;
 
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();
@@ -843,5 +873,10 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::noCells() const
     return neg(alpha_ + 100.0);
 }
 
+
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::largeSolidCells() const
+{
+    return pos(alphas() - alphaMin_);
+}
 
 // ************************************************************************* //
