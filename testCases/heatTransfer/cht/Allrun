@@ -48,15 +48,14 @@ done
 #runParallel `getApplication` 4
 #exit
 mpirun -np 4 chtMultiRegionFoam -parallel
-exit
 #foamJob -screen -parallel chtMultiRegionFoam
 
 # Reconstruct
-for i in htx hydride
+for i in gas cylinder
 do
    reconstructPar -region $i
 done
-
+sample -region gas
 
 echo
 echo "creating files for paraview post-processing"
