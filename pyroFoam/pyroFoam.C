@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
         runTime.write();
 
         log << runTime.value() << token::TAB
-            << Ts.weightedAverage(ib.alphas()).value() << endl;
+            << Ts.weightedAverage(ib.alphasCorr()).value() << endl;
 
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

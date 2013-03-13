@@ -289,6 +289,8 @@ public:
 
     void calcHeatTransfer();
 
+    void calcHeatTransferOld();
+
 };
 
 
