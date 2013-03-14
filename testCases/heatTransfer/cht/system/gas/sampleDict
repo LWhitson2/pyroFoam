@@ -1,0 +1,47 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      sampleDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Set output format : choice of
+//      xmgr
+//      jplot
+//      gnuplot
+//      raw
+//      vtk
+//      csv
+setFormat csv;
+
+interpolationScheme cellPointFace;
+
+fields
+(
+    p
+    T
+    U
+);
+
+sets
+(
+    lineX1
+    {
+        type        midPointAndFace;
+        axis        distance;
+
+        start       (0.01 0.059 0.0);
+        end         (1.0 0.059 0.0);
+    }
+);
+
+// *********************************************************************** //

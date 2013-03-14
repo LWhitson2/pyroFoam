@@ -1,5 +1,5 @@
 {
-    solid.calcHeatTransferOld();
+    solid.calcHeatTransfer();
     // Calculate corrected thermal diffusivity
     surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff())
                                *ib.alphaf();
