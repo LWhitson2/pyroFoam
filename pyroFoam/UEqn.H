@@ -12,7 +12,6 @@
       + fvm::div(phi, U)
       - fvm::laplacian(muEff, U)
       - fvc::div(muEff*gradUeff)
-      //- fvc::div(muEff*fvc::interpolate(Foam::dev2(Foam::T(fvc::grad(U)))))
       - solid.mU()
       - rho*ib.alpha()*g
       + fvm::Sp(solid.USp(), U)
