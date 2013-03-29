@@ -40,20 +40,22 @@ namespace pyrolysisModels
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 Foam::pyrolysisModels::Arrhenius::Arrhenius
 (
-    dictionary pyroDict
+    dictionary pyroDict,
+    basicSolidThermo const* solidThermo
 )
 :
-    pyrolysisModel(typeName, pyroDict),
+    pyrolysisModel(typeName, pyroDict, solidThermo),
     A_(pyroModelDict_.lookup("A")),
     Ea_(pyroModelDict_.lookup("Ea"))
 {
 }
-    
+
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 Foam::dimensionedScalar Foam::pyrolysisModels::Arrhenius::mass_burning_rate
 (
     const dimensionedScalar& T,
-    const dimensionedScalar& p
+    const dimensionedScalar& p,
+    const label& cell
 )
 {
     dimensionedScalar Ru("Ru",dimEnergy/dimMoles/dimTemperature,8314);

@@ -53,7 +53,7 @@ class NoPyrolysis
 {
 
     //model-specific stuff
-        
+
         //nothing in this case
 
 public:
@@ -66,9 +66,10 @@ public:
         //- construct from components
         NoPyrolysis
         (
-            dictionary pyroDict
+            dictionary pyroDict,
+            basicSolidThermo const* solidThermo
         );
-        
+
     //- Destructor
         virtual ~NoPyrolysis() {}
 
@@ -77,7 +78,8 @@ public:
         virtual dimensionedScalar mass_burning_rate
         (
             const dimensionedScalar& T,
-            const dimensionedScalar& p
+            const dimensionedScalar& p,
+            const label& cell
         );
 
 };

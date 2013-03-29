@@ -11,18 +11,18 @@
 
     fvScalarMatrix hsEqn
     (
-        fvm::ddt(ib.alphaCorr()*rho, hs)
+       fvm::ddt(ib.alphaCorr()*rho, hs)
       + mvConvection->fvmDiv(phi, hs)
       - fvm::laplacian(alphaEff, hs)
      ==
-        ib.alphaCorr()*dpdt
+       ib.alphaCorr()*dpdt
       - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
-//       + ib.alphaCorr()*combustion->Sh()
-//       + solid.Sh()   //<--
+      + ib.alphaCorr()*combustion->Sh()
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), hs)
       + solid.QgSu()
-      - fvm::Sp(solid.QgSp()/thermo.Cp(), hs)
+      - fvm::Sp(solid.QgSp(), hs)
+      + solid.Qgeng()
     );
 
     hsEqn.relax();

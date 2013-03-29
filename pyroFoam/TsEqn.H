@@ -14,6 +14,7 @@
       - fvm::Sp(solid.TsSp(), Ts)
       + solid.QsSu()
       - fvm::Sp(solid.QsSp(), Ts)
+      + solid.Qgens()
     );
 
     TsEqn.relax();

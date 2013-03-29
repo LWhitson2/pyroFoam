@@ -64,6 +64,19 @@ const volScalarField& psi = thermo.psi();
 volScalarField& hs = thermo.hs();
 const volScalarField& T = thermo.T();
 
+volScalarField hsOut
+(
+    IOobject
+    (
+        "hsOut",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    thermo.hs()
+);
+
 #include "compressibleCreatePhi.H"
 
 Info << "Creating turbulence model.\n" << nl;

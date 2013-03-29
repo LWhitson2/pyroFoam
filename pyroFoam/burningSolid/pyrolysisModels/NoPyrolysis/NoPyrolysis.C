@@ -40,18 +40,20 @@ namespace pyrolysisModels
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 Foam::pyrolysisModels::NoPyrolysis::NoPyrolysis
 (
-    dictionary pyroDict
+    dictionary pyroDict,
+    basicSolidThermo const* solidThermo
 )
 :
-    pyrolysisModel(typeName, pyroDict)
+    pyrolysisModel(typeName, pyroDict, solidThermo)
 {
 }
-    
+
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 Foam::dimensionedScalar Foam::pyrolysisModels::NoPyrolysis::mass_burning_rate
 (
     const dimensionedScalar& T,
-    const dimensionedScalar& p
+    const dimensionedScalar& p,
+    const label& cell
 )
 {
     return dimensionedScalar("m0",dimMass/dimArea/dimTime,0.0);
