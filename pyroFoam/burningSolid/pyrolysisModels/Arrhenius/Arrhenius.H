@@ -53,7 +53,7 @@ class Arrhenius
 {
 
     //model-specific stuff
-        
+
         dimensionedScalar A_;  //should be in kg/(m2-s)
         dimensionedScalar Ea_; //should be in J/kmol
 
@@ -67,9 +67,10 @@ public:
         //- construct from components
         Arrhenius
         (
-            dictionary pyroDict
+            dictionary pyroDict,
+            basicSolidThermo const* solidThermo_
         );
-        
+
     //- Destructor
         virtual ~Arrhenius() {}
 
@@ -78,7 +79,8 @@ public:
         virtual dimensionedScalar mass_burning_rate
         (
             const dimensionedScalar& T,
-            const dimensionedScalar& p
+            const dimensionedScalar& p,
+            const label& cell
         );
 
 };

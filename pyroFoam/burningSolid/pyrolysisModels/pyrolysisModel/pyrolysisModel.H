@@ -41,13 +41,14 @@ SourceFiles
 #include "fvCFD.H"
 #include "dimensionedScalar.H"
 #include "dimensionedScalarFwd.H"
+#include "basicSolidThermo.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-   
+
 /*---------------------------------------------------------------------------*\
                       Class pyrolysisModel Declaration
 \*---------------------------------------------------------------------------*/
@@ -55,24 +56,26 @@ namespace Foam
 class pyrolysisModel
 {
     // Protected data - all pyrolysis models inherit this stuff
-    // Possible things to add include: 
+    // Possible things to add include:
     //    pyrolysis gas molar mass
     protected:
 
-        dictionary pyroModelDict_;        
-        
+        dictionary pyroModelDict_;
+
         pyrolysisModel(const pyrolysisModel&);
-        
+
         void operator=(const pyrolysisModel&);
-        
-        
-public:
 
-    //- Runtime type information
-    TypeName("pyrolysisModel");
+        basicSolidThermo const* solidThermo_;
 
+        dimensionedScalar Qc_; // J/kg
 
-    // Declare run-time constructor selection table
+    public:
+
+        //- Runtime type information
+        TypeName("pyrolysisModel");
+
+        // Declare run-time constructor selection table
 
         declareRunTimeSelectionTable
         (
@@ -80,45 +83,52 @@ public:
             pyrolysisModel,
             components,
             (
-                dictionary pyroDict
+                dictionary pyroDict,
+                basicSolidThermo const* solidThermo
             ),
-            (pyroDict)
+            (
+                pyroDict,
+                solidThermo
+            )
         );
 
 
-    // Selectors
+        // Selectors
 
-        //- Return a reference to the selected phaseChange model
-        static autoPtr<pyrolysisModel> New
-        (
-            dictionary pyroDict
-        );
-        
-    // Constructors
-    
-        pyrolysisModel
-        (
-            const word& type,
-            dictionary pyroDict
-        );
-        
-        virtual ~pyrolysisModel() {}
+            //- Return a reference to the selected phaseChange model
+            static autoPtr<pyrolysisModel> New
+            (
+                dictionary pyroDict,
+                basicSolidThermo const* solidThermo
+            );
+
+        // Constructors
+
+            pyrolysisModel
+            (
+                const word& type,
+                dictionary pyroDict,
+                basicSolidThermo const* solidThermo
+            );
+
+            virtual ~pyrolysisModel() {}
 
 
-    // Member Functions
-    
-        virtual dimensionedScalar mass_burning_rate
-        (
-            const dimensionedScalar& T,
-            const dimensionedScalar& p
-        ) = 0;
-        
-        // Other possible functions include:
-        //  Derivatives to help solving, dmdT, dmdP
-        //  Heat generation rates
-        //
-        //
+        // Member Functions
 
+            virtual dimensionedScalar mass_burning_rate
+            (
+                const dimensionedScalar& T,
+                const dimensionedScalar& p,
+                const label& cell
+            ) = 0;
+
+            virtual dimensionedScalar energy_generation
+            (
+                const dimensionedScalar& T,
+                const dimensionedScalar& p,
+                const label& cell
+            );
 };
 
 

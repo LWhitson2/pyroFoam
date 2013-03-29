@@ -121,6 +121,8 @@ int main(int argc, char *argv[])
 
         Tall = Ts*ib.alphas() + T*ib.alpha();
 
+        hsOut = thermo.hs();
+
         runTime.write();
 
         log << runTime.value() << token::TAB

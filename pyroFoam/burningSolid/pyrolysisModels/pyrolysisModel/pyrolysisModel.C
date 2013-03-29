@@ -38,17 +38,30 @@ namespace Foam
 Foam::pyrolysisModel::pyrolysisModel
 (
     const word& type,
-    dictionary pyroDict
+    dictionary pyroDict,
+    basicSolidThermo const* solidThermo
 )
 :   //allow an empty dictionary for NoPyrolysis model, all others will crash
-    pyroModelDict_(pyroDict.subOrEmptyDict(type + "Coeffs")) 
+    pyroModelDict_(pyroDict.subOrEmptyDict(type + "Coeffs")),
+    solidThermo_(solidThermo),
+    Qc_(dimensionedScalar("zero", dimEnergy/dimMass, 0.))
 {
+    if(!pyroModelDict_.empty()) Qc_ = pyroModelDict_.lookup("Qc");
 }
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
  //Define any general pyrolysisModel functions here. These will be things
  // that are the same for every model.
+Foam::dimensionedScalar Foam::pyrolysisModel::energy_generation
+    (
+        const dimensionedScalar& T,
+        const dimensionedScalar& p,
+        const label& cell
+    )
+{
+    return mass_burning_rate(T, p, cell)*Qc_;
+}
 
 // ************************************************************************* //
 

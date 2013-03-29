@@ -122,8 +122,17 @@ class burningSolid
         //- Solid Temperature explicit source term
         volScalarField TsSu_;
 
-        //- Constant burning rate (for now, kg/m2/s)
-        dimensionedScalar m0_;
+        //- Solid burning flux (kg/m2/s)
+        volScalarField mflux_;
+
+        //- Solid burning heat flux (J/m2/s)
+        volScalarField qflux_;
+
+        //- Gas burning heat generation (J/m3/s)
+        volScalarField qgeng_;
+
+        //- Solid burning heat generation (J/m3/s)
+        volScalarField qgens_;
 
         //- Name of the solid specie
         word solidName_;
@@ -152,144 +161,155 @@ class burningSolid
     // Private functions
         void fixSmallCells();
         void calcBurnU();
-//         void calcHeatTransfer();
         void calcSurfaceStress();
+        void calcMassFlux();
+        void calcSurfaceEnergy();
 
-public:
+    public:
 
-    // Constructor
-    burningSolid
-    (
-        const fvMesh& mesh,
-        immersedBoundary& ib,
-        const hsCombustionThermo& gasThermo
-    );
+        // Constructor
+        burningSolid
+        (
+            const fvMesh& mesh,
+            immersedBoundary& ib,
+            const hsCombustionThermo& gasThermo
+        );
 
-    //Functions
-    const word& gasName()
-    {
-        return gasName_;
-    }
+        //Functions
+        const word& gasName()
+        {
+            return gasName_;
+        }
 
-    const word& solidName()
-    {
-        return solidName_;
-    }
+        const word& solidName()
+        {
+            return solidName_;
+        }
 
-    const volVectorField& mU()
-    {
-        return mU_;
-    }
+        const volVectorField& mU()
+        {
+            return mU_;
+        }
 
-    const volVectorField& USu()
-    {
-        return USu_;
-    }
+        const volVectorField& USu()
+        {
+            return USu_;
+        }
 
-    const volScalarField& USp()
-    {
-        return USp_;
-    }
+        const volScalarField& USp()
+        {
+            return USp_;
+        }
 
-    const volScalarField& pSp()
-    {
-        return pSp_;
-    }
+        const volScalarField& pSp()
+        {
+            return pSp_;
+        }
 
-    const volScalarField& pSu()
-    {
-        return pSu_;
-    }
+        const volScalarField& pSu()
+        {
+            return pSu_;
+        }
 
-    const volScalarField& m_pyro()
-    {
-        return m_pyro_;
-    }
+        const volScalarField& m_pyro()
+        {
+            return m_pyro_;
+        }
 
-    void correct
-    (
-        const volVectorField& U,
-        surfaceScalarField& phi,
-        bool allowHtx = true
-    );
+        void correct
+        (
+            const volVectorField& U,
+            surfaceScalarField& phi,
+            bool allowHtx = true
+        );
 
-    tmp<volScalarField> YSu(const word& Yname) const;
+        tmp<volScalarField> YSu(const word& Yname) const;
 
-    tmp<volScalarField> YSp() const;
+        tmp<volScalarField> YSp() const;
 
-    const volScalarField& hsSu()
-    {
-        return hsSu_;
-    }
+        const volScalarField& hsSu()
+        {
+            return hsSu_;
+        }
 
-    const volScalarField& hsSp()
-    {
-        return hsSp_;
-    }
+        const volScalarField& hsSp()
+        {
+            return hsSp_;
+        }
 
-    const volScalarField& TsSu()
-    {
-        return TsSu_;
-    }
+        const volScalarField& TsSu()
+        {
+            return TsSu_;
+        }
 
-    const volScalarField& TsSp()
-    {
-        return TsSp_;
-    }
+        const volScalarField& TsSp()
+        {
+            return TsSp_;
+        }
 
-    volScalarField& Ts()
-    {
-        return Ts_;
-    }
+        volScalarField& Ts()
+        {
+            return Ts_;
+        }
 
-    const volScalarField& rhos()
-    {
-        return solidThermo_->rho();
-    }
+        const volScalarField& rhos()
+        {
+            return solidThermo_->rho();
+        }
 
-    const volScalarField& Ks()
-    {
-        return solidThermo_->K();
-    }
+        const volScalarField& Ks()
+        {
+            return solidThermo_->K();
+        }
 
-    const tmp<volScalarField> Cps()
-    {
-        return solidThermo_->Cp();
-    }
+        const tmp<volScalarField> Cps()
+        {
+            return solidThermo_->Cp();
+        }
 
-    basicSolidThermo& solidThermo()
-    {
-      return solidThermo_();
-    }
+        basicSolidThermo& solidThermo()
+        {
+        return solidThermo_();
+        }
 
-    const volScalarField& QgSp()
-    {
-        return QgSp_;
-    }
+        const volScalarField& QgSp()
+        {
+            return QgSp_;
+        }
 
-    const volScalarField& QsSp()
-    {
-        return QsSp_;
-    }
+        const volScalarField& QsSp()
+        {
+            return QsSp_;
+        }
 
-    const volScalarField& QgSu()
-    {
-        return QgSu_;
-    }
+        const volScalarField& QgSu()
+        {
+            return QgSu_;
+        }
 
-    const volScalarField& QsSu()
-    {
-        return QsSu_;
-    }
+        const volScalarField& QsSu()
+        {
+            return QsSu_;
+        }
 
-    const volScalarField& Stress()
-    {
-        return surfStress_;
-    }
+        const volScalarField& Stress()
+        {
+            return surfStress_;
+        }
 
-    void calcHeatTransfer();
+        const volScalarField& Qgens()
+        {
+            return qgens_;
+        }
 
-    void calcHeatTransferOld();
+        const volScalarField& Qgeng()
+        {
+            return qgeng_;
+        }
+
+        void calcHeatTransfer();
+
+        void calcHeatTransferOld();
 
 };
 

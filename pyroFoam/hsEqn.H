@@ -17,12 +17,12 @@
      ==
        ib.alphaCorr()*dpdt
       - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
-//       + ib.alphaCorr()*combustion->Sh()
-//       + solid.Sh()   //<--
+      + ib.alphaCorr()*combustion->Sh()
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), hs)
       + solid.QgSu()
       - fvm::Sp(solid.QgSp(), hs)
+      + solid.Qgeng()
     );
 
     hsEqn.relax();

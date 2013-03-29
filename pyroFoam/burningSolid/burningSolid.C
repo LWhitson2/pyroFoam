@@ -63,7 +63,7 @@ Foam::burningSolid::burningSolid
         )
     ),
 
-    pyroModel_(pyrolysisModel::New(pyroDict_)),
+    pyroModel_(pyrolysisModel::New(pyroDict_, solidThermo_.operator->())),
 
     m_pyro_
     (
@@ -247,7 +247,61 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("TsSu", dimPower/dimVolume, 0.0)
     ),
 
-    m0_(pyroDict_.lookup("m0")),
+    mflux_
+    (
+        IOobject
+        (
+            "mflux",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("mflux", dimMass/dimArea/dimTime, 0.0)
+    ),
+
+    qflux_
+    (
+        IOobject
+        (
+            "qflux",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("qflux", dimPower/dimArea, 0.0)
+    ),
+
+    qgeng_
+    (
+        IOobject
+        (
+            "qgeng",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("qgeng", dimPower/dimVolume, 0.0)
+    ),
+
+    qgens_
+    (
+        IOobject
+        (
+            "qgens",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("qgens", dimPower/dimVolume, 0.0)
+    ),
 
     solidName_(pyroDict_.lookup("solidName")),
 
@@ -370,6 +424,10 @@ void Foam::burningSolid::fixSmallCells()
 
     volVectorField mU_transferred = m_transferred*burnU_;
 
+    volScalarField qgens_transferred = qgens_;
+
+    volScalarField qgeng_transferred = qgeng_;
+
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
     (
@@ -426,6 +484,14 @@ void Foam::burningSolid::fixSmallCells()
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
 
+    forAll(hsSu_, cellI)
+    {
+        if(ib_.solidCells()()[cellI])
+        {
+            hsSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])*hsrdT.value();
+        }
+    }
+
     TsSp_ = TsSp_*(1. - ib_.smallSolidCells());
     TsSu_ = TsSu_*(1. - ib_.smallSolidCells());
     hsSp_ = hsSp_*(1. - ib_.smallCells());
@@ -434,6 +500,8 @@ void Foam::burningSolid::fixSmallCells()
     // Transfer mass and momentum out of small cells
     ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
     ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
+    ib_.transfer<scalar>(w, qgeng_transferred, qgeng_, 0.0, "gas");
+    ib_.transfer<scalar>(ws, qgens_transferred, qgens_, 0.0, "solid");
 }
 
 // Calculate the burn gas velocity
@@ -447,9 +515,49 @@ void Foam::burningSolid::calcBurnU()
         EMg_->R()
     );
 
-    burnU_ = m0_*gasThermo_.T()*Rg/gasThermo_.p()*ib_.normal().oldTime();
+    burnU_ = mflux_*Ti_*Rg/gasThermo_.p()*ib_.normal().oldTime();
 }
 
+
+void Foam::burningSolid::calcMassFlux()
+{
+    mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
+
+    forAll(Ti_, cellI)
+    {
+        if (ib_.area().oldTime()[cellI] > 0.0)
+        {
+            mflux_[cellI] = pyroModel_->mass_burning_rate(
+                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+        }
+    }
+}
+
+void Foam::burningSolid::calcSurfaceEnergy()
+{
+    qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
+    qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
+    qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
+
+    forAll(Ti_, cellI)
+    {
+        if (ib_.area().oldTime()[cellI] > 0.0)
+        {
+            qflux_[cellI] = pyroModel_->energy_generation(
+                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+
+//             qgeng_[cellI] = m_pyro_[cellI]*(gasThermo_.hs()[cellI]
+//                        - mCM_.cellMixture(cellI).Hs(Ti_[cellI]));
+//
+//             qgens_[cellI] = qflux_[cellI]*ib_.area().oldTime()[cellI]
+//                           / mesh_.V()[cellI] - qgeng_[cellI];
+            qgeng_[cellI] = qflux_[cellI]*ib_.area().oldTime()[cellI]
+                          / mesh_.V()[cellI];
+
+            qgens_[cellI] = 0.0;
+        }
+    }
+}
 
 // * * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * //
 
@@ -462,11 +570,11 @@ void Foam::burningSolid::correct
 {
     Foam::Info << "Correcting burningSolid" << Foam::endl;
 
-    // Step 1: Calculate mass flux (m0) using current P and Ts
-    // *** Assumed constant for now ***
+    // Step 1: Calculate mass flux (mflux) using current P and Ts
+    calcMassFlux();
 
     // Step 2: Calculate mass density source using original cell area
-    m_pyro_.internalField() = m0_ * ib_.area().oldTime() / mesh_.V();
+    m_pyro_.internalField() = mflux_ * ib_.area().oldTime() / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
     // Step 3: Calculate burn gas velocity using current interface orientation
@@ -474,6 +582,9 @@ void Foam::burningSolid::correct
 
     // Step 4: Calculate momentum source
     mU_ = burnU_ * m_pyro_;
+
+    // Step 4b: Calculate combustion energy source
+    calcSurfaceEnergy();
 
     // Step 5: Evolve interface using calculated burning rate (vol frac/s)
     ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
@@ -870,8 +981,8 @@ void Foam::burningSolid::calcHeatTransfer()
             else hsGas = max(hsGas, hsTime);
             hsSp_[cellI] = hsrdT.value();
             hsSu_[cellI] = hsGas*hsrdT.value();
-            QsSu_[cellI] += (rhog.oldTime()[cellI]*gasThermo_.hs().oldTime()[cellI]
-                          - rhog[cellI]*hsGas) / mesh_.time().deltaTValue();
+//             QsSu_[cellI] += (rhog.oldTime()[cellI]*gasThermo_.hs().oldTime()[cellI]
+//                           - rhog[cellI]*hsGas) / mesh_.time().deltaTValue();
             QgSu_[cellI] = 0.0;
             QgSp_[cellI] = 0.0;
         }
@@ -887,8 +998,8 @@ void Foam::burningSolid::calcHeatTransfer()
             else Tsolid = max(Tsolid, TsTime);
             TsSp_[cellI] = TsrdT.value();
             TsSu_[cellI] = Tsolid*TsrdT.value();
-            QgSu_[cellI] += (Ts_.oldTime()[cellI] - Tsolid)
-                          * rhos[cellI]*Cps[cellI]/mesh_.time().deltaTValue();
+//             QgSu_[cellI] += (Ts_.oldTime()[cellI] - Tsolid)
+//                           * rhos[cellI]*Cps[cellI]/mesh_.time().deltaTValue();
             QsSu_[cellI] = 0.0;
             QsSp_[cellI] = 0.0;
         }
@@ -900,6 +1011,8 @@ void Foam::burningSolid::calcHeatTransfer()
 //                        / scReq[cellI];
 //         }
     }
+    // Print max Ti
+    Info << "Maximum Interface Temperature: " << max(Ti_).value() << endl;
 }
 
 void Foam::burningSolid::calcSurfaceStress()

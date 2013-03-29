@@ -30,7 +30,8 @@ License
 Foam::autoPtr<Foam::pyrolysisModel>
 Foam::pyrolysisModel::New
 (
-    dictionary pyroDict
+    dictionary pyroDict,
+    basicSolidThermo const* solidThermo
 )
 {
     // Look in pyroDict to see which model is specified
@@ -61,7 +62,7 @@ Foam::pyrolysisModel::New
     }
 
     // Return a pointer to the newly created pyrolysis model using macro magic
-    return autoPtr<pyrolysisModel>(cstrIter()(pyroDict));
+    return autoPtr<pyrolysisModel>(cstrIter()(pyroDict, solidThermo));
 }
 
 

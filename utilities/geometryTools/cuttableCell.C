@@ -124,7 +124,7 @@ Foam::plane Foam::cuttableCell::constructInterface
     //scalar fH = 1.0-alpha;
     scalar res = 1.0; //mag(f2);
     label iters = 0;
-    scalar resmin = 1e-6;
+    scalar resmin = 1e-4;
 
     scalar dspan = dmax - dmin;
     scalar dtol = dspan / 1e4;
