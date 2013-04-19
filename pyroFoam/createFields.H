@@ -72,7 +72,7 @@ volScalarField hsOut
         runTime.timeName(),
         mesh,
         IOobject::NO_READ,
-        IOobject::AUTO_WRITE
+        IOobject::NO_WRITE
     ),
     thermo.hs()
 );
@@ -156,6 +156,11 @@ const tmp<volScalarField> Cps = solid.Cps();
 const volScalarField& Ks = solid.Ks();
 
 OFstream log(args.path()/"TsAvg.out");
+OFstream logTi(args.path()/"TiAvg.out");
 
 log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
     << endl;
+
+logTi << "Time" << token::TAB << "Min Interface Temp. [K]" << token::TAB
+      << "Avg. Interface Temp. [K]" << token::TAB
+      << "Max Interface Temp. [K]" << endl;

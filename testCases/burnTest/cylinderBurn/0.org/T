@@ -29,13 +29,19 @@ boundaryField
 
     bottom
     {
-        type            fixedValue;
-        value           uniform 500.;
+        type            uniformFixedValue;
+        uniformValue    table
+        (
+            (0.0  1000.)
+            (1.5  1000.)
+            (2.0   300.)
+        );
     }
 
     sides
     {
-        type            zeroGradient;
+        type            inletOutlet;
+        inletValue      uniform 300.;
     }
 
     frontAndBack

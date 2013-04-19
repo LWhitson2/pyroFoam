@@ -28,7 +28,8 @@ boundaryField
     }
     sides
     {
-        type            zeroGradient;
+        type            inletOutlet;
+        inletValue      1.;
     }
     frontAndBack
     {

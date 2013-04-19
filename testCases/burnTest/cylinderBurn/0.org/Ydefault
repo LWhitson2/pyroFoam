@@ -29,7 +29,8 @@ boundaryField
 
     sides
     {
-        type            zeroGradient;
+        type            inletOutlet;
+        inletValue      uniform 0.;
     }
 
     frontAndBack

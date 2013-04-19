@@ -1,5 +1,6 @@
 {
-    solid.calcHeatTransfer();
+    solid.calcInterfaceTemp();
+
     // Calculate corrected thermal diffusivity
     surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff())
                                *ib.alphaf();
@@ -31,7 +32,7 @@
     thermo.correct(); //we may need to create a 'specie' for the solid so that this works
 
     Info<< "T gas min/max   = " <<
-        min(ib.solidCells()*dimensionedScalar("tmpT", dimTemperature, 1000.0)
+        min(ib.solidCells()*dimensionedScalar("tmpT", dimTemperature, 100000.0)
         + T).value() << ", " << max(ib.gasCells()*T).value()
         << endl;
 }

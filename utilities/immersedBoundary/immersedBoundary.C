@@ -486,7 +486,11 @@ void Foam::immersedBoundary::correct()
                 alphafOwn = cf.cut(p);
             }
 
-            alphaf_[faceI] = Foam::min(alphafNei, alphafOwn);
+            alphaf_[faceI] = min(alphafNei, alphafOwn);
+            if (alpha_[nei]*alpha_[own] > SMALL)
+            {
+                alphaf_[faceI] = (alphafNei + alphafOwn)/2.0;
+            }
 
             // Catch the cases where:
             //
@@ -537,6 +541,12 @@ void Foam::immersedBoundary::correct()
         }
     }
 
+    // Synchronize Boundary Values
+    iArea_.correctBoundaryConditions();
+    iNormal_.correctBoundaryConditions();
+    iPoint_.correctBoundaryConditions();
+    alpha_.correctBoundaryConditions();
+
     // Now set alphaf on parallel patches
     const volScalarField::GeometricBoundaryField& alphaBf =
         alpha_.boundaryField();
@@ -548,7 +558,6 @@ void Foam::immersedBoundary::correct()
         iArea_.boundaryField();
     const surfaceScalarField::GeometricBoundaryField& hasIntermedsBf =
         hasIntermeds.boundaryField();
-
     surfaceScalarField::GeometricBoundaryField& alphafBf =
         alphaf_.boundaryField();
 
@@ -600,7 +609,12 @@ void Foam::immersedBoundary::correct()
                         alphafOwn = cf.cut(p);
                     }
 
-                    alphafPf[pFaceI] = Foam::min(alphafNei, alphafOwn);
+
+                    alphafPf[pFaceI] = min(alphafNei, alphafOwn);
+                    if (alphaPNf[pFaceI]*alpha_[pfCellI] > SMALL)
+                    {
+                        alphafPf[pFaceI] = (alphafNei + alphafOwn)/2.0;
+                    }
 
                     // now catch sharp edges
                     if (alpha_[pfCellI] < reconstructTol_.value()

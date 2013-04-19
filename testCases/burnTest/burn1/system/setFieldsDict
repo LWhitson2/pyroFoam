@@ -18,7 +18,7 @@ FoamFile
 defaultFieldValues
 (
     volScalarFieldValue alphaGas 1
-    volVectorFieldValue U (0 8.8447 0)
+    volVectorFieldValue U (0 0. 0)
 );
 
 regions

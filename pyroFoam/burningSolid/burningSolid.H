@@ -158,11 +158,20 @@ class burningSolid
         //- Solid stress term
         volScalarField surfStress_;
 
+        //- Igniter Flux
+        dimensionedScalar ignFlux_;
+
+        //- Igniter Time
+        dimensionedScalar ignTime_;
+
+        //- Igniter Relax Time
+        dimensionedScalar ignRelax_;
+
     // Private functions
         void fixSmallCells();
         void calcBurnU();
         void calcSurfaceStress();
-        void calcMassFlux();
+        void calcInterfaceFlux();
         void calcSurfaceEnergy();
 
     public:
@@ -307,7 +316,12 @@ class burningSolid
             return qgeng_;
         }
 
-        void calcHeatTransfer();
+        const volScalarField& Ti()
+        {
+            return Ti_;
+        }
+
+        void calcInterfaceTemp();
 
         void calcHeatTransferOld();
 

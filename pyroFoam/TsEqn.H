@@ -22,8 +22,8 @@
 
     Info<< "T solid min/max   = " <<
         min(ib.fullGasCells()*dimensionedScalar("tmpT", dimTemperature, 100000.0)
-        + Ts).value() << ", " << max(ib.solidCells()*Ts).value()
-        << endl;
+        + Ts).value() << ", "
+        << max((ib.solidCells()+ib.mixedCells())*Ts).value() << endl;
 
     // Update solidThermo
     solid.solidThermo().T() = Ts;

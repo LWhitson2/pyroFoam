@@ -28,11 +28,11 @@ EMg
         Tlow            200;
         Thigh           5000;
         Tcommon         1000;
-        highCpCoeffs    ( 1400 0.0 0.0 0.0 0.0
-                          3018000.0
+        highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
+                          12414.7
                           0.0 );
-        lowCpCoeffs     ( 1400 0.0 0.0 0.0 0.0
-                          3018000.0
+        lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
+                          12414.7
                           0.0 );
     }
     transport
@@ -54,10 +54,10 @@ EMp
         Tlow            200;
         Thigh           5000;
         Tcommon         1000;
-        highCpCoeffs    ( 1400 0.0 0.0 0.0 0.0
+        highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
                           0.0
                           0.0 );
-        lowCpCoeffs     ( 1400 0.0 0.0 0.0 0.0
+        lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
                           0.0
                           0.0 );
     }
@@ -81,11 +81,11 @@ EMs
         Tlow            200;
         Thigh           5000;
         Tcommon         1000;
-        highCpCoeffs    ( 1400 0.0 0.0 0.0 0.0
-                          0.0
+        highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
+                          12414.7
                           0.0 );
-        lowCpCoeffs     ( 1400 0.0 0.0 0.0 0.0
-                          0.0
+        lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
+                          12414.7
                           0.0 );
     }
     transport

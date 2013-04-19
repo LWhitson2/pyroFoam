@@ -128,6 +128,15 @@ int main(int argc, char *argv[])
         log << runTime.value() << token::TAB
             << Ts.weightedAverage(ib.alphasCorr()).value() << endl;
 
+        // Record average Interface Temperature
+        dimensionedScalar smallA("dA", dimArea, SMALL);
+        logTi << runTime.value() << token::TAB
+            << min(neg(ib.area() - smallA)
+             * dimensionedScalar("tmpT", dimTemperature, 100000.0)
+             + solid.Ti()).value() << token::TAB
+            << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
+            << max(solid.Ti()).value() << endl;
+
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

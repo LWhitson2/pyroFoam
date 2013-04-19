@@ -9,10 +9,10 @@ reactions
 {
     gasReaction
     {
-        type        irreversibleArrheniusReaction;
+        type        bananas; //irreversibleArrheniusReaction;
         reaction    "EMg = EMp";
-        A           0.05472;
-        beta        2.0;
+        A           0.664749;
+        beta        1.0;
         Ta          0.;
         thirdBodyEfficiencies
         {

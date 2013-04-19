@@ -24,7 +24,7 @@ boundaryField
     top
     {
         type            inletOutlet;
-        inletValue      uniform 298;
+        inletValue      uniform 300.;
     }
 
     bottom

@@ -24,14 +24,14 @@ boundaryField
 {
     sides
     {
-        type            zeroGradient;
+        type            fixedValue;
+        value           uniform 1e5;
     }
 
     top
     {
-        type            waveTransmissive;
-        gamma           1.2;
-        fieldInf        uniform 1e5;
+        type            fixedValue;
+        value           uniform 1e5;
     }
 
     bottom

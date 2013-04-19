@@ -18,7 +18,7 @@ FoamFile
 
 dimensions      [1 -1 -2 0 0 0 0];
 
-internalField   uniform 10e5;
+internalField   uniform 5.e5;
 
 boundaryField
 {
@@ -29,13 +29,15 @@ boundaryField
 
     top
     {
-        type            waveTransmissive;
-        value           uniform 10e5;
-        phi             phi;
-        rho             rho;
-        gamma           1.2;
-        lInf            0.00;
-        fieldInf        10e5;
+        type            fixedValue;
+        value           uniform 5.e5;
+//         type            waveTransmissive;
+//         value           uniform 1e5;
+//         phi             phi;
+//         rho             rho;
+//         gamma           1.2;
+//         lInf            0.00;
+//         fieldInf        1e5;
 
         /*type            totalPressure;
         p0              uniform 1e5;
