@@ -9,11 +9,12 @@ reactions
 {
     gasReaction
     {
-        type        irreversibleArrheniusReaction;
+        type        irreversiblethirdBodyArrheniusReaction;
         reaction    "EMg = EMp";
-        A           0.664749;
-        beta        1.0;
+        A           0.05472;
+        beta        2.0;
         Ta          0.;
+        defaultEfficiency    1;
         thirdBodyEfficiencies
         {
             coeffs

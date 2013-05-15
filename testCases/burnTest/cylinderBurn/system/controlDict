@@ -29,7 +29,7 @@ flowRelaxTime   0.0;
 
 deltaT          1e-6;
 
-maxDeltaT       1e-4;
+maxDeltaT       1e-3;
 
 writeControl    adjustableRunTime;
 

@@ -129,6 +129,18 @@ class pyrolysisModel
                 const dimensionedScalar& p,
                 const label& cell
             );
+
+            virtual dimensionedScalar dmdT
+            (
+                const dimensionedScalar& T,
+                const dimensionedScalar& p,
+                const label& cell
+            );
+
+            dimensionedScalar Qc()
+            {
+                return Qc_;
+            }
 };
 
 

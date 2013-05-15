@@ -342,7 +342,8 @@ bool Foam::cuttableCell::makePoints
     {
         Info<< "\n\n--> Bad point list:\n" << pointList << endl;
         //FatalError << "makePoints encountered zero area" << abort(FatalError);
-        return false;
+        //return false;
+        return true;
     }
 
     centroid /= area;

@@ -63,5 +63,23 @@ Foam::dimensionedScalar Foam::pyrolysisModel::energy_generation
     return mass_burning_rate(T, p, cell)*Qc_;
 }
 
+Foam::dimensionedScalar Foam::pyrolysisModel::dmdT
+    (
+        const dimensionedScalar& T,
+        const dimensionedScalar& p,
+        const label& cell
+    )
+{
+//     dimensionedScalar dT("dT", dimTemperature, 0.5);
+    scalar dT = 0.5;
+    dimensionedScalar T0 = T - dT;
+    dimensionedScalar T2 = T + dT;
+
+    dimensionedScalar m0 = mass_burning_rate(T0, p, cell);
+    dimensionedScalar m2 = mass_burning_rate(T2, p, cell);
+
+    return (m2 - m0)/(2.*dT);
+}
+
 // ************************************************************************* //
 

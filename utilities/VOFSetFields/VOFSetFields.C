@@ -26,7 +26,7 @@ Application
 
 Description
     Set volume fraction fields that are not aligned with the mesh
-    
+
     Future development as it becomes useful:
        * Be able to set multiple planes, circles, and spheres, and specify
           build up more complex shapes
@@ -52,12 +52,12 @@ int main(int argc, char *argv[])
     #include "createMesh.H"
     #include "createFields.H"
 
-    const volVectorField& cellCenters = mesh.C();   
-     
+    const volVectorField& cellCenters = mesh.C();
+
     word shape(VOFDict.lookup("shape"));
     label solidCells = 0;
     label gasCells = 0;
-    
+
     if (shape == "circle")
     {
         vector center(VOFDict.lookup("center"));
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         vector Ugas(VOFDict.lookup("Ugas"));
         word planename(VOFDict.lookup("plane"));
         word inv(VOFDict.lookup("inverse"));
-    
+
         forAll(alpha, cellI)
         {
             vector r = cellCenters[cellI] - center;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 
             cuttableCell pc(mesh, cellI);
             alpha[cellI] = 1.0 - pc.cut( plane(p, n) );
-            
+
             if (inv == "yes")
             {
                 alpha[cellI] = 1.0 - alpha[cellI];
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
                 solidCells++;
             }
         }
-    
+
     }
     else if (shape == "plane")
     {
@@ -118,13 +118,13 @@ int main(int argc, char *argv[])
         vector normal(VOFDict.lookup("normal"));
         vector Usolid(VOFDict.lookup("Usolid"));
         vector Ugas(VOFDict.lookup("Ugas"));
-        
+
         plane p(point, normal);
-    
+
         forAll(alpha, cellI)
         {
             cuttableCell pc(mesh, cellI);
-            alpha[cellI] = 1.0 - pc.cut( p );
+            alpha[cellI] = max(1.0 - pc.cut( p ), 0.0);
 
             if (alpha[cellI] > SMALL)
             {
@@ -137,16 +137,16 @@ int main(int argc, char *argv[])
                 solidCells++;
             }
         }
-    
+
     }
     else
     {
         FatalError<< "Invalid shape " << shape << " specified"
                   << abort(FatalError);
     }
-	
+
 	runTime.writeNow();
-	
+
 	Info<< "Set " << gasCells << " gas and mixed cells and "
 	    << solidCells << " solid cells" << endl;
 

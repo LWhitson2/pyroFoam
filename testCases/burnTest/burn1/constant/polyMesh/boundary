@@ -20,26 +20,26 @@ FoamFile
     bottom
     {
         type            patch;
-        nFaces          16;
-        startFace       15984;
+        nFaces          8;
+        startFace       14992;
     }
     sides
     {
         type            symmetryPlane;
-        nFaces          3200;
-        startFace       16000;
+        nFaces          2000;
+        startFace       15000;
     }
     frontAndBack
     {
         type            symmetryPlane;
-        nFaces          3200;
-        startFace       19200;
+        nFaces          16000;
+        startFace       17000;
     }
     top
     {
         type            patch;
-        nFaces          16;
-        startFace       22400;
+        nFaces          8;
+        startFace       33000;
     }
 )
 

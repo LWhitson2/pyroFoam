@@ -25,11 +25,11 @@ startTime       0.0;
 
 stopAt          endTime;
 
-endTime         0.2;
+endTime         1.0;
 
 deltaT          1e-6;
 
-maxDeltaT       1e-4;
+maxDeltaT       1e-5;
 
 writeControl    adjustableRunTime;
 
