@@ -685,6 +685,7 @@ void Foam::burningSolid::calcInterfaceTemp()
     QsSu_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
 
     // Initialize Interface Temperature to Solid Temperature
+    const volScalarField& qfluxOld = qflux_.oldTime();
     Ti_ = Ts_;
 
     // Cell identification
@@ -703,34 +704,12 @@ void Foam::burningSolid::calcInterfaceTemp()
             // Calculate Thermal Resistances
             scalar Rg = Lg[cellI]/(Ai[cellI]*Kg[cellI]);
             scalar Rs = Ls[cellI]/(Ai[cellI]*Ks[cellI]);
-            scalar Req = Rg + Rs;
 
-            // Calculate Interface Temperature
-            scalar err = 1.0;
-            scalar derrdT = 0.0;
-            Ti_[cellI] = (Rg*Ts_[cellI] + Rs*gasThermo_.T()[cellI])/Req;
-            while (err > 1.e-6)
-            {
-                scalar m = pyroModel_->mass_burning_rate(
-                    Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
-                scalar mQc = pyroModel_->energy_generation(
-                    Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
-                scalar Qc = pyroModel_->Qc().value();
-
-                scalar dmdT = pyroModel_->dmdT(
-                    Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
-
-                scalar hi = mCM_.cellMixture(cellI).Hs(Ti_[cellI]);
-
-                err = mQc - Ks[cellI]*(Ti_[cellI] - Ts_[cellI])/Ls[cellI]
-                    + Kg[cellI]*(gasThermo_.T()[cellI] - Ti_[cellI])/Lg[cellI]
-                    - m*hi;
-
-                derrdT = dmdT*(Qc - hi) - m*Cpg()[cellI]
-                       - (Kg[cellI]/Lg[cellI] + Ks[cellI]/Ls[cellI]);
-
-                Ti_[cellI] = Ti_[cellI] - err/derrdT;
-            }
+            // Calculate Interface Temperature using Previous qFlux
+            Ti_[cellI] = (Ks[cellI]*Ts_[cellI]/Ls[cellI]
+                       +  Kg[cellI]*gasThermo_.T()[cellI]/Lg[cellI]
+                       +  qfluxOld[cellI])
+                       / (Ks[cellI]/Ls[cellI] + Kg[cellI]/Lg[cellI]);
 
             // Gas source terms
             QgSp_[cellI] = 1./(Rg*Cpg()[cellI]*Vc[cellI]);
@@ -757,7 +736,6 @@ void Foam::burningSolid::calcInterfaceTemp()
         if (fullCell[sc] && !solidCell[mc])
         {
             scalar tmpA = ib_.alphafU()[faceI]*mesh_.magSf()[faceI];
-            tmpA = ib_.area()[sc];
 
             if (tmpA > 0.)
             {
@@ -769,53 +747,12 @@ void Foam::burningSolid::calcInterfaceTemp()
                 // Calculate thermal resistance
                 scalar Rg = tmpLg/(Kg[mc]*tmpA);
                 scalar Rs = tmpLs/(Ks[sc]*tmpA);
-                scalar Req = Rg + Rs;
 
                 // Calculate current interface temperature
-                scalar tmpTi = (Rg*Ts_[sc] + Rs*gasThermo_.T()[mc])/Req;
-//                 scalar Ti1 = tmpTi
-//                 scalar Ti2 = tmpTi
-                scalar err = 1.0;
-//                 scalar err1 = 0.0;
-//                 scalar err2 = 0.0;
-                scalar derrdT = 0.0;
-                scalar niter = 1.;
-                while (err > 1.)
-                {
-                    niter = niter + 1.;
-//                     errOld = err;
-//                     TiOld = tmpTi;
-//                     if(niter < 100.)
-//                     {
-                        scalar m = pyroModel_->mass_burning_rate(
-                            tmpTi, gasThermo_.p()[mc], mc).value();
-                        scalar mQc = pyroModel_->energy_generation(
-                            tmpTi, gasThermo_.p()[mc], mc).value();
-                        scalar Qc = pyroModel_->Qc().value();
-
-                        scalar dmdT = pyroModel_->dmdT(
-                            tmpTi, gasThermo_.p()[mc], mc).value();
-
-                        scalar hi = mCM_.cellMixture(mc).Hs(tmpTi);
-
-                        err = mQc - Ks[sc]*(tmpTi - Ts_[sc])/tmpLs
-                            + Kg[mc]*(gasThermo_.T()[mc] - tmpTi)/tmpLg
-                            - m*hi;
-
-                        derrdT = dmdT*(Qc - hi) - m*Cpg()[mc]
-                                - (Kg[mc]/tmpLg + Ks[sc]/tmpLs);
-
-                        tmpTi = tmpTi - 0.1*err/derrdT;
-//                     }
-//                     else
-//                     {
-//                         scalar Ti2 = tmpTi
-//                         scalar err2 = err
-//                         tmpTi = (Ti2 + TiOld)/2.
-//
-//                     }
-                    if (niter > 100.) Info << tmpTi << endl;
-                }
+                scalar tmpTi = (Ks[sc]*Ts_[sc]/tmpLs
+                       +  Kg[mc]*gasThermo_.T()[mc]/tmpLg
+                       )//+  qfluxOld[mc])
+                       / (Ks[sc]/tmpLs + Kg[mc]/tmpLg);
 
                 // Gas source terms
                 QgSp_[mc] += 1./(Rg*Cpg()[mc]*Vc[mc]);
