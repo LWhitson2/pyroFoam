@@ -7,7 +7,7 @@ cd ${0%/*} || exit 1    # run from this directory
 
 cp -r 0.org 0
 blockMesh
-VOFSetFields
+VOFSetFields-pf
 
 #-- Run on single processor
 #pyroFoam
@@ -16,13 +16,15 @@ VOFSetFields
 #-- Run on 6 processors
  decomposePar
 # 
- touch processor0/pyro.foam
- touch processor1/pyro.foam
- touch processor2/pyro.foam
- touch processor3/pyro.foam
+# touch processor0/pyro.foam
+# touch processor1/pyro.foam
+# touch processor2/pyro.foam
+# touch processor3/pyro.foam
 # touch processor4/pyro.foam
 # touch processor5/pyro.foam
 # 
- mpirun -np 4 pyroFoam -parallel
+# mpirun -np 4 pyroFoam -parallel
+
+foamJob -screen -parallel pyroFoam
 
 # ----------------------------------------------------------------- end-of-file

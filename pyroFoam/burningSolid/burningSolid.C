@@ -431,9 +431,9 @@ void Foam::burningSolid::fixSmallCells()
 
     volVectorField mU_transferred = m_transferred*burnU_;
 
-    volScalarField qgens_transferred = qgens_;
+    volScalarField qgens_transferred = qgens_; //Just like not all the mass is transferred, maybe not all the heat should be?
 
-    volScalarField qgeng_transferred = qgeng_;
+    //volScalarField qgeng_transferred = qgeng_;
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
@@ -502,7 +502,7 @@ void Foam::burningSolid::fixSmallCells()
     // Transfer mass and momentum out of small cells
     ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
     ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
-    ib_.transfer<scalar>(w, qgeng_transferred, qgeng_, 0.0, "gas");
+    //ib_.transfer<scalar>(w, qgeng_transferred, qgeng_, 0.0, "gas");
     ib_.transfer<scalar>(ws, qgens_transferred, qgens_, 0.0, "solid");
 }
 
@@ -517,8 +517,8 @@ void Foam::burningSolid::calcBurnU()
         EMg_->R()
     );
 
-    burnU_ = (Ti_*Rg/gasThermo_.p() - 1./solidThermo_->rho())
-           * mflux_*ib_.normal().oldTime();
+    burnU_ = (Ts_*Rg/gasThermo_.p() - 1./solidThermo_->rho())
+           * mflux_*ib_.normal().oldTime(); //should use oldTime??
 }
 
 
@@ -527,15 +527,15 @@ void Foam::burningSolid::calcInterfaceFlux()
     mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
     qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
 
-    forAll(Ti_, cellI)
+    forAll(Ts_, cellI)
     {
         if (ib_.area().oldTime()[cellI] > 0.0)
         {
             mflux_[cellI] = pyroModel_->mass_burning_rate(
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
 
             qflux_[cellI] = pyroModel_->energy_generation(
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
         }
     }
 }
@@ -543,44 +543,47 @@ void Foam::burningSolid::calcInterfaceFlux()
 void Foam::burningSolid::calcSurfaceEnergy()
 {
 
-    qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
-    qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
+    //qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.); //do not use
+    //qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
 
     // Conduction coefficients
-    volScalarField Ks = solidThermo_->K();
-    tmp<volScalarField> Cpg = gasThermo_.Cp();
-    volScalarField alphag = gasThermo_.alpha();
-    volScalarField Kg = alphag*Cpg();
+    //volScalarField Ks = solidThermo_->K();
+    //tmp<volScalarField> Cpg = gasThermo_.Cp();
+    //volScalarField alphag = gasThermo_.alpha();
+    //volScalarField Kg = alphag*Cpg();
 
-    // Weight energy flux by thermal conductivity
-    forAll(Ti_, cellI)
+    // Do not double-count energy generation. The reason a combustion reaction
+    // generates energy is that it takes high enthalpy reactants and transforms
+    // them to lower energy products.
+    qgens_ = qflux_ * ib_.area(); //oldTime? //TODO add an AbyV or ArV function to ib
+    qgens_.internalField() /= mesh_.V();
+    
+    /*forAll(Ti_, cellI)
     {
-        if (ib_.area().oldTime()[cellI] > 0.0)
+        if (ib_.area().oldTime()[cellI] > 0.0) //prove why oldTime and not current time
         {
             scalar ArV = ib_.area().oldTime()[cellI]/mesh_.V()[cellI];
-            scalar qConv = m_pyro_[cellI]
-                         * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
-                         - gasThermo_.hs()[cellI]);
-            scalar Ksum = Kg[cellI] + Ks[cellI];
+            //scalar qConv = m_pyro_[cellI]
+            //             * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
+            //             - gasThermo_.hs()[cellI]);
+            //scalar Ksum = Kg[cellI] + Ks[cellI];
 
-            qgeng_[cellI] = qConv + qflux_[cellI]*ArV*Kg[cellI]/Ksum;
+            //qgeng_[cellI] = qConv + qflux_[cellI]*ArV*Kg[cellI]/Ksum;
 
-            qgens_[cellI] = qflux_[cellI]*ArV*Ks[cellI]/Ksum;
+            qgens_[cellI] = qflux_[cellI]*ArV; //*Ks[cellI]/Ksum;
         }
-    }
+    }*/
 
     if (mesh_.time().timeOutputValue() < ignTime_.value())
     {
-        qgens_.internalField() = qgens_.internalField()
-                               + ignFlux_*ib_.area().oldTime()/mesh_.V();
+        qgens_.internalField() += ignFlux_*ib_.area().oldTime()/mesh_.V();
     }
     else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
     {
         scalar time = mesh_.time().timeOutputValue();
         scalar maxTime = (ignTime_.value() + ignRelax_.value());
         dimensionedScalar ignFlux = ignFlux_*(maxTime - time)/ignRelax_.value();
-        qgens_.internalField() = qgens_.internalField()
-                               + ignFlux*ib_.area().oldTime()/mesh_.V();
+        qgens_.internalField() += ignFlux*ib_.area().oldTime()/mesh_.V();
     }
 }
 
@@ -596,7 +599,7 @@ void Foam::burningSolid::correct
     Foam::Info << "Correcting burningSolid" << Foam::endl;
 
     // Calculate current interface temperature
-    calcInterfaceTemp();
+    //calcInterfaceTemp();
 
     // Calculate mass and energy flux (mflux, qflux) using current P and Ts
     calcInterfaceFlux();
@@ -604,7 +607,7 @@ void Foam::burningSolid::correct
     // Step 2: Calculate mass and energy source using original cell area
     m_pyro_.internalField() = mflux_ * ib_.area().oldTime() / mesh_.V();
     m_pyro_.correctBoundaryConditions();
-    calcSurfaceEnergy();
+    //calcSurfaceEnergy(); //why twice??
 
     // Step 3: Calculate burn gas velocity using current interface orientation
     calcBurnU();
@@ -612,7 +615,8 @@ void Foam::burningSolid::correct
     // Step 4: Calculate momentum source
     mU_ = burnU_ * m_pyro_;
 
-    // Step 4b: Calculate combustion energy source
+    // Step 4b: Transform energy flux to volumetric energy source and add
+    //          extra flux. SHOULD THIS BE BEFORE OF AFTER INTERFACE HAS MOVED??
     calcSurfaceEnergy();
 
     // Step 5: Evolve interface using calculated burning rate (vol frac/s)

@@ -128,7 +128,7 @@ void immersedBoundary::setScValue
     const word& input
 )
 {
-    const tmp<volScalarField> alphastmp = 1.0 - alpha_;
+    tmp<volScalarField> alphastmp = 1.0 - alpha_;
     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
 
     Su = ((input == "gas") ? solidCells():fullGasCells())*solidValue*diag;

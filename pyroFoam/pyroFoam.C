@@ -135,7 +135,9 @@ int main(int argc, char *argv[])
              * dimensionedScalar("tmpT", dimTemperature, 100000.0)
              + solid.Ti()).value() << token::TAB
             << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
-            << max(solid.Ti()).value() << endl;
+            << max(solid.Ti()).value() << token::TAB
+            << Ts.weightedAverage(ib.area()).value() << token::TAB
+            << T.weightedAverage(ib.area()).value() << endl;
 
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

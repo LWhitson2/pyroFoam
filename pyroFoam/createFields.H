@@ -163,4 +163,6 @@ log<< "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
 
 logTi << "Time" << token::TAB << "Min Interface Temp. [K]" << token::TAB
       << "Avg. Interface Temp. [K]" << token::TAB
-      << "Max Interface Temp. [K]" << endl;
+      << "Max Interface Temp. [K]" << token::TAB
+      << "Avg Tg at Interface" << token::TAB
+      << "Avg Ts at Interface" << endl;

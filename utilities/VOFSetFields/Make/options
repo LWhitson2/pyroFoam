@@ -11,4 +11,4 @@ EXE_LIBS = \
     -lgenericPatchFields \
     -ldynamicMesh \
     -lmeshTools \
-    -lgeometryTools
+    -lgeometryTools-pf

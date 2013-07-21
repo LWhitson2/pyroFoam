@@ -306,6 +306,67 @@ void Foam::immersedBoundary::update()
 }
 
 
+tmp<surfaceScalarField> Foam::immersedBoundary::lapCorr
+(
+    const word& input
+)
+{
+    tmp<surfaceScalarField> tLapCorr
+    (
+        new surfaceScalarField
+        (
+            IOobject
+            (
+                "tLapCorr",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar("tLapCorr", dimless, 1.0)
+        )
+    );
+    surfaceScalarField& LC = tLapCorr();
+    
+    //the laplacian corrector is delta_12 / delta_1'2' where 1'2'
+    // is the distance between the actual centroids
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbor = mesh_.neighbour();
+
+    tmp<volScalarField> mc = mixedCells();
+    tmp<surfaceScalarField> magDelta = mag(mesh_.delta() & mesh_.Sf()) / mesh_.magSf();
+    
+    tmp<volScalarField> alphastmp = 1.0 - alpha_;
+    const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
+    
+    // Internal faces first
+    forAll(alphaf_, faceI)
+    {
+        label own = owner[faceI];
+        label nei = neighbor[faceI];
+    
+        // Check if either cell has a cut plane in it
+        if( mag(iPoint_[own]) > SMALL || mag(iPoint_[nei]) > SMALL )
+        {
+            // get the proper centroid from each cell
+            point ownC = (mag(iPoint_[own]) > SMALL) ? 
+                        ( (input == "gas") ? gasC_[own] : solidC_[own] ) 
+                      : ( mesh_.C()[own] );
+                      
+            point neiC = (mag(iPoint_[nei]) > SMALL) ? 
+                        ( (input == "gas") ? gasC_[nei] : solidC_[nei] ) 
+                      : ( mesh_.C()[nei] );
+        
+            scalar cutDelta = mag((ownC - neiC) & mesh_.Sf()[faceI]) / mesh_.magSf()[faceI];
+                                    
+            LC[faceI] = magDelta()[faceI] / cutDelta;
+        }
+    }
+    
+    //Repeat for parallel patches (and boundary patches?)
+    
+    return tLapCorr;
+}
+
 void Foam::immersedBoundary::calculateInterfaceNormal
 (
     const volScalarField& intermeds
@@ -380,7 +441,6 @@ Foam::vector Foam::immersedBoundary::outwardNormal
 
 
 // Given alpha, calculate derived interface fields
-// LIMITATIONS: SERIAL RUNS ONLY
 void Foam::immersedBoundary::correct()
 {
     // Step 1: Identify intermediate cells based on alpha_ and reconstructTol_
