@@ -563,9 +563,9 @@ void Foam::burningSolid::calcSurfaceEnergy()
                          - gasThermo_.hs()[cellI]);
             scalar Ksum = Kg[cellI] + Ks[cellI];
 
-            qgeng_[cellI] = qConv + qflux_[cellI]*ArV*Kg[cellI]/Ksum;
+            qgeng_[cellI] = 0.;//qConv + qflux_[cellI]*ArV*Kg[cellI]/Ksum;
 
-            qgens_[cellI] = qflux_[cellI]*ArV*Ks[cellI]/Ksum;
+            qgens_[cellI] = 0.;//qflux_[cellI]*ArV*Ks[cellI]/Ksum;
         }
     }
 
