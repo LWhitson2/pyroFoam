@@ -557,7 +557,7 @@ void Foam::burningSolid::calcSurfaceEnergy()
     // them to lower energy products.
     qgens_ = qflux_ * ib_.area(); //oldTime? //TODO add an AbyV or ArV function to ib
     qgens_.internalField() /= mesh_.V();
-    
+
     /*forAll(Ti_, cellI)
     {
         if (ib_.area().oldTime()[cellI] > 0.0) //prove why oldTime and not current time
@@ -568,15 +568,9 @@ void Foam::burningSolid::calcSurfaceEnergy()
             //             - gasThermo_.hs()[cellI]);
             //scalar Ksum = Kg[cellI] + Ks[cellI];
 
-<<<<<<< HEAD
             //qgeng_[cellI] = qConv + qflux_[cellI]*ArV*Kg[cellI]/Ksum;
 
             qgens_[cellI] = qflux_[cellI]*ArV; //*Ks[cellI]/Ksum;
-=======
-            qgeng_[cellI] = 0.;//qConv + qflux_[cellI]*ArV*Kg[cellI]/Ksum;
-
-            qgens_[cellI] = 0.;//qflux_[cellI]*ArV*Ks[cellI]/Ksum;
->>>>>>> master
         }
     }*/
 
