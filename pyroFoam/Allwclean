@@ -6,4 +6,8 @@ wclean
 wclean burningSolid
 find . -name '*~' -delete
 
+wclean ../utilities/immersedBoundary
+wclean ../utilities/geometryTools
+wclean ../utilities/initDynamicMesh
+wclean ../utilities/VOFSetFields
 # ----------------------------------------------------------------- end-of-file

@@ -10,8 +10,8 @@ blockMesh
 VOFSetFields
 
 #-- Run on single processor
-#pyroFoam
-
+pyroFoam
+exit
 
 #-- Run on 6 processors
  decomposePar

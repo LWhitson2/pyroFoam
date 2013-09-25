@@ -212,6 +212,11 @@ public:
         //- Update the interface after a mesh update
         void update();
 
+        tmp<surfaceScalarField> lapCorr
+        (
+            const word& input
+        );
+
         //- Get the mesh refinement criteria field
         tmp<volScalarField> getRefinementField
         (
@@ -240,7 +245,8 @@ public:
             GeometricField<Type, fvPatchField, volMesh>& Su,
             GeometricField<scalar, fvPatchField, volMesh>& Sp,
             const GeometricField<Type, fvPatchField, volMesh>& src,
-            const dimensioned<Type>& solidValue,
+//             const dimensioned<Type>& solidValue,
+            const GeometricField<Type, fvPatchField, volMesh>& solidValue,
             const dimensionedScalar& diag,
             const word& mode,
             const word& input

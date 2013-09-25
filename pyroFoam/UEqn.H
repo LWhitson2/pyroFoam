@@ -10,13 +10,13 @@
     (
         fvm::ddt(rho*ib.alphaCorr(), U)
       + fvm::div(phi, U)
-      - fvm::laplacian(muEff, U)
+      - fvm::laplacian(muEff*ib.lapCorr("gas"), U)
       - fvc::div(muEff*gradUeff)
       - solid.mU()
-      - rho*ib.alpha()*g
+      - rho*ib.alphaCorr()*g
       + fvm::Sp(solid.USp(), U)
       - solid.USu()
-      + fvm::Sp(turbulence->muEff()*solid.Stress(), U)
+      //+ fvm::Sp(turbulence->muEff()*solid.Stress(), U)
     );
 
     UEqn.relax();

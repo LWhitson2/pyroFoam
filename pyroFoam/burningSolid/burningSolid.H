@@ -325,6 +325,8 @@ class burningSolid
 
         void calcHeatTransferOld();
 
+        void calcInterfaceTransfer();
+
 };
 
 

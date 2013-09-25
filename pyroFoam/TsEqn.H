@@ -1,9 +1,8 @@
 {
-    //solid.calcHeatTransfer();
     // Calculate corrected thermal conductivity
     tmp<volScalarField> Cps = solid.Cps();
     surfaceScalarField KEff = ib.interpolate(Ks)
-                               *ib.alphafs();
+                               *ib.alphafsU()*ib.lapCorr("solid");
 
     fvScalarMatrix TsEqn
     (

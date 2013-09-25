@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
     #include "initContinuityErrs.H"
     #include "readTimeControls.H"
     #include "compressibleCourantNo.H"
+//     #include "diffusionNo.H"
     #include "setInitialDeltaT.H"
 
     //Time for fluid flow to run before enableing heat transfer to solid
@@ -68,7 +69,7 @@ int main(int argc, char *argv[])
     {
         #include "readControls.H"
         #include "compressibleCourantNo.H"
-        #include "setDeltaT.H"
+        #include "setPyroDeltaT.H"
 
         runTime++;
         Info<< "Time = " << runTime.timeName() << nl << endl;
@@ -131,13 +132,9 @@ int main(int argc, char *argv[])
         // Record average Interface Temperature
         dimensionedScalar smallA("dA", dimArea, SMALL);
         logTi << runTime.value() << token::TAB
-            << min(neg(ib.area() - smallA)
-             * dimensionedScalar("tmpT", dimTemperature, 100000.0)
-             + solid.Ti()).value() << token::TAB
-            << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
-            << max(solid.Ti()).value() << token::TAB
-            << Ts.weightedAverage(ib.area()).value() << token::TAB
-            << T.weightedAverage(ib.area()).value() << endl;
+              << Ts.weightedAverage(ib.area()).value() << token::TAB
+              << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
+              << T.weightedAverage(ib.area()).value() << endl;
 
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"

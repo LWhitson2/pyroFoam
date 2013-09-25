@@ -122,7 +122,8 @@ void immersedBoundary::setScValue
     GeometricField<Type, fvPatchField, volMesh>& Su,
     GeometricField<scalar, fvPatchField, volMesh>& Sp,
     const GeometricField<Type, fvPatchField, volMesh>& src,
-    const dimensioned<Type>& solidValue,
+//     const dimensioned<Type>& solidValue,
+    const GeometricField<Type, fvPatchField, volMesh>& solidValue,
     const dimensionedScalar& diag,
     const word& mode,
     const word& input
@@ -136,7 +137,7 @@ void immersedBoundary::setScValue
 
     if (mode == "fix")
     {
-        Su += smallCells()*src*diag;
+        Su += ((input == "gas") ? smallCells():smallSolidCells())*src*diag;
     }
     else if (mode == "avg")
     {
@@ -147,7 +148,7 @@ void immersedBoundary::setScValue
 
         forAll(w, faceI)
         {
-            if (w[faceI] > 0.0)
+            if (w[faceI] > SMALL)
             {
                 label own = owner[faceI];
                 label nei = neighbor[faceI];
