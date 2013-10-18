@@ -58,6 +58,48 @@ Foam::immersedBoundary::immersedBoundary
         mesh_
     ),
 
+    alphas_
+    (
+        IOobject
+        (
+            "alphaSolid",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphaSolid", dimless, 0.0)
+    ),
+
+    alphaCorr_
+    (
+        IOobject
+        (
+            "alphaGasCorr",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphaGasCorr", dimless, 0.0)
+    ),
+
+    alphasCorr_
+    (
+        IOobject
+        (
+            "alphaSolidCorr",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("alphaSolidCorr", dimless, 0.0)
+    ),
+
     alphaf_
     (
         IOobject
@@ -496,7 +538,7 @@ void Foam::immersedBoundary::correct()
             }
             else
             { //solid cell
-                alpha_[cellI] = 0.0;
+                // alpha_[cellI] = 0.0;
                 gasC_[cellI] = vector::zero;
                 solidC_[cellI] = mesh_.C()[cellI];
                 gasL_[cellI] = 0.0;
@@ -718,6 +760,11 @@ void Foam::immersedBoundary::correct()
     alphafsCorr_ = alphafs_;
     alphafCorr_ = alphaf_;
 
+    // Create corrected alpha varialbes
+    alphas_ = 1. - alpha_;
+    alphaCorr_ = alpha_*pos(alpha_ - alphaMin_);
+    alphasCorr_ = alphas_*pos(alphas_ - alphaMin_);
+
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();
     gasC_.correctBoundaryConditions();
@@ -888,7 +935,6 @@ Foam::immersedBoundary::getRefinementField
     return tRefinementField;
 }
 
-
 void Foam::immersedBoundary::moveInterface(const volScalarField& ddtalpha)
 {
     //Update alpha
@@ -897,8 +943,6 @@ void Foam::immersedBoundary::moveInterface(const volScalarField& ddtalpha)
     //Correct the interface parameters using the new alpha
     correct();
 }
-
-
 
 Foam::tmp<Foam::volScalarField>
 Foam::immersedBoundary::smallAndSolidCells() const
@@ -914,40 +958,38 @@ Foam::immersedBoundary::smallSolidAndGasCells() const
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::fullGasCells() const
 {
-    return neg(alphas() - SMALL);
+    return neg(alphas() - reconstructTol_);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallCells() const
 {
-    return neg(alpha_ - alphaMin_)*pos(alpha_ - SMALL);
+    return neg(alpha_ - alphaMin_)*pos(alpha_ - reconstructTol_);
 }
-
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::solidCells() const
 {
-    return neg(alpha_ - SMALL);
+    return neg(alpha_ - reconstructTol_);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallSolidCells() const
 {
-    return neg(alphas() - alphaMin_)*pos(alphas() - SMALL);
+    return neg(alphas() - alphaMin_)*pos(alphas() - reconstructTol_);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::gasCells() const
 {
-    return pos(alpha_ - alphaMin_);
+    return pos(alpha_ - reconstructTol_);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::mixedCells() const
 {
-    return pos(alpha_ - SMALL)*pos(alphas() - SMALL);
+    return pos(alpha_ - reconstructTol_)*pos(alphas() - reconstructTol_);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::noCells() const
 {
     return neg(alpha_ + 100.0);
 }
-
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::largeSolidCells() const
 {

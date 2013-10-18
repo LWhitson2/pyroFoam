@@ -384,7 +384,9 @@ Foam::burningSolid::burningSolid
 
     ignTime_(pyroDict_.lookup("ignTime")),
 
-    ignRelax_(pyroDict_.lookup("ignRelax"))
+    ignRelax_(pyroDict_.lookup("ignRelax")),
+
+    coupleSolid_(pyroDict_.lookup("coupleSolid"))
 
 {
     Info<< "Created burningSolid" << endl;
@@ -530,10 +532,31 @@ void Foam::burningSolid::calcInterfaceFlux()
 
     volScalarField Ks = solidThermo_->K();
 
+    // Surface fluxes
+    forAll(Ts_, cellI)
+    {
+        if (ib_.area().oldTime()[cellI] > SMALL)
+        {
+            scalar qflux = qgens_[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
+            //Ti_[cellI] = Ts_[cellI] + qflux*Ls.oldTime()[cellI]/Ks[cellI];
+            mflux_[cellI] = pyroModel_->mass_burning_rate(
+                Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
+//                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+
+            qflux_[cellI] = pyroModel_->energy_generation(
+                Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
+//                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+        }
+    }
+
     // Laser ignition source
+    volScalarField Cps = solidThermo_->Cp();
     if (mesh_.time().timeOutputValue() < ignTime_.value())
     {
         qgens_.internalField() = ignFlux_ * ib_.area().oldTime()/mesh_.V();
+//             - (mflux_.internalField()*Cps.internalField()
+//             * Ts_.oldTime().internalField()*ib_.area().oldTime().internalField()
+//             / mesh_.V());
     }
     else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
     {
@@ -541,23 +564,6 @@ void Foam::burningSolid::calcInterfaceFlux()
         scalar maxTime = (ignTime_.value() + ignRelax_.value());
         dimensionedScalar ignFlux = ignFlux_*(maxTime - time)/ignRelax_.value();
         qgens_.internalField() = ignFlux*ib_.area().oldTime()/mesh_.V();
-    }
-
-    // Surface fluxes
-    forAll(Ts_, cellI)
-    {
-        if (ib_.area().oldTime()[cellI] > SMALL)
-        {
-            scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
-            Ti_[cellI] = Ts_[cellI] + qflux*Ls.oldTime()[cellI]/Ks[cellI];
-            mflux_[cellI] = pyroModel_->mass_burning_rate(
-//                 Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
-
-            qflux_[cellI] = pyroModel_->energy_generation(
-//                 Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
-        }
     }
 }
 
@@ -570,9 +576,12 @@ void Foam::burningSolid::calcSurfaceEnergy()
     // Energy transferred to gas
     forAll(mflux_, cellI)
     {
-        qgeng_.internalField()[cellI] = mflux_[cellI] * ib_.area().oldTime()[cellI]
-                               * mCM_.cellMixture(cellI).Hs(Ti_[cellI])
+        if (coupleSolid_ == "on")
+        {
+            qgeng_.internalField()[cellI] = mflux_[cellI] * ib_.area().oldTime()[cellI]
+                               * mCM_.cellMixture(cellI).Hs(Ts_[cellI])
                                / mesh_.V()[cellI];
+        }
     }
 }
 
@@ -625,7 +634,8 @@ void Foam::burningSolid::correct
     calcSurfaceStress();
 
     Foam::Info << "Calculate gas/solid interface" << Foam::endl;
-    calcInterfaceTransfer();
+    if (coupleSolid_ == "yes") calcInterfaceTransfer();
+
 }
 
 
@@ -699,6 +709,8 @@ void Foam::burningSolid::calcInterfaceTransfer()
     tmp<volScalarField> Cpg = gasThermo_.Cp();
     volScalarField alphag = gasThermo_.alpha();
     volScalarField Kg = alphag*Cpg();
+
+    Info << "K gas Min/Max: " << min(Kg).value() << ", " << max(Kg).value() << endl;
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL();
@@ -1000,6 +1012,14 @@ void Foam::burningSolid::calcInterfaceTransfer()
 //             QsSp_[cellI] = 0.0;
             TsSp_[cellI] = 0.0;
             TsSu_[cellI] = 0.0;
+        }
+
+        if (coupleSolid_ != "on")
+        {
+            QgSu_[cellI] = 0.0;
+            QgSp_[cellI] = 0.0;
+            QsSu_[cellI] = 0.0;
+            QsSp_[cellI] = 0.0;
         }
     }
 }

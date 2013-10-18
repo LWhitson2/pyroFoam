@@ -49,8 +49,6 @@ tmp<fv::convectionScheme<scalar> > mvConvection
         }
     }
 
-    thermo.correct();
-
     // Added to get sum(Yi) = 1
     //Yt += Y[inertIndex];
 
@@ -62,4 +60,6 @@ tmp<fv::convectionScheme<scalar> > mvConvection
             << Foam::min(Y[i]).value() << ", "
             << Foam::max(Y[i]).value() << endl;
     }
+
+    thermo.correct();
 }

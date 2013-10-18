@@ -31,11 +31,12 @@ WSBCoeffs
 ConstantCoeffs
 {
     mb    mb    [1 -2 -1 0 0 0 0]   1.0;
-    Qc    Qc    [0 2 -2 0 0 0 0]    1600.e3;
+    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
 }   
 
 ignTime   ignTime     [0 0 1 0 0 0 0]     0.500;
-ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.;
+ignFlux   ignFlux     [1 0 -3 0 0 0 0]    100.;
 ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.0;
 
+coupleSolid  off;
 // ************************************************************************* //

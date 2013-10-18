@@ -66,6 +66,12 @@ class immersedBoundary
         //- Volume fraction of gas
         volScalarField alpha_;
 
+        volScalarField alphas_;
+
+        volScalarField alphaCorr_;
+
+        volScalarField alphasCorr_;
+
         //- Face area fraction of gas
         surfaceScalarField alphaf_;
 
@@ -159,6 +165,20 @@ public:
             return alpha_;
         }
 
+//         const volScalarField& alphas() const
+//         {
+//             return alphas_;
+//         }
+//
+//         const volScalarField& alphaCorr() const
+//         {
+//             return alphaCorr_;
+//         }
+//
+//         const volScalarField& alphasCorr() const
+//         {
+//             return alphasCorr_;
+//         }
         const tmp<volScalarField> alphas() const
         {
             return (1. - alpha_);

@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
         {
             // Evolve the solid surface
             solid.correct(U, phi, runTime.timeOutputValue() > flowRelaxTime);
+            Info << endl << max(mag(fvc::ddt(ib.alphasCorr()()))) << endl << endl;
 
             #include "UEqn.H"
             #include "YEqn.H"

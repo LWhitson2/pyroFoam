@@ -167,6 +167,9 @@ class burningSolid
         //- Igniter Relax Time
         dimensionedScalar ignRelax_;
 
+        //- Couple Solid and Gas
+        word coupleSolid_;
+
     // Private functions
         void fixSmallCells();
         void calcBurnU();
