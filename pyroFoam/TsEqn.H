@@ -14,7 +14,8 @@
       + solid.QsSu()
       - fvm::Sp(solid.QsSp(), Ts)
       + solid.Qgens()
-      //- fvm::Sp(rhos*Cps*fvc::ddt(ib.alphaCorr()), Ts)
+//       - rhos*Cps*fvc::ddt(ib.alphaCorr()())*(solid.Ti() - Ts)
+//       - fvm::Sp(rhos*Cps*fvc::ddt(ib.alphaCorr()), Ts)
     );
 
     TsEqn.relax();

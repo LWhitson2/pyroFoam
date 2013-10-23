@@ -62,7 +62,7 @@
     {
         fvScalarMatrix pcorrEqn
         (
-            fvm::laplacian(rAUf, pcorr) == fvc::div(phi) - divU //TODO: Fix so we can include alphaf in laplacian?
+            fvm::laplacian(rAUf*ib.lapCorr("gas"), pcorr) == fvc::div(phi) - divU //TODO: Fix so we can include alphaf in laplacian?
         );
 
         pcorrEqn.solve();

@@ -537,15 +537,14 @@ void Foam::burningSolid::calcInterfaceFlux()
     {
         if (ib_.area().oldTime()[cellI] > SMALL)
         {
-            scalar qflux = qgens_[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
-            //Ti_[cellI] = Ts_[cellI] + qflux*Ls.oldTime()[cellI]/Ks[cellI];
+            scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
+//             Ti_[cellI] = Ts_[cellI] + ignFlux_.value()*Ls[cellI]/Ks[cellI];
+            Ti_[cellI] = Ts_[cellI] + qflux*Ls[cellI]/Ks[cellI];
             mflux_[cellI] = pyroModel_->mass_burning_rate(
-                Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
-//                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
 
             qflux_[cellI] = pyroModel_->energy_generation(
-                Ts_[cellI], gasThermo_.p()[cellI], cellI).value();
-//                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
         }
     }
 
@@ -554,9 +553,6 @@ void Foam::burningSolid::calcInterfaceFlux()
     if (mesh_.time().timeOutputValue() < ignTime_.value())
     {
         qgens_.internalField() = ignFlux_ * ib_.area().oldTime()/mesh_.V();
-//             - (mflux_.internalField()*Cps.internalField()
-//             * Ts_.oldTime().internalField()*ib_.area().oldTime().internalField()
-//             / mesh_.V());
     }
     else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
     {
@@ -582,6 +578,8 @@ void Foam::burningSolid::calcSurfaceEnergy()
                                * mCM_.cellMixture(cellI).Hs(Ts_[cellI])
                                / mesh_.V()[cellI];
         }
+        qgens_.internalField()[cellI] -= mflux_[cellI]*solidThermo_->Cp()()[cellI]
+            *(Ti_[cellI] - Ts_[cellI]) * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
     }
 }
 
@@ -672,7 +670,6 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
 }
 
 
-
 void Foam::burningSolid::calcSurfaceStress()
 {
     // Centroid lengths
@@ -702,15 +699,19 @@ void Foam::burningSolid::calcSurfaceStress()
     }
 }
 
+
 void Foam::burningSolid::calcInterfaceTransfer()
 {
-    // Conduction coefficients
+    // Solid Properties
+    volScalarField rhos = solidThermo_->rho();
+    volScalarField Cps = solidThermo_->Cp();
     volScalarField Ks = solidThermo_->K();
+    
+    // Gas Properties
+    volScalarField rhog = gasThermo_.rho();
     tmp<volScalarField> Cpg = gasThermo_.Cp();
     volScalarField alphag = gasThermo_.alpha();
     volScalarField Kg = alphag*Cpg();
-
-    Info << "K gas Min/Max: " << min(Kg).value() << ", " << max(Kg).value() << endl;
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL();
@@ -974,9 +975,6 @@ void Foam::burningSolid::calcInterfaceTransfer()
     );
 
     // Solve conduction for small cells only
-    volScalarField rhog = gasThermo_.rho();
-    volScalarField rhos = solidThermo_->rho();
-    volScalarField Cps = solidThermo_->Cp();
     const tmp<volScalarField> alphas = ib_.alphas();
     forAll(QgSu_, cellI)
     {
@@ -1012,14 +1010,6 @@ void Foam::burningSolid::calcInterfaceTransfer()
 //             QsSp_[cellI] = 0.0;
             TsSp_[cellI] = 0.0;
             TsSu_[cellI] = 0.0;
-        }
-
-        if (coupleSolid_ != "on")
-        {
-            QgSu_[cellI] = 0.0;
-            QgSp_[cellI] = 0.0;
-            QsSu_[cellI] = 0.0;
-            QsSp_[cellI] = 0.0;
         }
     }
 }
