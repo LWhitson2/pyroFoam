@@ -527,8 +527,7 @@ void Foam::burningSolid::calcInterfaceFlux()
     mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
     qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
     qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
-    Ti_ = Ts_;
-    const volScalarField& Ls = ib_.solidL();
+//     const volScalarField& Ls = ib_.solidL();
 
     volScalarField Ks = solidThermo_->K();
 
@@ -537,49 +536,57 @@ void Foam::burningSolid::calcInterfaceFlux()
     {
         if (ib_.area().oldTime()[cellI] > SMALL)
         {
-            scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
+//             scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
 //             Ti_[cellI] = Ts_[cellI] + ignFlux_.value()*Ls[cellI]/Ks[cellI];
-            Ti_[cellI] = Ts_[cellI] + qflux*Ls[cellI]/Ks[cellI];
+//             Ti_[cellI] = Ts_[cellI] + qflux*Ls[cellI]/Ks[cellI];
             mflux_[cellI] = pyroModel_->mass_burning_rate(
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ti_.oldTime()[cellI], gasThermo_.p().oldTime()[cellI], cellI).value();
 
             qflux_[cellI] = pyroModel_->energy_generation(
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ti_.oldTime()[cellI], gasThermo_.p().oldTime()[cellI], cellI).value();
         }
     }
 
     // Laser ignition source
     volScalarField Cps = solidThermo_->Cp();
+    Info << "Applying Laser Source..." << endl;
     if (mesh_.time().timeOutputValue() < ignTime_.value())
     {
-        qgens_.internalField() = ignFlux_ * ib_.area().oldTime()/mesh_.V();
+//         qgens_.internalField() = ignFlux_ * ib_.area().oldTime()/mesh_.V();
+        qflux_ += ignFlux_;
     }
     else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
     {
         scalar time = mesh_.time().timeOutputValue();
         scalar maxTime = (ignTime_.value() + ignRelax_.value());
         dimensionedScalar ignFlux = ignFlux_*(maxTime - time)/ignRelax_.value();
-        qgens_.internalField() = ignFlux*ib_.area().oldTime()/mesh_.V();
+        
+//         qgens_.internalField() = ignFlux*ib_.area().oldTime()/mesh_.V();
+        qflux_ += ignFlux;
     }
+    Info << "Done." << endl;
 }
 
 void Foam::burningSolid::calcSurfaceEnergy()
 {
     // Pyrolysis energy flux
     // TODO add an AbyV or ArV function to ib
-    qgens_.internalField() += qflux_ * ib_.area().oldTime()/mesh_.V();
+//     qgens_.internalField() -= qflux_ * ib_.area().oldTime()/mesh_.V();
 
     // Energy transferred to gas
     forAll(mflux_, cellI)
     {
         if (coupleSolid_ == "on")
         {
-            qgeng_.internalField()[cellI] = mflux_[cellI] * ib_.area().oldTime()[cellI]
-                               * mCM_.cellMixture(cellI).Hs(Ts_[cellI])
-                               / mesh_.V()[cellI];
+            qgeng_.internalField()[cellI] = mflux_[cellI]
+                * (mCM_.cellMixture(cellI).Hs(Ti_.oldTime()[cellI])
+                - mCM_.cellMixture(cellI).Hs(Ts_.oldTime()[cellI]))
+                * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
         }
-        qgens_.internalField()[cellI] -= mflux_[cellI]*solidThermo_->Cp()()[cellI]
-            *(Ti_[cellI] - Ts_[cellI]) * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+        qgens_.internalField()[cellI] -= 
+              mflux_[cellI]*solidThermo_->Cp()()[cellI]
+            * (Ti_.oldTime()[cellI] - Ts_[cellI])
+            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
     }
 }
 
@@ -632,7 +639,7 @@ void Foam::burningSolid::correct
     calcSurfaceStress();
 
     Foam::Info << "Calculate gas/solid interface" << Foam::endl;
-    if (coupleSolid_ == "yes") calcInterfaceTransfer();
+    calcInterfaceTransfer();
 
 }
 
@@ -702,6 +709,9 @@ void Foam::burningSolid::calcSurfaceStress()
 
 void Foam::burningSolid::calcInterfaceTransfer()
 {
+    // Initialize Ti = Ts
+    Ti_ = Ts_;
+    
     // Solid Properties
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
@@ -712,6 +722,9 @@ void Foam::burningSolid::calcInterfaceTransfer()
     tmp<volScalarField> Cpg = gasThermo_.Cp();
     volScalarField alphag = gasThermo_.alpha();
     volScalarField Kg = alphag*Cpg();
+    if (coupleSolid_ != "on") Kg = Kg*0.;
+        
+    const volScalarField& Tg = gasThermo_.T();
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL();
@@ -741,19 +754,23 @@ void Foam::burningSolid::calcInterfaceTransfer()
         // Normal mixed cell conduction transfer
         if (normalCell[cellI])
         {
-            // Calculate Thermal Resistance
-            scalar Rg = Lg[cellI]/(Ai[cellI]*Kg[cellI]);
-            scalar Rs = Ls[cellI]/(Ai[cellI]*Ks[cellI]);
-            scalar Req = Rg + Rs;
+            // Calculate Thermal Coefficients
+            scalar Cg = Kg[cellI]/Lg[cellI];
+            scalar Cs = Ks[cellI]/Ls[cellI];
+            
+            // Calculate Interface Temperature
+            Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
+                       / (Cs + Cg);
+
 
             // Gas source terms
-            QgSp_[cellI] = 1./(Req*Cpg()[cellI]*Vc[cellI]);
-            QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
-                         / (Req*Cpg()[cellI]*Vc[cellI]);
+            QgSp_[cellI] = Cg*Ai[cellI]/(Cpg()[cellI]*Vc[cellI]);
+            QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ti_[cellI])
+                         * Cg*Ai[cellI]/(Cpg()[cellI]*Vc[cellI]);
 
             // Solid source terms
-            QsSp_[cellI] = 1./(Req*Vc[cellI]);
-            QsSu_[cellI] = gasThermo_.T()[cellI]/(Req*Vc[cellI]);
+            QsSp_[cellI] = Cs*Ai[cellI]/Vc[cellI];
+            QsSu_[cellI] = Cs*Ti_[cellI]*Ai[cellI]/Vc[cellI];
         }
     }
 
@@ -772,31 +789,36 @@ void Foam::burningSolid::calcInterfaceTransfer()
 
             if (tmpA > SMALL)
             {
+                // Calculate conduction lengths
                 scalar tmpLg = mag((mesh_.Cf()[faceI] - ib_.gasC()[mc])
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
                 scalar tmpLs = mag((mesh_.Cf()[faceI] - mesh_.C()[sc])
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
 
-//                 Info << "Lg / Ls: " << tmpLg << ", " << tmpLs << endl;
-//                 Info << "tmpA: " << tmpA << endl;
-//                 Info << "Vc mc/sc: " << Vc[mc] << ", " << Vc[sc] << endl;
-//                 Info << "K mc/sc: " << Kg[mc] << ", " << Ks[sc] << endl;
+                Info << "Lg / Ls: " << tmpLg << ", " << tmpLs << endl;
+                Info << "tmpA: " << tmpA << endl;
+                Info << "Vc mc/sc: " << Vc[mc] << ", " << Vc[sc] << endl;
+                Info << "K mc/sc: " << Kg[mc] << ", " << Ks[sc] << endl;
 
-                // Calculate thermal resistance
-                scalar Rg = tmpLg/(Kg[mc]*tmpA);
-                scalar Rs = tmpLs/(Ks[sc]*tmpA);
-                scalar Req = Rg + Rs;
+                // Calculate Thermal Coefficients
+                scalar Cg = Kg[mc]/tmpLg;
+                scalar Cs = Ks[sc]/tmpLs;
+                
+                // Calculate interface temperature
+                scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
+                             / (Cs + Cg);
+                Ti_[sc] = tmpTi;  // TODO Update for Ti based on area averaging.
 
 //                 Info << "Rg / Rs / Req: " << Rg << ", " << Rs << ", " << Req << endl;
 
                 // Gas source terms
-                QgSp_[mc] += 1./(Req*Cpg()[mc]*Vc[mc]);
-                QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
-                           / (Req*Cpg()[mc]*Vc[mc]);
+                QgSp_[mc] += Cg*tmpA/(Cpg()[mc]*Vc[mc]);
+                QgSu_[mc] += mCM_.cellMixture(mc).Hs(tmpTi)
+                           * Cg*tmpA/(Cpg()[mc]*Vc[mc]);
 
                 // Solid source terms
-                QsSp_[sc] += 1./(Req*Vc[sc]);
-                QsSu_[sc] += gasThermo_.T()[mc]/(Req*Vc[sc]);
+                QsSp_[sc] += tmpA/(Cs*Vc[sc]);
+                QsSu_[sc] += tmpTi*tmpA/(Cs*Vc[sc]);
             }
         }
     }
