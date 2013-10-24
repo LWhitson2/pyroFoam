@@ -537,9 +537,9 @@ void Foam::burningSolid::calcInterfaceFlux()
     {
         if (ib_.area().oldTime()[cellI] > SMALL)
         {
-            scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
-//             Ti_[cellI] = Ts_[cellI] + ignFlux_.value()*Ls[cellI]/Ks[cellI];
-            Ti_[cellI] = Ts_[cellI] + qflux*Ls[cellI]/Ks[cellI];
+//             scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
+            Ti_[cellI] = Ts_[cellI] + ignFlux_.value()*Ls[cellI]/Ks[cellI];
+//             Ti_[cellI] = Ts_[cellI] + qflux*Ls[cellI]/Ks[cellI];
             mflux_[cellI] = pyroModel_->mass_burning_rate(
                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
 
