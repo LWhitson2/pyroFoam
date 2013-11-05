@@ -15,7 +15,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-psiChemistryModel   ODEChemistryModel<gasThermoPhysics>;
+psiChemistryModel   ODEChemistryModel<constGasThermoPhysics>;
 
 chemistry           off;
 

@@ -84,6 +84,7 @@ else*/
 Info<< "Min,max p = " << Foam::min(p).value()
     << ", " << Foam::max(p).value() << endl;
 
+// #include "rhoEqn.H"
 #include "compressibleContinuityErrs.H"
 
 Info<< "Min,max U = " << Foam::min(Foam::mag(U)).value()

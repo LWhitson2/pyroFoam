@@ -75,7 +75,7 @@ class burningSolid
         const hsCombustionThermo& gasThermo_;
 
         //- Multicomponent Mixture
-        const multiComponentMixture<gasThermoPhysics>& mCM_;
+        const multiComponentMixture<constGasThermoPhysics>& mCM_;
 
         //- Input dictionary
         IOdictionary pyroDict_;
@@ -141,7 +141,7 @@ class burningSolid
         word gasName_;
 
         //- Pointer to the thermo for the pyro gas
-        const gasThermoPhysics* EMg_;
+        const constGasThermoPhysics* EMg_;
 
         //- Gas heat transfer implicit source
         volScalarField QgSp_;
@@ -167,8 +167,8 @@ class burningSolid
         //- Igniter Relax Time
         dimensionedScalar ignRelax_;
 
-        //- Couple Solid and Gas
-        word coupleSolid_;
+        //- Flag to test various parts of code
+        word testPyro_;
 
     // Private functions
         void fixSmallCells();
@@ -322,6 +322,11 @@ class burningSolid
         const volScalarField& Ti()
         {
             return Ti_;
+        }
+
+        const word testPyro()
+        {
+            return testPyro_;
         }
 
         void calcInterfaceTemp();

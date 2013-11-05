@@ -12,11 +12,11 @@
 
     fvScalarMatrix hsEqn
     (
-       fvm::ddt(ib.alphaCorr()*rho, hs)
+        fvm::ddt(ib.alphaCorr()*rho, hs)
       + mvConvection->fvmDiv(phi, hs)
       - fvm::laplacian(alphaEff, hs)
      ==
-       ib.alphaCorr()*dpdt
+        ib.alphaCorr()*dpdt
       - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
       + ib.alphaCorr()*combustion->Sh()
       + solid.hsSu()

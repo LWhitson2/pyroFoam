@@ -103,15 +103,32 @@ int main(int argc, char *argv[])
             // Evolve the solid surface
             solid.correct(U, phi, runTime.timeOutputValue() > flowRelaxTime);
 
-            #include "UEqn.H"
-            #include "YEqn.H"
-            #include "hsEqn.H"
-            #include "TsEqn.H"
-
-            // --- Pressure corrector loop
-            while (pimple.correct())
+            if (solid.testPyro() == "solid")
             {
-                #include "pEqn.H"
+                #include "TsEqn.H"
+            }
+            else if (solid.testPyro() == "momentum")
+            {
+                #include "UEqn.H"
+
+                // --- Pressure corrector loop
+                while (pimple.correct())
+                {
+                    #include "pEqn.H"
+                }
+            }
+            else
+            {
+                #include "UEqn.H"
+                #include "YEqn.H"
+                #include "hsEqn.H"
+                #include "TsEqn.H"
+
+                // --- Pressure corrector loop
+                while (pimple.correct())
+                {
+                    #include "pEqn.H"
+                }
             }
 
             if (pimple.turbCorr())

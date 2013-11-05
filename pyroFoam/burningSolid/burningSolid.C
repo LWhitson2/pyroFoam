@@ -47,7 +47,7 @@ Foam::burningSolid::burningSolid
 
     mCM_
     (
-        dynamic_cast<const multiComponentMixture<gasThermoPhysics>& >
+        dynamic_cast<const multiComponentMixture<constGasThermoPhysics>& >
         ( gasThermo_.composition() )
     ),
 
@@ -386,7 +386,7 @@ Foam::burningSolid::burningSolid
 
     ignRelax_(pyroDict_.lookup("ignRelax")),
 
-    coupleSolid_(pyroDict_.lookup("coupleSolid"))
+    testPyro_(pyroDict_.lookup("testPyro"))
 
 {
     Info<< "Created burningSolid" << endl;
@@ -397,11 +397,11 @@ Foam::burningSolid::burningSolid
     solidThermo_->rho().rename("rhos");
 
     // Find gasName in species
-    const multiComponentMixture<gasThermoPhysics>& composition =
-        dynamic_cast<const multiComponentMixture<gasThermoPhysics>& >
+    const multiComponentMixture<constGasThermoPhysics>& composition =
+        dynamic_cast<const multiComponentMixture<constGasThermoPhysics>& >
         ( gasThermo_.composition() );
 
-    const PtrList<gasThermoPhysics>& speciesData = composition.speciesData();
+    const PtrList<constGasThermoPhysics>& speciesData = composition.speciesData();
 
     forAll(speciesData, s)
     {
@@ -517,7 +517,7 @@ void Foam::burningSolid::calcBurnU()
         EMg_->R()
     );
 
-    burnU_ = (Ts_*Rg/gasThermo_.p() - 1./solidThermo_->rho())
+    burnU_ = (Ti_*Rg/gasThermo_.p() - 1./solidThermo_->rho())
            * mflux_*ib_.normal().oldTime(); //should use oldTime??
 }
 
@@ -527,19 +527,12 @@ void Foam::burningSolid::calcInterfaceFlux()
     mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
     qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
     qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
-    Ti_ = Ts_;
-    const volScalarField& Ls = ib_.solidL();
 
-    volScalarField Ks = solidThermo_->K();
-
-    // Surface fluxes
+    // Surface pyrolysis fluxes
     forAll(Ts_, cellI)
     {
         if (ib_.area().oldTime()[cellI] > SMALL)
         {
-//             scalar qflux = qgens_.oldTime()[cellI]*mesh_.V()[cellI]/ib_.area().oldTime()[cellI];
-            Ti_[cellI] = Ts_[cellI] + ignFlux_.value()*Ls[cellI]/Ks[cellI];
-//             Ti_[cellI] = Ts_[cellI] + qflux*Ls[cellI]/Ks[cellI];
             mflux_[cellI] = pyroModel_->mass_burning_rate(
                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
 
@@ -548,38 +541,41 @@ void Foam::burningSolid::calcInterfaceFlux()
         }
     }
 
-    // Laser ignition source
+    // Laser ignition flux
     volScalarField Cps = solidThermo_->Cp();
     if (mesh_.time().timeOutputValue() < ignTime_.value())
     {
-        qgens_.internalField() = ignFlux_ * ib_.area().oldTime()/mesh_.V();
+        qflux_ += ignFlux_;
     }
     else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
     {
         scalar time = mesh_.time().timeOutputValue();
         scalar maxTime = (ignTime_.value() + ignRelax_.value());
         dimensionedScalar ignFlux = ignFlux_*(maxTime - time)/ignRelax_.value();
-        qgens_.internalField() = ignFlux*ib_.area().oldTime()/mesh_.V();
+        qflux_ += ignFlux;
     }
 }
 
 void Foam::burningSolid::calcSurfaceEnergy()
 {
-    // Pyrolysis energy flux
+    // Convert surface flux to source
     // TODO add an AbyV or ArV function to ib
-    qgens_.internalField() += qflux_ * ib_.area().oldTime()/mesh_.V();
+    qgens_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
 
     // Energy transferred to gas
     forAll(mflux_, cellI)
     {
-        if (coupleSolid_ == "on")
+        if (testPyro_ == "solid")
         {
-            qgeng_.internalField()[cellI] = mflux_[cellI] * ib_.area().oldTime()[cellI]
-                               * mCM_.cellMixture(cellI).Hs(Ts_[cellI])
-                               / mesh_.V()[cellI];
+            qgeng_.internalField()[cellI] = mflux_[cellI]
+                * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
+                - gasThermo_.hs()[cellI])
+                * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
         }
-        qgens_.internalField()[cellI] -= mflux_[cellI]*solidThermo_->Cp()()[cellI]
-            *(Ti_[cellI] - Ts_[cellI]) * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+        qgens_.internalField()[cellI] -=
+              mflux_[cellI]*solidThermo_->Cp()()[cellI]
+            * (Ti_[cellI] - Ts_[cellI])
+            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
     }
 }
 
@@ -595,10 +591,11 @@ void Foam::burningSolid::correct
     Foam::Info << "Correcting burningSolid" << Foam::endl;
 
     // Calculate mass and energy flux (mflux, qflux) using current P and Ts
+    Foam::Info << "Calculate mass/energy flux at surface" << Foam::endl;
     calcInterfaceFlux();
 
     // Calculate mass and energy source using original cell area
-    Foam::Info << "Caculate mass/energy source" << Foam::endl;
+    Foam::Info << "Calculate mass/energy source" << Foam::endl;
     m_pyro_.internalField() = mflux_ * ib_.area().oldTime() / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
@@ -632,8 +629,7 @@ void Foam::burningSolid::correct
     calcSurfaceStress();
 
     Foam::Info << "Calculate gas/solid interface" << Foam::endl;
-    if (coupleSolid_ == "yes") calcInterfaceTransfer();
-
+    calcInterfaceTransfer();
 }
 
 
@@ -706,12 +702,14 @@ void Foam::burningSolid::calcInterfaceTransfer()
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
     volScalarField Ks = solidThermo_->K();
-    
+
     // Gas Properties
     volScalarField rhog = gasThermo_.rho();
     tmp<volScalarField> Cpg = gasThermo_.Cp();
     volScalarField alphag = gasThermo_.alpha();
     volScalarField Kg = alphag*Cpg();
+    if (testPyro_ != "solid") Kg = Kg*0.;
+    const volScalarField& Tg = gasThermo_.T();
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL();
@@ -735,25 +733,40 @@ void Foam::burningSolid::calcInterfaceTransfer()
     volScalarField fullCell = solidCell*pos(Ai
                             - dimensionedScalar("tmp", dimArea, SMALL));
 
+    // Initialize Ti to Ts
+    Ti_ = Ts_;
+
     Info << "Normal Cell Conduction" << endl;
     forAll(Ts_,cellI)
     {
         // Normal mixed cell conduction transfer
         if (normalCell[cellI])
         {
-            // Calculate Thermal Resistance
-            scalar Rg = Lg[cellI]/(Ai[cellI]*Kg[cellI]);
-            scalar Rs = Ls[cellI]/(Ai[cellI]*Ks[cellI]);
-            scalar Req = Rg + Rs;
+            // Calculate thermal constants
+            scalar Cg = Kg[cellI]/Lg[cellI];
+            scalar Cs = Ks[cellI]/Ls[cellI];
 
-            // Gas source terms
-            QgSp_[cellI] = 1./(Req*Cpg()[cellI]*Vc[cellI]);
-            QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
-                         / (Req*Cpg()[cellI]*Vc[cellI]);
+            // Calculate interface temperature
+            Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
+                       / (Cs + Cg);
 
-            // Solid source terms
-            QsSp_[cellI] = 1./(Req*Vc[cellI]);
-            QsSu_[cellI] = gasThermo_.T()[cellI]/(Req*Vc[cellI]);
+            if (testPyro_ != "solid")
+            {
+                // Calculate thermal resistance
+                scalar Req = 0.;
+                if (Cg > SMALL) Req += 1./Cg;
+                if (Cs > SMALL) Req += 1./Cs;
+
+                // Gas source terms
+                QgSp_[cellI] = Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
+                QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
+                            * Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
+
+                // Solid source terms
+                QsSp_[cellI] = Ai[cellI]/(Req*Vc[cellI]);
+                QsSu_[cellI] = Tg[cellI]
+                            * Ai[cellI]/(Req*Vc[cellI]);
+            }
         }
     }
 
@@ -783,24 +796,36 @@ void Foam::burningSolid::calcInterfaceTransfer()
 //                 Info << "K mc/sc: " << Kg[mc] << ", " << Ks[sc] << endl;
 
                 // Calculate thermal resistance
-                scalar Rg = tmpLg/(Kg[mc]*tmpA);
-                scalar Rs = tmpLs/(Ks[sc]*tmpA);
-                scalar Req = Rg + Rs;
+                scalar Cg = Kg[mc]/tmpLg;
+                scalar Cs = Ks[sc]/tmpLs;
 
-//                 Info << "Rg / Rs / Req: " << Rg << ", " << Rs << ", " << Req << endl;
+                // Calculate interface temperature
+                scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
+                       / (Cs + Cg);
+                Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
 
-                // Gas source terms
-                QgSp_[mc] += 1./(Req*Cpg()[mc]*Vc[mc]);
-                QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
-                           / (Req*Cpg()[mc]*Vc[mc]);
+                if (testPyro_ != "solid")
+                {
+                    // Calculate thermal resistance
+                    scalar Req = 0.;
+                    if (Cg > SMALL) Req += 1./Cg;
+                    if (Cs > SMALL) Req += 1./Cs;
 
-                // Solid source terms
-                QsSp_[sc] += 1./(Req*Vc[sc]);
-                QsSu_[sc] += gasThermo_.T()[mc]/(Req*Vc[sc]);
+                    // Gas source terms
+                    QgSp_[mc] += tmpA/(Req*Cpg()[mc]*Vc[mc]);
+                    QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
+                               * tmpA/(Req*Cpg()[mc]*Vc[mc]);
+
+                    // Solid source terms
+                    QsSp_[sc] += tmpA/(Req*Vc[sc]);
+                    QsSu_[sc] += Tg[mc]
+                               * tmpA/(Req*Vc[sc]);
+                }
             }
         }
     }
 
+    // TODO Update parallel routine for calculating interface transfer
     /*// Full solid cell to parallel neighbor conduction transfer
     const fvPatchList& patches = mesh_.boundary();
 
@@ -997,452 +1022,10 @@ void Foam::burningSolid::calcInterfaceTransfer()
 
         if (smallSolidCell[cellI])
         {
-//             scalar qcond = (QsSu_[cellI] - QsSp_[cellI]*Ts_[cellI])
-//                          * mesh_.time().deltaTValue();
-//             scalar Tsolid = QsSu_[cellI]/QsSp_[cellI];
-//             scalar TsTime = Ts_.oldTime()[cellI]
-//                           + qcond/(alphas()[cellI]*rhos[cellI]*Cps[cellI]);
-//             if (qcond > 0.) Tsolid = min(Tsolid, TsTime);
-//             else Tsolid = max(Tsolid, TsTime);
-//             TsSp_[cellI] = TsrdT.value();
-//             TsSu_[cellI] = Tsolid*TsrdT.value();
-//             QsSu_[cellI] = 0.0;
-//             QsSp_[cellI] = 0.0;
             TsSp_[cellI] = 0.0;
             TsSu_[cellI] = 0.0;
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-// void Foam::burningSolid::calcInterfaceTemp()
-// {
-//     // Conduction coefficients
-//     volScalarField Ks = solidThermo_->K();
-//     tmp<volScalarField> Cpg = gasThermo_.Cp();
-//     volScalarField alphag = gasThermo_.alpha();
-//     volScalarField Kg = alphag*Cpg();
-//
-//     // Conduction lengths
-//     const volScalarField& Lg = ib_.gasL();
-//     const volScalarField& Ls = ib_.solidL();
-//
-//     // Interface area and volume
-//     const volScalarField& Ai = ib_.area();
-//     const volScalarField::DimensionedInternalField& Vc = mesh_.V();
-//
-//     // Initialize cells to no heat transfer
-//     QgSp_ = dimensionedScalar("zero", dimDensity/dimTime, 0.0);
-//     QsSp_ = dimensionedScalar("zero", dimPower/dimTemperature/dimVolume, 0.0);
-//     QgSu_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
-//     QsSu_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
-//
-//     // Initialize Interface Temperature to Solid Temperature
-//     const volScalarField& qfluxOld = qflux_.oldTime();
-//     Ti_ = Ts_;
-//
-//     // Cell identification
-//     volScalarField normalCell = ib_.mixedCells();
-//     volScalarField solidCell = ib_.solidCells();
-//     volScalarField smallGasCell = ib_.smallCells();
-//     volScalarField smallSolidCell = ib_.smallSolidCells();
-//     volScalarField fullCell = solidCell*pos(Ai
-//                             - dimensionedScalar("tmp", dimArea, SMALL));
-//
-//     forAll(Ts_,cellI)
-//     {
-//         // Normal mixed cell conduction transfer
-//         if (normalCell[cellI])
-//         {
-//             // Calculate Thermal Resistances
-//             scalar Rg = Lg[cellI]/(Ai[cellI]*Kg[cellI]);
-//             scalar Rs = Ls[cellI]/(Ai[cellI]*Ks[cellI]);
-//
-//             // Calculate Interface Temperature using Previous qFlux
-//             Ti_[cellI] = (Ks[cellI]*Ts_[cellI]/Ls[cellI]
-//                        +  Kg[cellI]*gasThermo_.T()[cellI]/Lg[cellI]
-//                        +  qfluxOld[cellI])
-//                        / (Ks[cellI]/Ls[cellI] + Kg[cellI]/Lg[cellI]);
-//
-//             // Gas source terms
-//             QgSp_[cellI] = 1./(Rg*Cpg()[cellI]*Vc[cellI]);
-//             QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ti_[cellI])
-//                          / (Rg*Cpg()[cellI]*Vc[cellI]);
-//
-//             // Solid source terms
-//             QsSp_[cellI] = 1./(Rs*Vc[cellI]);
-//             QsSu_[cellI] = Ti_[cellI]/(Rs*Vc[cellI]);
-//         }
-//     }
-//
-//     volScalarField sumAiTi = Ti_*0.;
-//     volScalarField sumAi = Ti_*0.;
-//
-//     forAll(mesh_.magSf(), faceI)
-//     {
-//         label own = mesh_.owner()[faceI];
-//         label nei = mesh_.neighbour()[faceI];
-//         label sc = (solidCell[own]) ? own:nei;
-//         label mc = (sc == own) ? nei:own;
-//
-//         // Full solid cell to face neighbor conduction transfer
-//         if (fullCell[sc] && !solidCell[mc])
-//         {
-//             scalar tmpA = ib_.alphafU()[faceI]*mesh_.magSf()[faceI];
-//
-//             if (tmpA > 0.)
-//             {
-//                 scalar tmpLg = mag((mesh_.Cf()[faceI] - ib_.gasC()[mc])
-//                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
-//                 scalar tmpLs = mag((mesh_.Cf()[faceI] - mesh_.C()[sc])
-//                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
-//
-//                 // Calculate thermal resistance
-//                 scalar Rg = tmpLg/(Kg[mc]*tmpA);
-//                 scalar Rs = tmpLs/(Ks[sc]*tmpA);
-//
-//                 // Calculate current interface temperature
-//                 scalar tmpTi = (Ks[sc]*Ts_[sc]/tmpLs
-//                        +  Kg[mc]*gasThermo_.T()[mc]/tmpLg
-//                        )//+  qfluxOld[mc])
-//                        / (Ks[sc]/tmpLs + Kg[mc]/tmpLg);
-//
-//                 // Gas source terms
-//                 QgSp_[mc] += 1./(Rg*Cpg()[mc]*Vc[mc]);
-//                 QgSu_[mc] += mCM_.cellMixture(mc).Hs(tmpTi)
-//                            / (Rg*Cpg()[mc]*Vc[mc]);
-//
-//                 // Solid source terms
-//                 QsSp_[sc] += 1./(Rs*Vc[sc]);
-//                 QsSu_[sc] += tmpTi/(Rs*Vc[sc]);
-//
-//                 // Partial calculation for Ti of solid cell
-//                 sumAiTi[sc] += tmpTi*tmpA;
-//                 sumAi[sc] += tmpA;
-//             }
-//         }
-//
-//         // Set small cell value based on steady state conduction
-//         if (smallGasCell[own] + smallGasCell[nei])
-//         {
-//             scalar tmpA = ib_.alphafU()[faceI]*mesh_.magSf()[faceI];
-//
-//             if (tmpA > 0.)
-//             {
-//                 // Calculate conduction lengths
-//                 scalar Lown = mag((mesh_.Cf()[faceI] - mesh_.C()[own])
-//                             & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
-//                 scalar Lnei = mag((mesh_.Cf()[faceI] - mesh_.C()[nei])
-//                             & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
-//
-//                 // Calculate thermal resistance
-//                 scalar Rown = Lown/(tmpA*alphag[own]);
-//                 scalar Rnei = Lnei/(tmpA*alphag[nei]);
-//                 scalar Req = Rown + Rnei;
-//
-//                 // Add thermal resistance to system
-//                 if (smallGasCell[own])
-//                 {
-//                     QgSp_[own] += 1./(Req*Vc[own]);
-//                     QgSu_[own] += gasThermo_.hs()[nei]/(Req*Vc[own]);
-//                 }
-//                 if (smallGasCell[nei])
-//                 {
-//                     QgSp_[nei] += 1./(Req*Vc[nei]);
-//                     QgSu_[nei] += gasThermo_.hs()[own]/(Req*Vc[nei]);
-//                 }
-//             }
-//         }
-//         if (smallSolidCell[own] + smallSolidCell[nei])
-//         {
-//             scalar tmpA = ib_.alphafsU()[faceI]*mesh_.magSf()[faceI];
-//
-//             if (tmpA > 0.)
-//             {
-//                 // Calculate conduction lengths
-//                 scalar Lown = mag((mesh_.Cf()[faceI] - mesh_.C()[own])
-//                             & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
-//                 scalar Lnei = mag((mesh_.Cf()[faceI] - mesh_.C()[nei])
-//                             & mesh_.Sf()[faceI])/mesh_.magSf()[faceI];
-//
-//                 // Calculate thermal resistance
-//                 scalar Rown = Lown/(tmpA*Ks[own]);
-//                 scalar Rnei = Lnei/(tmpA*Ks[nei]);
-//                 scalar Req = Rown + Rnei;
-//
-//                 // Add thermal resistance to system
-//                 if (smallSolidCell[own])
-//                 {
-//                     QsSp_[own] += 1./(Req*Vc[own]);
-//                     QsSu_[own] += Ts_[nei]/(Req*Vc[own]);
-//                 }
-//                 if (smallSolidCell[nei])
-//                 {
-//                     QsSp_[nei] += 1./(Req*Vc[nei]);
-//                     QsSu_[nei] += Ts_[own]/(Req*Vc[nei]);
-//                 }
-//             }
-//         }
-//     }
-//
-//     // Full solid cell to parallel neighbor conduction transfer
-//     const fvPatchList& patches = mesh_.boundary();
-//
-//     // Get boundary fields for required values
-//     const volScalarField::GeometricBoundaryField& KgBf = Kg.boundaryField();
-//     const volScalarField::GeometricBoundaryField& KsBf = Ks.boundaryField();
-//     const volScalarField::GeometricBoundaryField& alphagBf = alphag.boundaryField();
-//     const volScalarField::GeometricBoundaryField& fullCellBf = fullCell.boundaryField();
-//     const volScalarField::GeometricBoundaryField& solidCellBf = solidCell.boundaryField();
-//     const volVectorField::GeometricBoundaryField& meshCBf = mesh_.C().boundaryField();
-//     const volScalarField::GeometricBoundaryField& TBf = gasThermo_.T().boundaryField();
-//     const volScalarField::GeometricBoundaryField& TsBf = Ts_.boundaryField();
-//
-//     forAll(patches, patchI)
-//     {
-//         const fvPatch& curPatch = patches[patchI];
-//         const labelList& pFaceCells = patches[patchI].faceCells();
-//
-//         // Get values for current patch
-//         const fvPatchScalarField& KgPf = KgBf[patchI];
-//         const fvPatchScalarField& KsPf = KsBf[patchI];
-//         const fvPatchScalarField& alphagPf = alphagBf[patchI];
-//         const fvPatchScalarField& fullCellPf = fullCellBf[patchI];
-//         const fvPatchScalarField& solidCellPf = solidCellBf[patchI];
-//         const fvPatchVectorField& meshCPf = meshCBf[patchI];
-//         const fvPatchScalarField& TPf = TBf[patchI];
-//         const fvPatchScalarField& TsPf = TsBf[patchI];
-//
-//         if (curPatch.coupled()) //returns true for parallel and cyclic patches
-//         {
-//             // Get values across parallel patch
-//             const scalarField KgPNf(KgPf.patchNeighbourField());
-//             const scalarField KsPNf(KsPf.patchNeighbourField());
-//             const scalarField alphagPNf(alphagPf.patchNeighbourField());
-//             const scalarField fullCellPNf(fullCellPf.patchNeighbourField());
-//             const scalarField solidCellPNf(solidCellPf.patchNeighbourField());
-//             const vectorField meshCPNf(meshCPf.patchNeighbourField());
-//             const scalarField TPNf(TPf.patchNeighbourField());
-//             const scalarField TsPNf(TsPf.patchNeighbourField());
-//
-//             forAll(curPatch, pFaceI)
-//             {
-//                 label pfCellI = pFaceCells[pFaceI];
-//
-//                 // Boundary cell solid, neighbor cell mixed
-//                 if (fullCell[pfCellI] && !solidCellPNf[pFaceI])
-//                 {
-//                     scalar tmpA = ib_.alphafU()[pFaceI]
-//                                     * mesh_.magSf()[pFaceI];
-//
-//                     if (tmpA > 0.)
-//                     {
-//                         scalar tmpLg = mag((mesh_.Cf()[pFaceI]
-//                                     - meshCPNf[pFaceI]) & mesh_.Sf()[pFaceI])
-//                                     / mesh_.magSf()[pFaceI];
-//                         scalar tmpLs = mag((mesh_.Cf()[pFaceI]
-//                                     - mesh_.C()[pfCellI]) & mesh_.Sf()[pFaceI])
-//                                     / mesh_.magSf()[pFaceI];
-//
-//                         // Calculate thermal resistance
-//                         scalar Rg = tmpLg/(tmpA*KgPNf[pFaceI]);
-//                         scalar Rs = tmpLs/(tmpA*Ks[pfCellI]);
-//                         scalar Req = Rg + Rs;
-//
-//                         // Calculate current interface temperature
-//                         scalar tmpTi = (Rg*Ts_[pfCellI] + Rs*TPNf[pFaceI])/Req;
-//
-//                         // Solid source terms
-//                         QsSp_[pfCellI] += 1./(Req*Vc[pfCellI]);
-//                         QsSu_[pfCellI] += TPNf[pFaceI]/(Req*Vc[pfCellI]);
-//
-//                         // Partial calculation for Ti of solid cell
-//                         sumAiTi[pfCellI] += tmpTi*tmpA;
-//                         sumAi[pfCellI] += tmpA;
-//                     }
-//                 }
-//
-//                 // Boundary cell mixed, neighbor cell solid
-//                 else if (fullCellPNf[pFaceI] && !solidCell[pfCellI])
-//                 {
-//                     scalar tmpA = ib_.alphafU()[pFaceI]
-//                                     * mesh_.magSf()[pFaceI];
-//                     if (tmpA > 0.)
-//                     {
-//                         scalar tmpLg = mag((mesh_.Cf()[pFaceI]
-//                                      - mesh_.C()[pfCellI]) & mesh_.Sf()[pFaceI])
-//                                      / mesh_.magSf()[pFaceI];
-//                         scalar tmpLs = mag((mesh_.Cf()[pFaceI]
-//                                     - meshCPNf[pFaceI]) & mesh_.Sf()[pFaceI])
-//                                     / mesh_.magSf()[pFaceI];
-//
-//                         // Calculate thermal resistance
-//                         scalar Rg = tmpLg/(Kg[pfCellI]*tmpA);
-//                         scalar Rs = tmpLs/(KsPNf[pFaceI]*tmpA);
-//                         scalar Req = Rg + Rs;
-//
-//                         // Calculate interface temperature for source terms
-//                         scalar tmpTi = (Rg*TsPNf[pFaceI]
-//                                      + Rs*gasThermo_.T()[pfCellI])/Req;
-//
-//                         // Gas source terms
-//                         QgSp_[pfCellI] += 1./(Rg*Cpg()[pfCellI]*Vc[pfCellI]);
-//                         QgSu_[pfCellI] += mCM_.cellMixture(pfCellI).Hs(tmpTi)
-//                                         / (Rg*Cpg()[pfCellI]*Vc[pfCellI]);
-//                     }
-//                 }
-//
-//                 // Set small cell value based on steady state conduction
-//                 if (smallGasCell[pfCellI])
-//                 {
-//                     scalar tmpA = ib_.alphafU()[pFaceI] * mesh_.magSf()[pFaceI];
-//                     if (tmpA > 0.)
-//                     {
-//                         scalar Lown = mag((mesh_.Cf()[pFaceI]
-//                                     - ib_.gasC()[pfCellI]) & mesh_.Sf()[pFaceI])
-//                                     / mesh_.magSf()[pFaceI];
-//                         scalar Lnei = mag((mesh_.Cf()[pFaceI] - meshCPNf[pFaceI])
-//                                     & mesh_.Sf()[pFaceI])/mesh_.magSf()[pFaceI];
-//
-//                         // Calculate Thermal Resistances
-//                         scalar Rown = Lown/(tmpA*alphag[pfCellI]);
-//                         scalar Rnei = Lnei/(tmpA*alphagPNf[pFaceI]);
-//                         scalar Req = Rown + Rnei;
-//
-//                         // Calculate interface temperature
-//                         scalar tmpTi = (Rown*gasThermo_.T()[pfCellI]
-//                                      + Rnei*TPNf[pFaceI])/Req;
-//
-//                         // Add thermal resistance to system
-//                         QgSp_[pfCellI] += 1./(Rown*Vc[pfCellI]);
-//                         QgSu_[pfCellI] += mCM_.cellMixture(pfCellI).Hs(tmpTi)
-//                                         / (Rown*Vc[pfCellI]);
-//                     }
-//                 }
-//                 if (smallSolidCell[pfCellI])
-//                 {
-//                     scalar tmpA = ib_.alphafsU()[pFaceI] * mesh_.magSf()[pFaceI];
-//                     if (tmpA > 0.)
-//                     {
-//                         scalar Lown = mag((mesh_.Cf()[pFaceI]
-//                                     - ib_.solidC()[pfCellI]) & mesh_.Sf()[pFaceI])
-//                                     / mesh_.magSf()[pFaceI];
-//                         scalar Lnei = mag((mesh_.Cf()[pFaceI] - meshCPNf[pFaceI])
-//                                     & mesh_.Sf()[pFaceI])/mesh_.magSf()[pFaceI];
-//
-//                         // Caclulate Thermal Resistance
-//                         scalar Rown = Lown/(tmpA*Ks[pfCellI]);
-//                         scalar Rnei = Lnei/(tmpA*KsPNf[pFaceI]);
-//                         scalar Req = Rown + Rnei;
-//
-//                         // Add thermal resistance to system
-//                         QsSp_[pfCellI] += 1./(Req*Vc[pfCellI]);
-//                         QsSu_[pfCellI] += TsPNf[pFaceI]/(Req*Vc[pfCellI]);
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//
-//     dimensionedScalar hsrdT
-//     (
-//         "hsrdT",
-//         dimDensity/dimTime,
-//         1.0/mesh_.time().deltaTValue()
-//     );
-//     dimensionedScalar TsrdT
-//     (
-//         "TsrdT",
-//         dimPower/dimVolume/dimTemperature,
-//         1.0/mesh_.time().deltaTValue()
-//     );
-//
-//     // Solve conduction for small cells only
-//     volScalarField rhog = gasThermo_.rho();
-//     volScalarField rhos = solidThermo_->rho();
-//     volScalarField Cps = solidThermo_->Cp();
-//     const tmp<volScalarField> alphas = ib_.alphas();
-//     forAll(QgSu_, cellI)
-//     {
-//         if (smallGasCell[cellI])
-//         {
-//             scalar qcond = (QgSu_[cellI] - QgSp_[cellI]*gasThermo_.hs()[cellI])
-//                          * mesh_.time().deltaTValue();
-//             scalar hsGas = QgSu_[cellI]/QgSp_[cellI];
-//             scalar hsTime = (rhog.oldTime()[cellI]*gasThermo_.hs().oldTime()[cellI]
-//                           + qcond/ib_.alpha()[cellI])/rhog[cellI];
-//             if (qcond > 0.) hsGas = min(hsGas, hsTime);
-//             else hsGas = max(hsGas, hsTime);
-//             hsSp_[cellI] = hsrdT.value();
-//             hsSu_[cellI] = hsGas*hsrdT.value();
-//             QgSu_[cellI] = 0.0;
-//             QgSp_[cellI] = 0.0;
-//         }
-//
-//         if (smallSolidCell[cellI])
-//         {
-//             scalar qcond = (QsSu_[cellI] - QsSp_[cellI]*Ts_[cellI])
-//                          * mesh_.time().deltaTValue();
-//             scalar Tsolid = QsSu_[cellI]/QsSp_[cellI];
-//             scalar TsTime = Ts_.oldTime()[cellI]
-//                           + qcond/(alphas()[cellI]*rhos[cellI]*Cps[cellI]);
-//             if (qcond > 0.) Tsolid = min(Tsolid, TsTime);
-//             else Tsolid = max(Tsolid, TsTime);
-//             TsSp_[cellI] = TsrdT.value();
-//             TsSu_[cellI] = Tsolid*TsrdT.value();
-//             QsSu_[cellI] = 0.0;
-//             QsSp_[cellI] = 0.0;
-//         }
-//
-//         // Calculate interface temperature in fullCells
-//         if (sumAi[cellI] > 0.0)
-//         {
-//             Ti_[cellI] = sumAiTi[cellI]/sumAi[cellI];
-//         }
-//     }
-//
-//     // Print min/max Interface Temperature
-//     dimensionedScalar smallA("dA", dimArea, SMALL);
-//     Info<< "T interface min/max   = " << min(neg(Ai - smallA)*
-//            dimensionedScalar("tmpT", dimTemperature, 100000.0) + Ti_).value() << ", " << max(pos(Ai - smallA)*Ti_).value()
-//         << endl;
-// }
-
-// void Foam::burningSolid::calcSurfaceStress2()
-// {
-//     // Centroid lengths
-//     volVectorField Lg = ib_.gasL()*ib_.iNormal();
-//
-//     // Interface area and volume
-//     volScalarField& Ai = ib_.area();
-//     const volScalarField::DimensionedInternalField& Vc = mesh_.V();
-//
-//     // Initialize cells to no heat transfer
-//     surfStress_ = dimensionedScalar("tmpSurfStress", dimless/dimArea, 0.0);
-//
-//     // Cell identification
-//     volScalarField normalCell = ib_.mixedCells();
-//     volScalarField solidCell = ib_.solidCells();
-//     volScalarField fullCell = solidCell*pos(Ai
-//                             - dimensionedScalar("tmp", dimArea, SMALL));
-//
-//     forAll(Ts_,cellI)
-//     {
-//         // Normal mixed cell surface stress
-//         if (normalCell[cellI])
-//         {
-//             // Calculate transfer to gas from constant temperature solid
-//             surfStress_[cellI] = Ai[cellI]/(Lg[cellI]*Vc[cellI]);
-//         }
-//     }
-// }
 
 // ************************************************************************* //
