@@ -122,6 +122,12 @@ class burningSolid
         //- Solid Temperature explicit source term
         volScalarField TsSu_;
 
+        //- Density implicit source term
+        volScalarField rhoSp_;
+
+        //- Density explicit source term
+        volScalarField rhoSu_;
+
         //- Solid burning flux (kg/m2/s)
         volScalarField mflux_;
 
@@ -257,6 +263,16 @@ class burningSolid
         const volScalarField& TsSp()
         {
             return TsSp_;
+        }
+
+        const volScalarField& rhoSu()
+        {
+            return rhoSu_;
+        }
+
+        const volScalarField& rhoSp()
+        {
+            return rhoSp_;
         }
 
         volScalarField& Ts()

@@ -247,6 +247,34 @@ Foam::burningSolid::burningSolid
         dimensionedScalar("TsSu", dimPower/dimVolume, 0.0)
     ),
 
+    rhoSp_
+    (
+        IOobject
+        (
+            "rhoSp",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("rhoSp", dimless/dimTime, 0.0)
+    ),
+
+    rhoSu_
+    (
+        IOobject
+        (
+            "rhoSu",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("rhoSu", dimDensity/dimTime, 0.0)
+    ),
+
     mflux_
     (
         IOobject

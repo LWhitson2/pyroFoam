@@ -30,7 +30,14 @@ Description
 \*---------------------------------------------------------------------------*/
 
 {
-    solve(fvm::ddt(rho) + fvc::div(phi));
+    solve
+    (
+        fvm::ddt(ib.alphaCorr(), rho)
+      + fvc::div(phi)
+     == solid.m_pyro()
+      + solid.rhoSu()
+      - fvm::Sp(solid.rhoSp(), rho)
+    );
 }
 
 // ************************************************************************* //

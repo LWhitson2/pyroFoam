@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        //#include "rhoEqn.H"
+        #include "rhoEqn.H"
 
         while (pimple.loop())
         {
@@ -115,6 +115,7 @@ int main(int argc, char *argv[])
                 while (pimple.correct())
                 {
                     #include "pEqn.H"
+                    #include "rhoEqn.H"
                 }
             }
             else
@@ -128,6 +129,7 @@ int main(int argc, char *argv[])
                 while (pimple.correct())
                 {
                     #include "pEqn.H"
+                    #include "rhoEqn.H"
                 }
             }
 
