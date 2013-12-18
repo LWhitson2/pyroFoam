@@ -30,14 +30,21 @@ Description
 \*---------------------------------------------------------------------------*/
 
 {
+
+    Info<< "Solving rhoEqn" << endl;
+
     solve
     (
         fvm::ddt(ib.alphaCorr(), rho)
       + fvc::div(phi)
-     == solid.m_pyro()
+     ==
+        solid.mgen()
       + solid.rhoSu()
       - fvm::Sp(solid.rhoSp(), rho)
     );
+
+    Info<< "Min,max rho = " << Foam::min(rho).value()
+        << ", " << Foam::max(rho).value() << endl;
 }
 
 // ************************************************************************* //

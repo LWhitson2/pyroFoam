@@ -86,6 +86,9 @@ class burningSolid
         //- Solid burning rate (kg/m^3-s)
         volScalarField m_pyro_;
 
+        //- Gas mass generation from burning (kg/m^3-s)
+        volScalarField mgen_;
+
         //- Interface temperature (K)
         volScalarField Ti_;
 
@@ -181,6 +184,8 @@ class burningSolid
         void calcBurnU();
         void calcSurfaceStress();
         void calcInterfaceFlux();
+        void calcSurfaceMass();
+        void calcSurfaceMomentum(const volVectorField& U);
         void calcSurfaceEnergy();
 
     public:
@@ -232,6 +237,11 @@ class burningSolid
         const volScalarField& m_pyro()
         {
             return m_pyro_;
+        }
+
+        const volScalarField& mgen()
+        {
+            return mgen_;
         }
 
         void correct

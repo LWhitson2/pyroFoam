@@ -12,10 +12,13 @@
       + fvm::div(phi, U)
       - fvm::laplacian(muEff*ib.lapCorr("gas"), U)
       - fvc::div(muEff*gradUeff)
-      - solid.mU()
       - rho*ib.alphaCorr()*g
-      + fvm::Sp(solid.USp(), U)
-      - solid.USu()
+     ==
+        solid.USu()
+      - fvm::Sp(solid.USp(), U)
+//       + solid.Ugen()
+      + solid.mU()
+
       //+ fvm::Sp(turbulence->muEff()*solid.Stress(), U)
     );
 

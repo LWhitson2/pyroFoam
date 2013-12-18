@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        #include "rhoEqn.H"
+//         #include "rhoEqn.H"
 
         while (pimple.loop())
         {
@@ -109,7 +109,34 @@ int main(int argc, char *argv[])
             }
             else if (solid.testPyro() == "momentum")
             {
+                #include "rhoEqn.H"
                 #include "UEqn.H"
+
+                // --- Pressure corrector loop
+                while (pimple.correct())
+                {
+                    #include "pEqn.H"
+                    #include "rhoEqn.H"
+                }
+            }
+            else if (solid.testPyro() == "species")
+            {
+                #include "rhoEqn.H"
+                #include "UEqn.H"
+                #include "YEqn.H"
+
+                // --- Pressure corrector loop
+                while (pimple.correct())
+                {
+                    #include "pEqn.H"
+                    #include "rhoEqn.H"
+                }
+            }
+            else if (solid.testPyro() == "enthalpy")
+            {
+                #include "rhoEqn.H"
+                #include "UEqn.H"
+                #include "hsEqn.H"
 
                 // --- Pressure corrector loop
                 while (pimple.correct())
@@ -120,6 +147,7 @@ int main(int argc, char *argv[])
             }
             else
             {
+                #include "rhoEqn.H"
                 #include "UEqn.H"
                 #include "YEqn.H"
                 #include "hsEqn.H"

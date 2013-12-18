@@ -64,10 +64,10 @@ else*/
             fvm::ddt(psi*ib.alphaCorr(), p)
           + fvc::div(phiEst)
           - fvm::laplacian(rhorAUf*ib.alphaf()*ib.lapCorr("gas"), p)
-          + fvm::Sp(solid.pSp(), p)
          ==
-            solid.m_pyro()
-          + solid.pSu()
+            solid.pSu()
+          - fvm::Sp(solid.pSp(), p)
+          + solid.mgen()
         );
 
         pEqn.solve(mesh.solver(p.select(pimple.finalInnerIter())));

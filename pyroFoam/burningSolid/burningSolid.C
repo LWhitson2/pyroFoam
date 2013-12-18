@@ -80,6 +80,21 @@ Foam::burningSolid::burningSolid
         zeroGradientFvPatchScalarField::typeName
     ),
 
+    mgen_
+    (
+        IOobject
+        (
+            "mgen",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("mgen", dimDensity/dimTime, 0.0),
+        zeroGradientFvPatchScalarField::typeName
+    ),
+
     Ti_
     (
         IOobject
@@ -456,13 +471,22 @@ Foam::burningSolid::burningSolid
 
 void Foam::burningSolid::fixSmallCells()
 {
-    volScalarField m_transferred = m_pyro_*
-        (1.0 - gasThermo_.rho()/solidThermo_->rho());
+    volScalarField mgen_transferred = mgen_;
 
-    volVectorField mU_transferred = m_transferred*burnU_;
+    volVectorField mU_transferred = mU_;
 
     volScalarField qgeng_transferred = qgeng_*
         (1.0 - gasThermo_.rho()/solidThermo_->rho());
+
+    // Small cell density value
+    dimensionedScalar Rg
+    (
+        "Rg",
+        dimVelocity*dimVelocity/dimTemperature,
+        EMg_->R()
+    );
+
+    volScalarField rhog = gasThermo_.p()/(Ti_*Rg);
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
@@ -496,6 +520,14 @@ void Foam::burningSolid::fixSmallCells()
         1.0/mesh_.time().deltaTValue()
     );
 
+    // Value to force gas cells to designated density
+    dimensionedScalar rdT
+    (
+        "rdT",
+        dimless/dimTime,
+        1.0/mesh_.time().deltaTValue()
+    );
+
     // Values to set in the solid region
     tmp<volScalarField> pSolid = (gasThermo_.p() - gasThermo_.p())
                                + dimensionedScalar("ps",dimPressure,1e5);
@@ -507,6 +539,7 @@ void Foam::burningSolid::fixSmallCells()
         hsSolid()[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI]);
     }
     tmp<volScalarField> TsGas = gasThermo_.T();
+    tmp<volScalarField> rhoSolid = solidThermo_->rho();
 
     // Calculate transfer weights
     tmp<surfaceScalarField> tw = ib_.scTransferWeights("gas");
@@ -526,12 +559,14 @@ void Foam::burningSolid::fixSmallCells()
                            hsSolid, hsrdT, "avg", "gas");
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
+    ib_.setScValue<scalar>(w, rhoSu_, rhoSp_, rhog,
+                           rhoSolid, rdT, "avg", "gas");
 
     // Transfer mass and momentum out of small cells
     Info << "Transferring out of small cells" << endl;
-    ib_.transfer<scalar>(w, m_transferred, m_pyro_, 0.0, "gas");
+    ib_.transfer<scalar>(w, mgen_transferred, mgen_, 0.0, "gas");
     ib_.transfer<vector>(w, mU_transferred, mU_, vector::zero, "gas");
-    ib_.transfer<scalar>(w, qgeng_transferred, qgeng_, 0.0, "gas");
+//     ib_.transfer<scalar>(w, qgeng_transferred, qgeng_, 0.0, "gas");
 }
 
 // Calculate the burn gas velocity
@@ -590,19 +625,51 @@ void Foam::burningSolid::calcSurfaceEnergy()
     // TODO add an AbyV or ArV function to ib
     qgens_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
 
-    // Energy transferred to gas
+    // Calculate energy transferred between solid and gas
     forAll(mflux_, cellI)
     {
-        if (testPyro_ == "solid")
-        {
-            qgeng_.internalField()[cellI] = mflux_[cellI]
-                * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
-                - gasThermo_.hs()[cellI])
-                * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
-        }
+        qgeng_.internalField()[cellI] = mflux_[cellI]
+            * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
+            - gasThermo_.hs()[cellI])
+            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+
         qgens_.internalField()[cellI] -=
               mflux_[cellI]*solidThermo_->Cp()()[cellI]
             * (Ti_[cellI] - Ts_[cellI])
+            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+    }
+}
+
+void Foam::burningSolid::calcSurfaceMomentum(const volVectorField& U)
+{
+    // Convert surface momentum flux to source
+    // TODO add an AbyV or ArV function to ib
+    mU_ = burnU_ * m_pyro_;
+
+    // Adjust flux for current conditions
+    volScalarField rhog = gasThermo_.rho();
+    volScalarField rhos = solidThermo_->rho();
+    forAll(mflux_, cellI)
+    {
+        mU_.internalField()[cellI] -=
+              mflux_[cellI]*rhog[cellI]*U[cellI]/rhos[cellI]
+            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+    }
+}
+
+void Foam::burningSolid::calcSurfaceMass()
+{
+    // Convert surface mass flux to source
+    // TODO add an AbyV or ArV function to ib
+    mgen_ = m_pyro_;
+
+    // Adjust flux for current conditions
+    volScalarField rhog = gasThermo_.rho();
+    volScalarField rhos = solidThermo_->rho();
+    forAll(mflux_, cellI)
+    {
+        mgen_.internalField()[cellI] -=
+              mflux_[cellI]*rhog[cellI]/rhos[cellI]
             * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
     }
 }
@@ -623,7 +690,7 @@ void Foam::burningSolid::correct
     calcInterfaceFlux();
 
     // Calculate mass and energy source using original cell area
-    Foam::Info << "Calculate mass/energy source" << Foam::endl;
+    Foam::Info << "Calculate mass burning rate" << Foam::endl;
     m_pyro_.internalField() = mflux_ * ib_.area().oldTime() / mesh_.V();
     m_pyro_.correctBoundaryConditions();
 
@@ -631,17 +698,20 @@ void Foam::burningSolid::correct
     Foam::Info << "Calculate gas velocity" << Foam::endl;
     calcBurnU();
 
-    // Calculate momentum source
-    Foam::Info << "Calculate momentum source" << Foam::endl;
-    mU_ = burnU_ * m_pyro_;
-
     // Evolve interface using calculated burning rate (vol frac/s)
     Foam::Info << "Move Interface" << Foam::endl;
     ib_.moveInterface( m_pyro_ / solidThermo_->rho() );
 
-    // Transform energy flux to volumetric energy source and add extra flux
-    // SHOULD THIS BE BEFORE OF AFTER INTERFACE HAS MOVED??
-    Foam::Info << "Calculate surface energy" << Foam::endl;
+    // // Calculate mass source
+    Foam::Info << "Calculate mass source" << Foam::endl;
+    calcSurfaceMass();
+
+    // Calculate momentum source
+    Foam::Info << "Calculate momentum source" << Foam::endl;
+    calcSurfaceMomentum(U);
+
+    // Calculate energy source
+    Foam::Info << "Calculate energy source" << Foam::endl;
     calcSurfaceEnergy();
 
     // Fix small cells by transferring momentum (mU) and mass (m_pyro)
@@ -672,8 +742,7 @@ tmp<volScalarField> Foam::burningSolid::YSu(const word& Yname) const
 
     if (Yname == gasName_)
     {
-        return ib_.gasCells()*m_pyro_
-               - ib_.smallCells()*onerDt*gasThermo_.rho();
+        return mgen_ + ib_.smallCells()*onerDt*gasThermo_.rho();
     }
     else
     {
@@ -730,13 +799,14 @@ void Foam::burningSolid::calcInterfaceTransfer()
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
     volScalarField Ks = solidThermo_->K();
+//     if (testPyro_ == "enthalpy") Ks = Ks*0.;
 
     // Gas Properties
     volScalarField rhog = gasThermo_.rho();
     tmp<volScalarField> Cpg = gasThermo_.Cp();
     volScalarField alphag = gasThermo_.alpha();
     volScalarField Kg = alphag*Cpg();
-    if (testPyro_ != "solid") Kg = Kg*0.;
+    if (testPyro_ == "solid") Kg = Kg*0.;
     const volScalarField& Tg = gasThermo_.T();
 
     // Conduction lengths

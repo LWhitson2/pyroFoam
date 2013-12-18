@@ -16,7 +16,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
     // Calculate corrected species diffusivity
     surfaceScalarField DEff = ib.interpolate(turbulence->alphaEff())
-                               *ib.alphaf(); // unity Lewis No.
+                               *ib.alphaf()*ib.lapCorr("gas"); // unity Lewis No.
 
     forAll(Y, i)
     {
@@ -38,7 +38,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
               ==
                 ib.alphaCorr()*combustion->R(Yi)
               + solid.YSu( Yi.name() )
-              + fvm::Sp(solid.YSp(), Yi)
+              - fvm::Sp(solid.YSp(), Yi)
             );
 
             YiEqn.relax();
