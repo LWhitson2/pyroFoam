@@ -1,0 +1,155 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermo.compressibleGas;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Energetic Material Gas Definition
+EMg
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              3018.e3;
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+
+EMp
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              0.;
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+
+// EMg
+// {
+//     specie
+//     {
+//         nMoles          1;
+//         molWeight       34.2;
+//     }
+//     thermodynamics
+//     {
+//         Tlow            200;
+//         Thigh           5000;
+//         Tcommon         1000;
+//         highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
+//                           12414.7
+//                           0.0 );
+//         lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
+//                           12414.7
+//                           0.0 );
+//     }
+//     transport
+//     {
+//         As              1.67212e-06;
+//         Ts              170.672;
+//     }
+// }
+
+// EMp
+// {
+//     specie
+//     {
+//         nMoles          1;
+//         molWeight       34.2;
+//     }
+//     thermodynamics
+//     {
+//         Tlow            200;
+//         Thigh           5000;
+//         Tcommon         1000;
+//         highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
+//                           0.0
+//                           0.0 );
+//         lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
+//                           0.0
+//                           0.0 );
+//     }
+//     transport
+//     {
+//         As              1.67212e-06;
+//         Ts              170.672;
+//     }
+// }
+
+// Energetic Material Solid Placeholder
+EMs
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              3018.e3;
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+// EMs
+// {
+//     specie
+//     {
+//         nMoles          1;
+//         molWeight       34.2;
+//     }
+//     thermodynamics
+//     {
+//         Tlow            200;
+//         Thigh           5000;
+//         Tcommon         1000;
+//         highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
+//                           12414.7
+//                           0.0 );
+//         lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
+//                           12414.7
+//                           0.0 );
+//     }
+//     transport
+//     {
+//         As              1.67212e-06;
+//         Ts              170.672;
+//     }
+// }
+
+
+// ************************************************************************* //
