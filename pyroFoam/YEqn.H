@@ -1,14 +1,3 @@
-tmp<fv::convectionScheme<scalar> > mvConvection
-(
-    fv::convectionScheme<scalar>::New
-    (
-        mesh,
-        fields,
-        phi,
-        mesh.divScheme("div(phi,Yi_h)")
-    )
-);
-
 {
     combustion->correct();
     dQ = combustion->dQ();
@@ -37,6 +26,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
               - fvm::laplacian(DEff, Yi)
               ==
                 ib.alphaCorr()*combustion->R(Yi)
+//                 combustion->R(Yi)
               + solid.YSu( Yi.name() )
               - fvm::Sp(solid.YSp(), Yi)
             );

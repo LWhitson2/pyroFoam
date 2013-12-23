@@ -96,32 +96,31 @@ int main(int argc, char *argv[])
             }
         }
 
-//         #include "rhoEqn.H"
+        // Evolve the solid surface
+        solid.correct(U, phi, runTime.timeOutputValue() > flowRelaxTime);
+        if (solid.testPyro() != "solid")
+        {
+            #include "rhoEqn.H"
+        }
 
         while (pimple.loop())
         {
-            // Evolve the solid surface
-            solid.correct(U, phi, runTime.timeOutputValue() > flowRelaxTime);
-
             if (solid.testPyro() == "solid")
             {
                 #include "TsEqn.H"
             }
             else if (solid.testPyro() == "momentum")
             {
-                #include "rhoEqn.H"
                 #include "UEqn.H"
 
                 // --- Pressure corrector loop
                 while (pimple.correct())
                 {
                     #include "pEqn.H"
-                    #include "rhoEqn.H"
                 }
             }
             else if (solid.testPyro() == "species")
             {
-                #include "rhoEqn.H"
                 #include "UEqn.H"
                 #include "YEqn.H"
 
@@ -129,12 +128,10 @@ int main(int argc, char *argv[])
                 while (pimple.correct())
                 {
                     #include "pEqn.H"
-                    #include "rhoEqn.H"
                 }
             }
             else if (solid.testPyro() == "enthalpy")
             {
-                #include "rhoEqn.H"
                 #include "UEqn.H"
                 #include "hsEqn.H"
 
@@ -142,12 +139,10 @@ int main(int argc, char *argv[])
                 while (pimple.correct())
                 {
                     #include "pEqn.H"
-                    #include "rhoEqn.H"
                 }
             }
             else
             {
-                #include "rhoEqn.H"
                 #include "UEqn.H"
                 #include "YEqn.H"
                 #include "hsEqn.H"
@@ -157,13 +152,17 @@ int main(int argc, char *argv[])
                 while (pimple.correct())
                 {
                     #include "pEqn.H"
-                    #include "rhoEqn.H"
                 }
             }
 
-            if (pimple.turbCorr())
+            Info << nl << rho << nl <<endl;
+
+            if (solid.testPyro() != "solid")
             {
-                turbulence->correct();
+                if (pimple.turbCorr())
+                {
+                    turbulence->correct();
+                }
             }
         }
 

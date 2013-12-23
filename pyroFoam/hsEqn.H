@@ -19,6 +19,7 @@
         ib.alphaCorr()*dpdt
       - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
       + ib.alphaCorr()*combustion->Sh()
+//       + combustion->Sh()
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), hs)
       + solid.QgSu()

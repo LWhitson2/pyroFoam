@@ -530,7 +530,7 @@ void Foam::burningSolid::fixSmallCells()
 
     // Values to set in the solid region
     tmp<volScalarField> pSolid = (gasThermo_.p() - gasThermo_.p())
-                               + dimensionedScalar("ps",dimPressure,1e5);
+                               + gasThermo_.p().weightedAverage(ib_.area());
     tmp<volVectorField> USolid = (burnU_ - burnU_)
                                + dimensionedVector("Us",dimVelocity,vector::zero);
     tmp<volScalarField> hsSolid = (gasThermo_.hs() - gasThermo_.hs());
@@ -590,6 +590,7 @@ void Foam::burningSolid::calcInterfaceFlux()
     mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
     qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
     qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
+    qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
 
     // Surface pyrolysis fluxes
     forAll(Ts_, cellI)
@@ -624,11 +625,15 @@ void Foam::burningSolid::calcSurfaceEnergy()
     // Convert surface flux to source
     // TODO add an AbyV or ArV function to ib
     qgens_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
+    if (testPyro_ == "enthalpy")
+    {
+        qgeng_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
+    }
 
     // Calculate energy transferred between solid and gas
     forAll(mflux_, cellI)
     {
-        qgeng_.internalField()[cellI] = mflux_[cellI]
+        qgeng_.internalField()[cellI] += mflux_[cellI]
             * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
             - gasThermo_.hs()[cellI])
             * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
@@ -799,7 +804,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
     volScalarField Ks = solidThermo_->K();
-//     if (testPyro_ == "enthalpy") Ks = Ks*0.;
+    if (testPyro_ == "enthalpy") Ks = Ks*0.;
 
     // Gas Properties
     volScalarField rhog = gasThermo_.rho();
@@ -808,6 +813,8 @@ void Foam::burningSolid::calcInterfaceTransfer()
     volScalarField Kg = alphag*Cpg();
     if (testPyro_ == "solid") Kg = Kg*0.;
     const volScalarField& Tg = gasThermo_.T();
+
+//     Info << "Kg min/max: " << min(Kg) << ", " << max(Kg) << endl;
 
     // Conduction lengths
     const volScalarField& Lg = ib_.gasL();
@@ -848,7 +855,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
             Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
                        / (Cs + Cg);
 
-            if (testPyro_ != "solid")
+            if ((testPyro_ != "solid") && (testPyro_ != "enthalpy"))
             {
                 // Calculate thermal resistance
                 scalar Req = 0.;
@@ -902,7 +909,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
                        / (Cs + Cg);
                 Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
 
-                if (testPyro_ != "solid")
+                if ((testPyro_ != "solid") && (testPyro_ != "enthalpy"))
                 {
                     // Calculate thermal resistance
                     scalar Req = 0.;
@@ -1103,17 +1110,6 @@ void Foam::burningSolid::calcInterfaceTransfer()
     {
         if (smallGasCell[cellI])
         {
-//             scalar qcond = (QgSu_[cellI] - QgSp_[cellI]*gasThermo_.hs()[cellI])
-//                          * mesh_.time().deltaTValue();
-//             scalar hsGas = QgSu_[cellI]/QgSp_[cellI];
-//             scalar hsTime = (rhog.oldTime()[cellI]*gasThermo_.hs().oldTime()[cellI]
-//                           + qcond/ib_.alpha()[cellI])/rhog[cellI];
-//             if (qcond > 0.) hsGas = min(hsGas, hsTime);
-//             else hsGas = max(hsGas, hsTime);
-//             hsSp_[cellI] = hsrdT.value();
-//             hsSu_[cellI] = hsGas*hsrdT.value();
-//             QgSu_[cellI] = 0.0;
-//             QgSp_[cellI] = 0.0;
             hsSp_[cellI] = 0.0;
             hsSu_[cellI] = 0.0;
         }
