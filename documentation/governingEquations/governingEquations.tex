@@ -1,0 +1,170 @@
+\documentclass{article}
+
+% Mathematics
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{empheq}
+\renewcommand{\vec}[1]{\ensuremath{\hat{#1}}}
+\newcommand{\grad}[1]{\ensuremath{\nabla #1}}
+\renewcommand{\div}[1]{\ensuremath{\nabla \cdot #1}}
+\newcommand{\laplacian}[1]{\ensuremath{\nabla^{2} #1}}
+\renewcommand{\d}{\mathrm{d}}
+
+% Document Information
+\title{pyroFoam Governing Equations Derivations}
+
+\begin{document}
+  \section{Gas Continuity Equation}
+    Mass continuity on gray (gas) control volume (Vg) surround by boundary Ag
+    \begin{equation*}
+        \frac{\partial}{\partial t}\int_{V_g} \rho \d V 
+      + \int_{A_g} \rho (\vec{u} \cdot \vec{n}) \d A
+      = 0
+    \end{equation*}
+    Using second-order approximations of the integrals and a first-order time derivative
+    \begin{equation*}
+        \frac{\rho V_g - \rho^0 V_g^0}{\Delta t}
+      + \sum_{f,g}\rho(\vec{u}\cdot\vec{A_{f,g}})
+      = 0
+    \end{equation*}
+    Translate this to the full cell
+    \begin{equation*}
+        V_c\frac{\rho \alpha_g - \rho^0 \alpha_g^0}{\Delta t}
+      + \sum_{f}\rho(\vec{u}\cdot\vec{A_{f}})\alpha_f
+      = \dot{m}'' A_b
+    \end{equation*}
+    Divide by cell volume, $V_c$, to give the equation in OpenFOAM form that we want to solve
+    \begin{equation}
+      \label{eq:gasCont}
+      \boxed{
+        \frac{\rho \alpha_g - \rho^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f}\rho (\vec{u}\cdot\vec{A_{f}})\alpha_f
+      = \frac{\dot{m}'' A_b}{V_c}
+      }
+    \end{equation}
+
+  \section{Gas Momentum Equation}
+    Conservation of momentum on gray (gas) control volume (Vg) surround by boundary Ag
+    \begin{equation*}
+        \frac{\partial}{\partial t}\int_{V_g} \rho \vec{u} \d V 
+      + \int_{A_g} \vec{u} (\rho \vec{u} \cdot \vec{n}) \d A 
+      + \vec{F}_p
+      = S(\vec{u})
+    \end{equation*}
+    Using second-order approximations of the integrals and a first-order time derivative
+    \begin{equation*}
+        \frac{\rho \vec{u} V_g - \rho^0 \vec{u}^0 V_g^0}{\Delta t}
+      + \sum_{f,g}\vec{u} (\rho \vec{u}\cdot\vec{A_{f,g}}) 
+      + \vec{F}_p
+      = S(\vec{u})
+    \end{equation*}
+    Translate this to the full cell
+    \begin{equation*}
+        V_c\frac{\rho \vec{u} \alpha_g - \rho^0 \vec{u}^0 \alpha_g^0}{\Delta t}
+      + \sum_{f}\vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f 
+      + \vec{F}_p \alpha_f
+      = S(\vec{u})
+      + \vec{u_b} \dot{m}'' A_b
+    \end{equation*}
+    Divide by cell volume, $V_c$, to give the equation in OpenFOAM form that we want to solve
+    \begin{equation}
+      \label{eq:gasMom}
+      \boxed{
+        \frac{\rho \vec{u} \alpha_g - \rho^0 \vec{u}^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} \vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
+      + \frac{\vec{F}_p \alpha_f}{V_c}
+      = \frac{S(\vec{u})}{V_c}
+      + \frac{\vec{u_b} \dot{m}'' A_b}{V_c}
+      }
+    \end{equation}
+
+  \section{Gas Energy Equation}
+    Conservation of energy on the gray (gas) control volume surrounded by boundary Ag
+    \begin{equation*}
+        \frac{\partial}{\partial t}\int_{V_g} \rho E \d V
+      + \int_{A_g} (E + \frac{p}{\rho}) (\rho \vec{u} \cdot \vec{n}) \d A
+      + \int_{A_g} (\vec{q} \cdot \vec{n}) \d A
+      = S(E)
+    \end{equation*}
+    The total energy of the fluid can be rewritten in terms of the specific enthalpy ($h_s$) such that
+    \begin{align*}
+      K =& \frac{u^2 + v^2 + w^2}{2} \\
+      i =& h_s - \frac{p}{\rho} \\
+      E =& i + K \\
+      E =& h_s + K - \frac{p}{\rho}
+    \end{align*}
+    Substituting into the energy equation then yields
+    \begin{equation*}
+          \frac{\partial}{\partial t}\int_{V_g} \rho (h_s + K - \frac{p}{\rho}) \d V
+        + \int_{A_g} (h_s + K) (\rho \vec{u} \cdot \vec{n}) \d A
+        + \int_{A_g} (\vec{q} \cdot \vec{n}) \d A
+        = S(E)
+    \end{equation*}
+    Using second-order approximations of the integrals and a first-order time derivative
+    \begin{align*}
+        &\frac{\rho h_s V_g - \rho^0 h_s^0 V_g^0}{\Delta t}
+      + \sum_{f,g} h_s (\rho \vec{u}\cdot\vec{A}_{f,g}) \\
+      + &\frac{\rho K V_g - \rho^0 K^0 V_g^0}{\Delta t}
+      + \sum_{f,g} K (\rho \vec{u}\cdot\vec{A}_{f,g}) \\
+      + &\frac{p V_g - p^0 V_g^0}{\Delta t}
+      + \sum_{f,g} (\vec{q}\cdot\vec{A}_{f,g}) \\
+      = & S(E)
+    \end{align*}
+    Translate equation to full cell
+    \begin{align*}
+        &V_c \frac{\rho h_s \alpha_g - \rho^0 h_s^0 \alpha_g^0}{\Delta t}
+      + \sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+      + &V_c \frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
+      + \sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+      + &V_c \frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}
+      + \sum_{f} (\vec{q}\cdot\vec{A}_{f}) \alpha_f \\
+      = & S(E)
+      + K_b \dot{m}'' A_b
+      + \vec{q}_b \cdot \vec{A}_b
+    \end{align*}
+    Divide by cell volume, $V_c$, to give the equation in OpenFOAM form that we want to solve
+    \begin{empheq}[box=\fbox]{align}
+        &\frac{\rho h_s \alpha_g - \rho^0 h_s^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \notag\\
+      + &\frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+      + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} (\vec{q}\cdot\vec{A}_{f}) \alpha_f \notag\\
+      = & \frac{S(E)}{V_c}
+      + \frac{K_b \dot{m}'' A_b}{V_c}
+      + \frac{\vec{q}_b \cdot \vec{A}_b}{V_c}\notag
+    \end{empheq}
+
+  \section{Gas Species Equation}
+    Conservation of a given species mass fraction ($Y_i$) on gray (gas) control volume (Vg) surround by boundary Ag
+    \begin{equation*}
+        \frac{\partial}{\partial t}\int_{V_g} \rho Y_i \d V 
+      + \int_{A_g} Y_i (\rho \vec{u} \cdot \vec{n}) \d A
+      + \int_{A_g} (\vec{G}_i \cdot \vec{n}) \d A
+      = S(Y_i)
+    \end{equation*}
+    Using second-order approximations of the integrals and a first-order time derivative
+    \begin{equation*}
+        \frac{\rho Y_i V_g - \rho^0 Y_i^0 V_g^0}{\Delta t}
+      + \sum_{f,g} Y_i (\rho \vec{u}\cdot\vec{A_{f,g}}) 
+      + \sum_{f,g} (\vec{G}_i \cdot \vec{A_{f,g}})
+      = S(Y_i)
+    \end{equation*}
+    Translate this to the full cell
+    \begin{equation*}
+        V_c\frac{\rho Y_i \alpha_g - \rho^0 Y_i^0 \alpha_g^0}{\Delta t}
+      + \sum_{f} Y_i (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f 
+      + \sum_{f,g} (\vec{G}_i \cdot \vec{A_{f}})\alpha_f
+      = S(Y_i)
+      + Y_{i,b} \dot{m}'' A_b
+    \end{equation*}
+    Divide by cell volume, $V_c$, to give the equation in OpenFOAM form that we want to solve
+    \begin{empheq}[box=\fbox]{align}
+      \label{eq:gasSpecie}
+        &\frac{\rho Y_i \alpha_g - \rho^0 Y_i^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} Y_i (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f \\
+      + &\frac{1}{V_c}\sum_{f,g} (\vec{G}_i \cdot \vec{A_{f}})\alpha_f 
+      = \frac{S(Y_i)}{V_c}
+      + \frac{Y_{i,b} \dot{m}'' A_b}{V_c} \notag
+    \end{empheq}
+\end{document}
