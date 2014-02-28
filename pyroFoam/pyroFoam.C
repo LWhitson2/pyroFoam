@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            Info << nl << rho << nl <<endl;
+            // Info << nl << rho << nl <<endl;
 
             if (solid.testPyro() != "solid")
             {

@@ -6,7 +6,7 @@
 
     fvScalarMatrix TsEqn
     (
-        rhos*Cps*fvm::ddt(ib.alphasCorr()(), Ts)
+        rhos*Cps*fvm::ddt(ib.alphasCorr(), Ts)
       - fvm::laplacian(KEff, Ts)
      ==
         solid.TsSu()

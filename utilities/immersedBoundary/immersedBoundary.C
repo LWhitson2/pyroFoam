@@ -58,20 +58,6 @@ Foam::immersedBoundary::immersedBoundary
         mesh_
     ),
 
-    alphas_
-    (
-        IOobject
-        (
-            "alphaSolid",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("alphaSolid", dimless, 0.0)
-    ),
-
     alphaCorr_
     (
         IOobject
@@ -84,20 +70,6 @@ Foam::immersedBoundary::immersedBoundary
         ),
         mesh_,
         dimensionedScalar("alphaGasCorr", dimless, 0.0)
-    ),
-
-    alphasCorr_
-    (
-        IOobject
-        (
-            "alphaSolidCorr",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("alphaSolidCorr", dimless, 0.0)
     ),
 
     alphaf_
@@ -755,33 +727,32 @@ void Foam::immersedBoundary::correct()
     //Re-normalize iNormal (only needed for the cases when it is incremented)
     iNormal_ /= (mag(iNormal_) + VSMALL);
 
+    // Currently the original value of alphaf_ is stored in alphafCorr_. Need to clean this up later.
     sumalphaf_ = fvc::surfaceSum(alphaf_);
     alphafs_ = 1.0 - alphaf_;
     alphafsCorr_ = alphafs_;
     alphafCorr_ = alphaf_;
 
     // Create corrected alpha varialbes
-    alphas_ = 1. - alpha_;
     alphaCorr_ = alpha_*pos(alpha_ - alphaMin_);
-    alphasCorr_ = alphas_*pos(alphas_ - alphaMin_);
+    alphaCorr_.oldTime() = pos(alphaCorr_ - SMALL)*alpha_.oldTime();
 
+    // Correct boundary conditions
     iArea_.correctBoundaryConditions();
     iNormal_.correctBoundaryConditions();
     gasC_.correctBoundaryConditions();
     solidC_.correctBoundaryConditions();
 }
 
-
-
-// Calculate alpha that excludes small cells
-Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphaCorr() const
-{
-    return alpha_ * pos(alpha_ - alphaMin_);
-}
-
+// Calculate solid alpha values on demand
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphasCorr() const
 {
-    return alphas() * pos(alphas() - alphaMin_);
+    return 1. - alphaCorr_;
+}
+
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::alphas() const
+{
+    return 1. - alpha_;
 }
 
 
