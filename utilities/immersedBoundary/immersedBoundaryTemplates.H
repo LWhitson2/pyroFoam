@@ -249,7 +249,7 @@ immersedBoundary::reconstruct
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
-            inv(fvc::surfaceSum(sqr(mesh_.Sf())/mesh_.magSf()))
+            inv(fvc::surfaceSum(sqr(mesh_.Sf())/(mesh_.magSf())))
           & fvc::surfaceSum((mesh_.Sf()/mesh_.magSf())*ssf),
             zeroGradientFvPatchField<GradType>::typeName
         )

@@ -649,17 +649,17 @@ void Foam::burningSolid::calcSurfaceMomentum(const volVectorField& U)
 {
     // Convert surface momentum flux to source
     // TODO add an AbyV or ArV function to ib
-    mU_ = burnU_ * m_pyro_;
+    mU_ = burnU_*m_pyro_;
 
-    // Adjust flux for current conditions
-    volScalarField rhog = gasThermo_.rho();
-    volScalarField rhos = solidThermo_->rho();
-    forAll(mflux_, cellI)
-    {
-        mU_.internalField()[cellI] -=
-              mflux_[cellI]*rhog[cellI]*U[cellI]/rhos[cellI]
-            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
-    }
+    // // Adjust flux for current conditions
+    // volScalarField rhog = gasThermo_.rho();
+    // volScalarField rhos = solidThermo_->rho();
+    // forAll(mflux_, cellI)
+    // {
+    //     mU_.internalField()[cellI] -=
+    //           mflux_[cellI]*rhog[cellI]*U[cellI]/rhos[cellI]
+    //         * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+    // }
 }
 
 void Foam::burningSolid::calcSurfaceMass()
@@ -668,15 +668,15 @@ void Foam::burningSolid::calcSurfaceMass()
     // TODO add an AbyV or ArV function to ib
     mgen_ = m_pyro_;
 
-    // Adjust flux for current conditions
-    volScalarField rhog = gasThermo_.rho();
-    volScalarField rhos = solidThermo_->rho();
-    forAll(mflux_, cellI)
-    {
-        mgen_.internalField()[cellI] -=
-              mflux_[cellI]*rhog[cellI]/rhos[cellI]
-            * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
-    }
+    // // Adjust flux for current conditions
+    // volScalarField rhog = gasThermo_.rho();
+    // volScalarField rhos = solidThermo_->rho();
+    // forAll(mflux_, cellI)
+    // {
+    //     mgen_.internalField()[cellI] -=
+    //           mflux_[cellI]*rhog[cellI]/rhos[cellI]
+    //         * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
+    // }
 }
 
 // * * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * //

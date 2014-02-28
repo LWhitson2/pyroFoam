@@ -53,7 +53,8 @@ else*/
         ib.interpolate(rho)*
         (
             (ib.interpolate(U) & mesh.Sf())*ib.alphaf()
-          //+ ib.ddtPhiCorr(rAU, rho, U, phi)
+            // + fvc::ddtPhiCorr(rAU, rho, U, phi)
+            // + ib.ddtPhiCorr(rAU, rho, U, phi)
         )
     );
 
