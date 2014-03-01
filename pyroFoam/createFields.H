@@ -5,8 +5,10 @@ autoPtr<combustionModels::rhoCombustionModel> reaction
     combustionModels::rhoCombustionModel::New(mesh)
 );
 
+
 rhoReactionThermo& thermo = reaction->thermo();
 thermo.validate(args.executable(), "h", "e");
+
 
 basicMultiComponentMixture& composition = thermo.composition();
 PtrList<volScalarField>& Y = composition.Y();
@@ -128,10 +130,8 @@ volScalarField dQ
 immersedBoundary ib(mesh);
 
 // Create the burning solid object defined by the immersed boundary
-//  The ideal scenario would be to create burningSolid as a template based
-//  on the gas thermo type from the thermophysicalProperties dictionary, so
-//  it would be valid for different thermo types.
-burningSolid solid(mesh, ib, thermo);
+//  For now, just set thermo type here to match what is in dictionary
+burningSolid<gasHThermoPhysics,rhoReactionThermo> solid(mesh, ib, thermo);
 
 // Create Solid Fields
 volScalarField& Ts = solid.Ts();

@@ -38,6 +38,8 @@ Description
 #include "burningSolid.H"
 #include "OFstream.H"
 
+#include "thermoPhysicsTypes.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 int main(int argc, char *argv[])

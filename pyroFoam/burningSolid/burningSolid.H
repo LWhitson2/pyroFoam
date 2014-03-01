@@ -42,12 +42,12 @@ SourceFiles
 #include "dimensionedScalarFwd.H"
 #include "cuttableCell.H"
 #include "cuttableFace.H"
-#include "thermoPhysicsTypes.H"
+#include "specie.H"
 #include "multiComponentMixture.H"
 #include "solidThermo.H"
 #include "immersedBoundary.H"
 #include "pyrolysisModel.H"
-#include "rhoReactionThermo.H"
+//#include "rhoReactionThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -58,7 +58,7 @@ namespace Foam
 /*---------------------------------------------------------------------------*\
                            Class phase Declaration
 \*---------------------------------------------------------------------------*/
-
+template<class GasThermoType, class ReactionThermoType>
 class burningSolid
 {
     // Private data
@@ -72,22 +72,10 @@ class burningSolid
         immersedBoundary& ib_;
 
         //- Gas thermo
-        const rhoReactionThermo& gasThermo_;
+        const ReactionThermoType& gasThermo_;
 
         //- Multicomponent Mixture
-        // NOTE: This locks in the thermo type. Making this a template would
-        // be more versatile but a pain. Your thermoType entry in
-        // thermophysicalProperties must have the following entries:
-        //
-        // transport       sutherland;
-        // thermo          janaf;
-        // energy          sensibleEnthalpy;
-        // equationOfState perfectGas;
-        // specie          specie;
-        //
-        // To use a different combination, refer to thermoPhysicsTypes.H, change
-        // this line and any others using gasHThermoPhysics, and recompile.
-        const multiComponentMixture<gasHThermoPhysics>& mCM_;
+        const multiComponentMixture<GasThermoType>& mCM_;
 
         //- Input dictionary
         IOdictionary pyroDict_;
@@ -162,7 +150,7 @@ class burningSolid
         word gasName_;
 
         //- Pointer to the thermo for the pyro gas
-        const gasHThermoPhysics* EMg_;
+        const GasThermoType* EMg_;
 
         //- Gas heat transfer implicit source
         volScalarField QgSp_;
@@ -207,7 +195,7 @@ class burningSolid
         (
             const fvMesh& mesh,
             immersedBoundary& ib,
-            const rhoReactionThermo& gasThermo
+            const ReactionThermoType& gasThermo
         );
 
         //Functions
@@ -381,6 +369,10 @@ class burningSolid
 } // End namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+#   include "burningSolid.C"
+#endif
 
 #endif
 
