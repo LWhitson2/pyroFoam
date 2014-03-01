@@ -31,14 +31,14 @@ Foam::burningSolid::burningSolid
 (
     const fvMesh& mesh,
     immersedBoundary& ib,
-    const hsCombustionThermo& gasThermo
+    const rhoReactionThermo& gasThermo
 )
 :
     mesh_(mesh),
 
     solidThermo_
     (
-        basicSolidThermo::New( mesh )
+        solidThermo::New( mesh )
     ),
 
     ib_(ib),
@@ -47,7 +47,7 @@ Foam::burningSolid::burningSolid
 
     mCM_
     (
-        dynamic_cast<const multiComponentMixture<constGasThermoPhysics>& >
+        dynamic_cast<const multiComponentMixture<gasHThermoPhysics>& >
         ( gasThermo_.composition() )
     ),
 
@@ -440,15 +440,17 @@ Foam::burningSolid::burningSolid
     solidThermo_->rho().rename("rhos");
 
     // Find gasName in species
-    const multiComponentMixture<constGasThermoPhysics>& composition =
-        dynamic_cast<const multiComponentMixture<constGasThermoPhysics>& >
+    const multiComponentMixture<gasHThermoPhysics>& composition =
+        dynamic_cast<const multiComponentMixture<gasHThermoPhysics>& >
         ( gasThermo_.composition() );
 
-    const PtrList<constGasThermoPhysics>& speciesData = composition.speciesData();
+    const PtrList<gasHThermoPhysics>& speciesData = composition.speciesData();
 
     forAll(speciesData, s)
     {
-        if (speciesData[s].name() == gasName_)
+        const specie& specieS = dynamic_cast<const specie&>(speciesData[s]);
+        
+        if (specieS.name() == gasName_ )
         {
             Info<< "  Linked burningSolid with gas specie" << endl;
             EMg_ = speciesData(s);
@@ -531,13 +533,22 @@ void Foam::burningSolid::fixSmallCells()
     // Values to set in the solid region
     tmp<volScalarField> pSolid = (gasThermo_.p() - gasThermo_.p())
                                + gasThermo_.p().weightedAverage(ib_.area());
+                               
+    //TODO: Fix these to do a proper creation rather than this X-X
     tmp<volVectorField> USolid = (burnU_ - burnU_)
                                + dimensionedVector("Us",dimVelocity,vector::zero);
-    tmp<volScalarField> hsSolid = (gasThermo_.hs() - gasThermo_.hs());
-    forAll(hsSolid(),cellI)
+                               
+    tmp<volScalarField> heSolid = (gasThermo_.he() - gasThermo_.he());
+    
+    forAll(heSolid(),cellI)
     {
-        hsSolid()[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI]);
+        heSolid()[cellI] = mCM_.cellMixture(cellI).Hs
+        (
+            pSolid()[cellI],
+            Ts_[cellI]
+        );
     }
+    
     tmp<volScalarField> TsGas = gasThermo_.T();
     tmp<volScalarField> rhoSolid = solidThermo_->rho();
 
@@ -555,8 +566,8 @@ void Foam::burningSolid::fixSmallCells()
                            USolid, rhordT, "fix", "gas");
     ib_.setScValue<scalar>(w, pSu_, pSp_, gasThermo_.p(),
                            pSolid, psirdT, "avg", "gas");
-    ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.hs(),
-                           hsSolid, hsrdT, "avg", "gas");
+    ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.he(),
+                           heSolid, hsrdT, "avg", "gas");
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
     ib_.setScValue<scalar>(w, rhoSu_, rhoSp_, rhog,
@@ -631,15 +642,16 @@ void Foam::burningSolid::calcSurfaceEnergy()
     }
 
     // Calculate energy transferred between solid and gas
+    tmp<volScalarField> Cps = solidThermo_->Cp();
     forAll(mflux_, cellI)
     {
         qgeng_.internalField()[cellI] += mflux_[cellI]
-            * (mCM_.cellMixture(cellI).Hs(Ti_[cellI])
-            - gasThermo_.hs()[cellI])
+            * (mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI],Ti_[cellI])
+            - gasThermo_.he()[cellI])
             * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
 
         qgens_.internalField()[cellI] -=
-              mflux_[cellI]*solidThermo_->Cp()()[cellI]
+              mflux_[cellI]*Cps()[cellI]
             * (Ti_[cellI] - Ts_[cellI])
             * ib_.area().oldTime()[cellI] / mesh_.V()[cellI];
     }
@@ -803,7 +815,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
     // Solid Properties
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
-    volScalarField Ks = solidThermo_->K();
+    volScalarField Ks = solidThermo_->kappa();
     if (testPyro_ == "enthalpy") Ks = Ks*0.;
 
     // Gas Properties
@@ -864,7 +876,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
 
                 // Gas source terms
                 QgSp_[cellI] = Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
-                QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
+                QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI],Ts_[cellI])
                             * Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
 
                 // Solid source terms
@@ -918,7 +930,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
 
                     // Gas source terms
                     QgSp_[mc] += tmpA/(Req*Cpg()[mc]*Vc[mc]);
-                    QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
+                    QgSu_[mc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc],Ts_[sc])
                                * tmpA/(Req*Cpg()[mc]*Vc[mc]);
 
                     // Solid source terms

@@ -67,7 +67,7 @@ public:
         NoPyrolysis
         (
             dictionary pyroDict,
-            basicSolidThermo const* solidThermo
+            solidThermo const* solidThermo
         );
 
     //- Destructor

@@ -1,6 +1,6 @@
 {
-    combustion->correct();
-    dQ = combustion->dQ();
+    reaction->correct();
+    dQ = reaction->dQ();
     volScalarField Yt(0.0*Y[0]);
 
     // Calculate corrected species diffusivity
@@ -25,7 +25,7 @@
               + mvConvection->fvmDiv(phi, Yi)
               - fvm::laplacian(DEff, Yi)
               ==
-                ib.alphaCorr()*combustion->R(Yi)
+                ib.alphaCorr()*reaction->R(Yi)
 //                 combustion->R(Yi)
               + solid.YSu( Yi.name() )
               - fvm::Sp(solid.YSp(), Yi)

@@ -39,7 +39,7 @@ Foam::pyrolysisModel::pyrolysisModel
 (
     const word& type,
     dictionary pyroDict,
-    basicSolidThermo const* solidThermo
+    solidThermo const* solidThermo
 )
 :   //allow an empty dictionary for NoPyrolysis model, all others will crash
     pyroModelDict_(pyroDict.subOrEmptyDict(type + "Coeffs")),

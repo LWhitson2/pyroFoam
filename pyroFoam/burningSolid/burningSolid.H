@@ -40,14 +40,14 @@ SourceFiles
 #include "fvCFD.H"
 #include "dimensionedScalar.H"
 #include "dimensionedScalarFwd.H"
-#include "hsCombustionThermo.H"
 #include "cuttableCell.H"
 #include "cuttableFace.H"
 #include "thermoPhysicsTypes.H"
 #include "multiComponentMixture.H"
-#include "basicSolidThermo.H"
+#include "solidThermo.H"
 #include "immersedBoundary.H"
 #include "pyrolysisModel.H"
+#include "rhoReactionThermo.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -66,16 +66,28 @@ class burningSolid
         const fvMesh& mesh_;
 
         //- Solid thermo pointer
-        autoPtr<basicSolidThermo> solidThermo_;
+        autoPtr<solidThermo> solidThermo_;
 
         //- Immersed solid boundary
         immersedBoundary& ib_;
 
         //- Gas thermo
-        const hsCombustionThermo& gasThermo_;
+        const rhoReactionThermo& gasThermo_;
 
         //- Multicomponent Mixture
-        const multiComponentMixture<constGasThermoPhysics>& mCM_;
+        // NOTE: This locks in the thermo type. Making this a template would
+        // be more versatile but a pain. Your thermoType entry in
+        // thermophysicalProperties must have the following entries:
+        //
+        // transport       sutherland;
+        // thermo          janaf;
+        // energy          sensibleEnthalpy;
+        // equationOfState perfectGas;
+        // specie          specie;
+        //
+        // To use a different combination, refer to thermoPhysicsTypes.H, change
+        // this line and any others using gasHThermoPhysics, and recompile.
+        const multiComponentMixture<gasHThermoPhysics>& mCM_;
 
         //- Input dictionary
         IOdictionary pyroDict_;
@@ -150,7 +162,7 @@ class burningSolid
         word gasName_;
 
         //- Pointer to the thermo for the pyro gas
-        const constGasThermoPhysics* EMg_;
+        const gasHThermoPhysics* EMg_;
 
         //- Gas heat transfer implicit source
         volScalarField QgSp_;
@@ -195,7 +207,7 @@ class burningSolid
         (
             const fvMesh& mesh,
             immersedBoundary& ib,
-            const hsCombustionThermo& gasThermo
+            const rhoReactionThermo& gasThermo
         );
 
         //Functions
@@ -295,9 +307,9 @@ class burningSolid
             return solidThermo_->rho();
         }
 
-        const volScalarField& Ks()
+        const tmp<volScalarField> Ks()
         {
-            return solidThermo_->K();
+            return solidThermo_->kappa();
         }
 
         const tmp<volScalarField> Cps()
@@ -305,9 +317,9 @@ class burningSolid
             return solidThermo_->Cp();
         }
 
-        basicSolidThermo& solidThermo()
+        solidThermo& thermo()
         {
-        return solidThermo_();
+            return solidThermo_();
         }
 
         const volScalarField& QgSp()

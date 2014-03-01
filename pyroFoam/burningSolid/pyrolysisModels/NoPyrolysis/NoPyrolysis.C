@@ -41,7 +41,7 @@ namespace pyrolysisModels
 Foam::pyrolysisModels::NoPyrolysis::NoPyrolysis
 (
     dictionary pyroDict,
-    basicSolidThermo const* solidThermo
+    solidThermo const* solidThermo
 )
 :
     pyrolysisModel(typeName, pyroDict, solidThermo)

@@ -41,7 +41,7 @@ namespace pyrolysisModels
 Foam::pyrolysisModels::Arrhenius::Arrhenius
 (
     dictionary pyroDict,
-    basicSolidThermo const* solidThermo
+    solidThermo const* solidThermo
 )
 :
     pyrolysisModel(typeName, pyroDict, solidThermo),

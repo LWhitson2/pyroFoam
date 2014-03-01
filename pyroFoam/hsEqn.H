@@ -10,25 +10,25 @@
 //         if (ib.smallCells()()[cellI]) Info << solid.QgSu()[cellI] << ", " << solid.QgSp()[cellI] << endl;
 //     }
 
-    fvScalarMatrix hsEqn
+    fvScalarMatrix heEqn
     (
-        fvm::ddt(ib.alphaCorr()*rho, hs)
-      + mvConvection->fvmDiv(phi, hs)
-      - fvm::laplacian(alphaEff, hs)
+        fvm::ddt(ib.alphaCorr()*rho, he)
+      + mvConvection->fvmDiv(phi, he)
+      - fvm::laplacian(alphaEff, he)
      ==
         ib.alphaCorr()*dpdt
       - (fvc::ddt(ib.alphaCorr()*rho, K) + fvc::div(phi, K))
-      + ib.alphaCorr()*combustion->Sh()
+      + ib.alphaCorr()*reaction->Sh()
 //       + combustion->Sh()
       + solid.hsSu()
-      - fvm::Sp(solid.hsSp(), hs)
+      - fvm::Sp(solid.hsSp(), he)
       + solid.QgSu()
-      - fvm::Sp(solid.QgSp(), hs)
+      - fvm::Sp(solid.QgSp(), he)
       + solid.Qgeng()
     );
 
-    hsEqn.relax();
-    hsEqn.solve();
+    heEqn.relax();
+    heEqn.solve();
 
     thermo.correct(); //we may need to create a 'specie' for the solid so that this works
 

@@ -1,19 +1,16 @@
-Info<< "Creating combustion model\n" << endl;
+Info<< "Creating reaction model\n" << endl;
 
-autoPtr<combustionModels::psiChemistryCombustionModel> combustion
+autoPtr<combustionModels::rhoCombustionModel> reaction
 (
-    combustionModels::psiChemistryCombustionModel::New
-    (
-        mesh
-    )
+    combustionModels::rhoCombustionModel::New(mesh)
 );
 
-psiChemistryModel& chemistry = combustion->pChemistry();
-
-hsCombustionThermo& thermo = chemistry.thermo();
+rhoReactionThermo& thermo = reaction->thermo();
+thermo.validate(args.executable(), "h", "e");
 
 basicMultiComponentMixture& composition = thermo.composition();
 PtrList<volScalarField>& Y = composition.Y();
+
 
 //word inertSpecie(thermo.lookup("inertSpecie"));
 
@@ -61,20 +58,20 @@ volVectorField U
 
 volScalarField& p = thermo.p();
 const volScalarField& psi = thermo.psi();
-volScalarField& hs = thermo.hs();
+volScalarField& he = thermo.he();
 const volScalarField& T = thermo.T();
 
-volScalarField hsOut
+volScalarField heOut
 (
     IOobject
     (
-        "hsOut",
+        "heOut",
         runTime.timeName(),
         mesh,
         IOobject::NO_READ,
         IOobject::AUTO_WRITE
     ),
-    thermo.hs()
+    thermo.he()
 );
 
 #include "compressibleCreatePhi.H"
@@ -92,7 +89,7 @@ autoPtr<compressible::turbulenceModel> turbulence
 );
 
 // Set the turbulence into the combustion model
-combustion->setTurbulence(turbulence());
+reaction->setTurbulence(turbulence());
 
 
 Info<< "Creating field dpdt\n" << endl;
@@ -108,7 +105,7 @@ forAll(Y, i)
 {
     fields.add(Y[i]);
 }
-fields.add(hs);
+fields.add(he);
 
 volScalarField dQ
 (
@@ -131,12 +128,15 @@ volScalarField dQ
 immersedBoundary ib(mesh);
 
 // Create the burning solid object defined by the immersed boundary
+//  The ideal scenario would be to create burningSolid as a template based
+//  on the gas thermo type from the thermophysicalProperties dictionary, so
+//  it would be valid for different thermo types.
 burningSolid solid(mesh, ib, thermo);
 
 // Create Solid Fields
 volScalarField& Ts = solid.Ts();
-solid.solidThermo().T() = Ts;
-solid.solidThermo().correct();
+solid.thermo().T() = Ts;
+solid.thermo().correct();
 
 volScalarField Tall
 (
@@ -152,8 +152,8 @@ volScalarField Tall
 );
 
 const volScalarField& rhos = solid.rhos();
-const tmp<volScalarField> Cps = solid.Cps();
-const volScalarField& Ks = solid.Ks();
+//const tmp<volScalarField> Cps = solid.Cps();
+//const tmp<volScalarField> Ks = solid.Ks();
 
 OFstream log(args.path()/"TsAvg.out");
 OFstream logTi(args.path()/"TiAvg.out");
