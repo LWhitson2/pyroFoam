@@ -11,14 +11,16 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
     Info<< "Solving UEqn" << endl;
 
-    surfaceScalarField muEff = ib.interpolate(turbulence->muEff())
+    surfaceScalarField muEff = ib.interpolate(turbulence->muEff(), "gas")
                                *ib.alphaf();
     surfaceVectorField gradUeff = fvc::interpolate(dev2(Foam::T(fvc::grad(U))))
                                 & mesh.Sf();
+    volScalarField rhoAlpha = rho*ib.alphaCorr();
+    rhoAlpha.oldTime() = rho.oldTime() * ib.alphaCorr().oldTime();
 
     fvVectorMatrix UEqn
     (
-        fvm::ddt(rho*ib.alphaCorr(), U)
+        fvm::ddt(rhoAlpha, U)
       + fvm::div(phi, U)
       - fvm::laplacian(muEff*ib.lapCorr("gas"), U)
       - fvc::div(muEff*gradUeff)

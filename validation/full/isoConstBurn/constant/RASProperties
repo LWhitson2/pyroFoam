@@ -11,33 +11,15 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      RASProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solidName   EMs;
-gasName     EMg;
+RASModel        kEpsilon;
 
-pyrolysisModel    WSB;
+turbulence      on;
 
-ConstantCoeffs
-{
-    mb    mb    [1 -2 1 0 0 0 0]    2.259;
-    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
-}
+printCoeffs     on;
 
-WSBCoeffs
-{
-    Ac    Ac    [0 0 -1 0 0 0 0]    1.637e15;
-    Ec    Ec    [1 2 -2 0 -1 0 0]   176.e6;
-    Qc    Qc    [0 2 -2 0 0 0 0]    400.e3;
-    T0    T0    [0 0 0 1 0 0 0]     300.;
-}
-
-ignTime   ignTime     [0 0 1 0 0 0 0]     0.0765;// 15.0e-2;
-ignFlux   ignFlux     [1 0 -3 0 0 0 0]    1.034e6;
-ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.00;
-
-testPyro  off;
 
 // ************************************************************************* //

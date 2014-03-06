@@ -287,11 +287,15 @@ public:
         //- Return a mask for large solid cells
         tmp<volScalarField> largeSolidCells() const;
 
+        //- Return a mask for reconstructed cells
+        tmp<volScalarField> reconstructedCells() const;
+
         //- IB-aware interpolation
         template<class Type>
         tmp<GeometricField<Type, fvsPatchField, surfaceMesh> > ibInterpolate
         (
-            const GeometricField<Type, fvPatchField, volMesh>& vf
+            const GeometricField<Type, fvPatchField, volMesh>& vf,
+            const word& input
         ) const;
 
 
@@ -322,34 +326,38 @@ public:
 
         inline tmp<surfaceScalarField> interpolate
         (
-            const volScalarField& vf
+            const volScalarField& vf,
+            const word& input
         ) const
         {
-            return ibInterpolate<scalar>(vf);
+            return ibInterpolate<scalar>(vf, input);
         }
 
         inline tmp<surfaceScalarField> interpolate
         (
-            tmp<volScalarField> tvf
+            tmp<volScalarField> tvf,
+            const word& input
         ) const
         {
-            return ibInterpolate<scalar>(tvf());
+            return ibInterpolate<scalar>(tvf(), input);
         }
 
         inline tmp<surfaceVectorField> interpolate
         (
-            const volVectorField& vf
+            const volVectorField& vf,
+            const word& input
         ) const
         {
-            return ibInterpolate<vector>(vf);
+            return ibInterpolate<vector>(vf, input);
         }
 
         inline tmp<surfaceVectorField> interpolate
         (
-            tmp<volVectorField> tvf
+            tmp<volVectorField> tvf,
+            const word& input
         ) const
         {
-            return ibInterpolate<vector>(tvf());
+            return ibInterpolate<vector>(tvf(), input);
         }
 };
 

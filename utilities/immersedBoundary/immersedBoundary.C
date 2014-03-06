@@ -349,7 +349,7 @@ Foam::tmp<surfaceScalarField> Foam::immersedBoundary::lapCorr
     tmp<volScalarField> mc = mixedCells();
     tmp<surfaceScalarField> magDelta = mag(mesh_.delta() & mesh_.Sf()) / mesh_.magSf();
 
-    tmp<volScalarField> alphastmp = 1.0 - alpha_;
+    // tmp<volScalarField> alphastmp = 1.0 - alpha_;
 //     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
 
     // Internal faces first
@@ -392,12 +392,12 @@ void Foam::immersedBoundary::calculateInterfaceNormal
     // Get gradient
     iNormal_ = fvc::grad(alpha_)*dimensionedScalar("one",dimLength,1.0);
 
-    surfaceVectorField iNormalf = interpolate(iNormal_);
+    surfaceVectorField iNormalf = fvc::interpolate(iNormal_);
     iNormal_ = 0.7*fvc::average(iNormalf) + 0.3*iNormal_;
 
     for (label i = 0; i < 1; ++i)
     {
-        iNormalf = interpolate(iNormal_);
+        iNormalf = fvc::interpolate(iNormal_);
         iNormal_ = 0.7*fvc::average(iNormalf) + 0.3*iNormal_;
     }
 
@@ -586,6 +586,7 @@ void Foam::immersedBoundary::correct()
                 && alphaf_[faceI] > SMALL)
             {
                 //own is solid
+                Info<< endl << "Check alphaf " << alphafOwn << " " << alphafNei << " " << mag(iPoint_[nei]*GREAT - mesh_.Cf()[faceI]*GREAT) << " " << iNormal_[nei] <<endl << endl;
                 iArea_[own] += mesh_.magSf()[faceI] * alphaf_[faceI];
                 iNormal_[own] += outwardNormal(faceI, own)*alphaf_[faceI];
             }
@@ -602,7 +603,7 @@ void Foam::immersedBoundary::correct()
         // is the one that will be burning at the next time step.
         else if (mag(alpha_[own] - alpha_[nei]) > 0.1)
         {
-            alphaf_[faceI] = 0.0;
+            alphaf_[faceI] = 1.0;
 
             //set iNormal and a_burn for this case
             label solidcell = (alpha_[own] < 0.1) ? own : nei;
@@ -929,32 +930,32 @@ Foam::immersedBoundary::smallSolidAndGasCells() const
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::fullGasCells() const
 {
-    return neg(alphas() - reconstructTol_);
+    return neg(alphas() - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallCells() const
 {
-    return neg(alpha_ - alphaMin_)*pos(alpha_ - reconstructTol_);
+    return neg(alpha_ - alphaMin_)*pos(alpha_ - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::solidCells() const
 {
-    return neg(alpha_ - reconstructTol_);
+    return neg(alpha_ - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallSolidCells() const
 {
-    return neg(alphas() - alphaMin_)*pos(alphas() - reconstructTol_);
+    return neg(alphas() - alphaMin_)*pos(alphas() - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::gasCells() const
 {
-    return pos(alpha_ - reconstructTol_);
+    return pos(alpha_ - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::mixedCells() const
 {
-    return pos(alpha_ - reconstructTol_)*pos(alphas() - reconstructTol_);
+    return pos(alpha_ - SMALL)*pos(alphas() - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::noCells() const
@@ -965,6 +966,11 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::noCells() const
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::largeSolidCells() const
 {
     return pos(alphas() - alphaMin_);
+}
+
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::reconstructedCells() const
+{
+    return pos(alpha_ - reconstructTol_)*pos(alphas() - reconstructTol_);
 }
 
 // ************************************************************************* //

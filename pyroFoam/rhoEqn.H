@@ -33,7 +33,6 @@ Description
 
     Info<< "Solving rhoEqn" << endl;
 
-    Info<< rho[99] << endl;
     solve
     (
         fvm::ddt(ib.alphaCorr(), rho)
@@ -43,13 +42,13 @@ Description
       + solid.rhoSu()
       - fvm::Sp(solid.rhoSp(), rho)
     );
-    Info<< rho[99] << endl;
-    Info<< ib.alphaCorr().oldTime()[99] << endl;
-    Info<< ib.alphaCorr()[99] << endl;
-    Info << rho.oldTime()[99] << endl;
-    Info<< fvc::div(phi)()[99] << endl;
-    Info<< solid.mgen()[99] << endl;
 
+    // Info<< rho[99] << endl;
+    // Info<< ib.alphaCorr().oldTime()[99] << endl;
+    // Info<< ib.alphaCorr()[99] << endl;
+    // Info << rho.oldTime()[99] << endl;
+    // Info << fvc::div(phi)()[99] << endl;
+    // Info<< solid.mgen()[99] << endl;
     // Info<< "Min,max rho = " << Foam::min(rho).value()
     //     << ", " << Foam::max(rho).value() << endl;
     // Info<< "Max alphaDiff = " << Foam::max(Foam::mag(

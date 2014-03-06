@@ -21,14 +21,14 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-09;
-        relTol          0.;
+        tolerance       1e-12;
+        relTol          0;
     }
 
     "(rho|Ts)Final"
     {
         $rho;
-        tolerance       1e-09;
+        tolerance       1e-12;
         relTol          0;
     }
 
@@ -36,14 +36,14 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-09;
-        relTol          0.;
+        tolerance       1e-12;
+        relTol          0;
     }
 
     alphaGasFinal
     {
         $alphaGas;
-        tolerance       1e-09;
+        tolerance       1e-12;
         relTol          0;
     }
 
@@ -58,7 +58,7 @@ solvers
     pFinal
     {
         $p;
-        tolerance        1e-9;
+        tolerance        1e-12;
         relTol           0.0;
     }
 
@@ -66,15 +66,15 @@ solvers
     {
         solver          PBiCG;
         preconditioner  DILU;
-        tolerance       1e-09;
-        relTol          0.;
+        tolerance       1e-12;
+        relTol          0;
     }
 
     "(U|hs|k|epsilon)Final"
     {
         solver          PBiCG;
         preconditioner  DILU;
-        tolerance       1e-09;
+        tolerance       1e-12;
         relTol          0;
     }
 
@@ -88,7 +88,7 @@ PIMPLE
 {
     momentumPredictor no;
     nOuterCorrectors  1;
-    nCorrectors     2;
+    nCorrectors     5;
     nNonOrthogonalCorrectors 0;
 }
 
