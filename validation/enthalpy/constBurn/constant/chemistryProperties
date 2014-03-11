@@ -17,7 +17,7 @@ FoamFile
 
 psiChemistryModel   ODEChemistryModel<constGasThermoPhysics>;
 
-chemistry           on;
+chemistry           off;
 
 chemistrySolver     ode;
 

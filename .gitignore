@@ -23,6 +23,7 @@ linux64GccDPOpt/
 *.log
 *.gz
 *.out
+*.foam
 
 ## Core latex/pdflatex auxiliary files:
 *.aux

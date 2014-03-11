@@ -39,7 +39,7 @@ SourceFiles
 Foam::cuttableCell::cuttableCell(const Foam::fvMesh& mesh, label cellI)
  : points_(mesh.cellPoints()[cellI].size()),
    faces_(mesh.cells()[cellI].size()),
-   pointEqualTol_(1e-6),
+   pointEqualTol_(1e-12),
    baseVol_(mesh.V()[cellI]),
    centroid_(mesh.C()[cellI]),
    cutArea_(0.0)
@@ -129,17 +129,24 @@ Foam::plane Foam::cuttableCell::constructInterface
     scalar dspan = dmax - dmin;
     scalar dtol = dspan / 1e4;
 
+    Foam::plane pl(centroid_,n);
+
 
     if (Foam::mag(alpha) <= resmin)
     {
         dM = dL;
-        Foam::plane pl(centroid_ + n*(dM+dtol),n);
+        Foam::plane plTmp(centroid_ + n*(dM+dtol),n);
+        pl = plTmp;
         cut(pl); //we must still call cut so the cut area is calculated
+        Info << "Yard Waste" << endl;
+        Info << dmin << ", " << dmax << ", " << dtol << endl;
+        Info << pl << endl;
     }
     else if (Foam::mag(alpha-1.0) <= resmin)
     {
         dM = dH;
-        Foam::plane pl(centroid_ + n*(dM-dtol),n);
+        Foam::plane plTmp(centroid_ + n*(dM-dtol),n);
+        pl = plTmp;
         cut(pl); //we must still call cut so the cut area is calculated
     }
     else
@@ -178,7 +185,7 @@ Foam::plane Foam::cuttableCell::constructInterface
                 Info<< "  alpha = " << alpha << endl;
                 Info<< "  cell = " << points_ << endl;
                 Info<< "  centroid = " << centroid_ << endl;
-                FatalError << "bisection method failed " << abort(FatalError);
+                FatalError << "bisection method failed " << endl; //abort(FatalError);
                 break;
             }
 
@@ -220,9 +227,11 @@ Foam::plane Foam::cuttableCell::constructInterface
                 break;
             }
         }
+        Foam::plane plTmp(centroid_ + n*dM,n);
+        pl = plTmp;
     }
 
-    return Foam::plane(centroid_ + n*dM, n);
+    return pl;
 }
 
 void Foam::cuttableCell::reduceCutPoints

@@ -21,8 +21,8 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-06;
-        relTol          0.1;
+        tolerance       1e-09;
+        relTol          0.;
     }
 
     "(rho|Ts)Final"
@@ -36,8 +36,8 @@ solvers
     {
         solver          PCG;
         preconditioner  DIC;
-        tolerance       1e-06;
-        relTol          0.1;
+        tolerance       1e-09;
+        relTol          0.;
     }
 
     alphaGasFinal
@@ -66,15 +66,15 @@ solvers
     {
         solver          PBiCG;
         preconditioner  DILU;
-        tolerance       1e-06;
-        relTol          0.1;
+        tolerance       1e-09;
+        relTol          0.;
     }
 
     "(U|hs|k|epsilon)Final"
     {
         solver          PBiCG;
         preconditioner  DILU;
-        tolerance       1e-06;
+        tolerance       1e-09;
         relTol          0;
     }
 

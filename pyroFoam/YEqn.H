@@ -4,7 +4,7 @@
     volScalarField Yt(0.0*Y[0]);
 
     // Calculate corrected species diffusivity
-    surfaceScalarField DEff = ib.interpolate(turbulence->alphaEff())
+    surfaceScalarField DEff = ib.interpolate(turbulence->alphaEff(), "gas")
                                *ib.alphaf()*ib.lapCorr("gas"); // unity Lewis No.
 
     forAll(Y, i)
@@ -21,12 +21,11 @@
 
             fvScalarMatrix YiEqn
             (
-                fvm::ddt(ib.alphaCorr()*rho, Yi)
+                fvm::ddt(rhoAlpha, Yi)
               + mvConvection->fvmDiv(phi, Yi)
               - fvm::laplacian(DEff, Yi)
               ==
                 ib.alphaCorr()*combustion->R(Yi)
-//                 combustion->R(Yi)
               + solid.YSu( Yi.name() )
               - fvm::Sp(solid.YSp(), Yi)
             );
@@ -50,6 +49,10 @@
             << Foam::min(Y[i]).value() << ", "
             << Foam::max(Y[i]).value() << endl;
     }
+
+    Info<< "Min,max for Total Y = "
+            << Foam::min(Yt).value() << ", "
+            << Foam::max(Yt).value() << endl;
 
     thermo.correct();
 }

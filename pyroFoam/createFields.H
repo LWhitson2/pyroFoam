@@ -77,6 +77,19 @@ volScalarField hsOut
     thermo.hs()
 );
 
+volVectorField UestOut
+(
+    IOobject
+    (
+        "UestOut",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    U
+);
+
 #include "compressibleCreatePhi.H"
 
 Info << "Creating turbulence model.\n" << nl;

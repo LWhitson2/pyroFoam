@@ -31,15 +31,16 @@ boundaryField
     {
         type            fixedValue;
         value           uniform 5.05e5;
-//         type            waveTransmissive;
-//         value           uniform 1e5;
-//         phi             phi;
-//         rho             rho;
-//         gamma           1.2;
-//         lInf            0.00;
-//         fieldInf        1e5;
 
-        /*type            totalPressure;
+        /*type            waveTransmissive;
+        value           uniform 1e5;
+        phi             phi;
+        rho             rho;
+        gamma           1.2;
+        lInf            0.00;
+        fieldInf        5e5;
+
+        type            totalPressure;
         p0              uniform 5.05e5;
         U               U;
         phi             phi;

@@ -66,11 +66,11 @@ class immersedBoundary
         //- Volume fraction of gas
         volScalarField alpha_;
 
-        volScalarField alphas_;
+        // volScalarField alphas_;
 
         volScalarField alphaCorr_;
 
-        volScalarField alphasCorr_;
+        // volScalarField alphasCorr_;
 
         //- Face area fraction of gas
         surfaceScalarField alphaf_;
@@ -165,23 +165,9 @@ public:
             return alpha_;
         }
 
-//         const volScalarField& alphas() const
-//         {
-//             return alphas_;
-//         }
-//
-//         const volScalarField& alphaCorr() const
-//         {
-//             return alphaCorr_;
-//         }
-//
-//         const volScalarField& alphasCorr() const
-//         {
-//             return alphasCorr_;
-//         }
-        const tmp<volScalarField> alphas() const
+        const volScalarField& alphaCorr() const
         {
-            return (1. - alpha_);
+            return alphaCorr_;
         }
 
         const volScalarField& area() const
@@ -219,8 +205,8 @@ public:
             return solidC_;
         }
 
-        //- Get the "used" alpha (zero in small cells)
-        tmp<volScalarField> alphaCorr() const;
+        //- Get the solid alpha value
+        tmp<volScalarField> alphas() const;
         tmp<volScalarField> alphasCorr() const;
 
         //- Evolve the interface given a solid consumption rate
@@ -265,7 +251,6 @@ public:
             GeometricField<Type, fvPatchField, volMesh>& Su,
             GeometricField<scalar, fvPatchField, volMesh>& Sp,
             const GeometricField<Type, fvPatchField, volMesh>& src,
-//             const dimensioned<Type>& solidValue,
             const GeometricField<Type, fvPatchField, volMesh>& solidValue,
             const dimensionedScalar& diag,
             const word& mode,
@@ -302,11 +287,15 @@ public:
         //- Return a mask for large solid cells
         tmp<volScalarField> largeSolidCells() const;
 
+        //- Return a mask for reconstructed cells
+        tmp<volScalarField> reconstructedCells() const;
+
         //- IB-aware interpolation
         template<class Type>
         tmp<GeometricField<Type, fvsPatchField, surfaceMesh> > ibInterpolate
         (
-            const GeometricField<Type, fvPatchField, volMesh>& vf
+            const GeometricField<Type, fvPatchField, volMesh>& vf,
+            const word& input
         ) const;
 
 
@@ -337,34 +326,38 @@ public:
 
         inline tmp<surfaceScalarField> interpolate
         (
-            const volScalarField& vf
+            const volScalarField& vf,
+            const word& input
         ) const
         {
-            return ibInterpolate<scalar>(vf);
+            return ibInterpolate<scalar>(vf, input);
         }
 
         inline tmp<surfaceScalarField> interpolate
         (
-            tmp<volScalarField> tvf
+            tmp<volScalarField> tvf,
+            const word& input
         ) const
         {
-            return ibInterpolate<scalar>(tvf());
+            return ibInterpolate<scalar>(tvf(), input);
         }
 
         inline tmp<surfaceVectorField> interpolate
         (
-            const volVectorField& vf
+            const volVectorField& vf,
+            const word& input
         ) const
         {
-            return ibInterpolate<vector>(vf);
+            return ibInterpolate<vector>(vf, input);
         }
 
         inline tmp<surfaceVectorField> interpolate
         (
-            tmp<volVectorField> tvf
+            tmp<volVectorField> tvf,
+            const word& input
         ) const
         {
-            return ibInterpolate<vector>(tvf());
+            return ibInterpolate<vector>(tvf(), input);
         }
 };
 

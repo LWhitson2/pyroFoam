@@ -215,12 +215,50 @@ template<class Type>
 tmp<GeometricField<Type, fvsPatchField, surfaceMesh> >
 immersedBoundary::ibInterpolate
 (
-    const GeometricField<Type, fvPatchField, volMesh>& vf
+    const GeometricField<Type, fvPatchField, volMesh>& vf,
+    const word& input
 ) const
 {
-    return fvc::interpolate(vf);
-}
+    tmp<GeometricField<Type, fvsPatchField, surfaceMesh> > tsf
+    (
+        fvc::interpolate(vf)
+    );
+    
+    GeometricField<Type, fvsPatchField, surfaceMesh>& sf = tsf();
+       
+    const labelUList& owner = mesh_.owner();
+    const labelUList& neighbor = mesh_.neighbour();
 
+    // Internal faces first
+    forAll(alphaf_, faceI)
+    {
+        label own = owner[faceI];
+        label nei = neighbor[faceI];
+
+        // Check if either cell has a cut plane in it
+        if( mag(iPoint_[own]) > SMALL || mag(iPoint_[nei]) > SMALL )
+        {
+            // get the proper centroid from each cell
+            vector ownC = (mag(iPoint_[own]) > SMALL) ?
+                        ( (input == "gas") ? gasC_[own] : solidC_[own] )
+                      : ( mesh_.C()[own] );
+
+
+            vector neiC = (mag(iPoint_[nei]) > SMALL) ?
+                        ( (input == "gas") ? gasC_[nei] : solidC_[nei] )
+                      : ( mesh_.C()[nei] );
+            
+            scalar deltaOwn = mag((ownC - mesh_.Cf()[faceI]) & mesh_.Sf()[faceI]) / mesh_.magSf()[faceI];
+            scalar deltaNei = mag((neiC - mesh_.Cf()[faceI]) & mesh_.Sf()[faceI]) / mesh_.magSf()[faceI];
+            
+            sf[faceI] = (deltaNei*vf[own] + deltaOwn*vf[nei])/(deltaOwn+deltaNei);
+        }
+    }
+
+    //Repeat for parallel patches (and boundary patches?)
+    
+    return tsf;
+}
 
 template<class Type>
 tmp
@@ -249,7 +287,7 @@ immersedBoundary::reconstruct
                 IOobject::NO_READ,
                 IOobject::NO_WRITE
             ),
-            inv(fvc::surfaceSum(sqr(mesh_.Sf())/mesh_.magSf()))
+            inv(fvc::surfaceSum(sqr(mesh_.Sf()*(alphaf_ + SMALL))/(mesh_.magSf())))
           & fvc::surfaceSum((mesh_.Sf()/mesh_.magSf())*ssf),
             zeroGradientFvPatchField<GradType>::typeName
         )
