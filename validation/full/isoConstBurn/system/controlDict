@@ -25,17 +25,17 @@ startTime       0.0;
 
 stopAt          endTime;
 
-endTime         0.0319;
+endTime         0.5e-1;
 
 deltaT          1e-6;
 
-maxDeltaT       1e-6;
+maxDeltaT       5e-6;
 
-//writeControl    adjustableRunTime;
-//writeInterval   1e-4;
+writeControl    adjustableRunTime;
+writeInterval   1e-4;
 
-writeControl    timeStep;
-writeInterval   1;
+//writeControl    timeStep;
+//writeInterval   1;
 
 purgeWrite      0;
 

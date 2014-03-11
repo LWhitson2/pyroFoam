@@ -471,7 +471,9 @@ Foam::burningSolid::burningSolid
 
 void Foam::burningSolid::fixSmallCells()
 {
-    volScalarField mgen_transferred = mgen_;
+    tmp<volScalarField> TsGas = gasThermo_.T();
+    
+    tmp<volScalarField> rhoSolid = solidThermo_->rho();
 
     volVectorField mU_transferred = mU_;
 
@@ -486,6 +488,8 @@ void Foam::burningSolid::fixSmallCells()
     );
 
     volScalarField rhog = gasThermo_.p()/(Ti_*Rg);
+
+    volScalarField mgen_transferred = mgen_*(rhog/rhoSolid);
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
@@ -537,8 +541,6 @@ void Foam::burningSolid::fixSmallCells()
     {
         hsSolid()[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI]);
     }
-    tmp<volScalarField> TsGas = gasThermo_.T();
-    tmp<volScalarField> rhoSolid = solidThermo_->rho();
 
     // Calculate transfer weights
     tmp<surfaceScalarField> tw = ib_.scTransferWeights("gas");
@@ -656,10 +658,6 @@ void Foam::burningSolid::calcSurfaceEnergy()
         // Energy gained by gas
         qgeng_.internalField()[cellI] += m_pyro_[cellI]
             * mCM_.cellMixture(cellI).Hs(Ti_[cellI]);
-
-        // Kinetic energy gained in gas
-        qgeng_.internalField()[cellI] -= m_pyro_[cellI]
-            *0.5*magSqr(burnU_[cellI]);
     }
 }
 
@@ -695,6 +693,7 @@ void Foam::burningSolid::correct
     // Calculate mass and energy source using original cell area
     Foam::Info << "Calculate mass burning rate" << Foam::endl;
     m_pyro_.internalField() = mflux_ * ib_.area().oldTime() / mesh_.V();
+    Info << "Interface Area: " << max(ib_.area().oldTime()).value() << ", " << max(ib_.area()).value() << endl;
     m_pyro_.correctBoundaryConditions();
 
     // Calculate burn gas velocity using current interface orientation
@@ -853,16 +852,17 @@ void Foam::burningSolid::calcInterfaceTransfer()
             // Info << ib_.alpha()[cellI] << endl;
             scalar Cg = Kg[cellI]/Lg[cellI];
             scalar Cs = Ks[cellI]/Ls[cellI];
-            Info << "Cell " << cellI <<" is normal" << endl;
-            Info << "Lg/Ls: " << Lg[cellI] << ", " << Ls[cellI] << endl;
-            Info << "Kg/Ks: " << Kg[cellI] << ", " << Ks[cellI] << endl;
-            Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
+            
+            // Info << "Cell " << cellI <<" is normal" << endl;
+            // Info << "Lg/Ls: " << Lg[cellI] << ", " << Ls[cellI] << endl;
+            // Info << "Kg/Ks: " << Kg[cellI] << ", " << Ks[cellI] << endl;
+            // Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
 
             // Info << Cg << " " << Cs << endl;
 
             // Calculate interface temperature
-            Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
-                       / (Cs + Cg);
+            // Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
+            //            / (Cs + Cg);
 
             if ((testPyro_ != "solid"))
             {
@@ -918,15 +918,15 @@ void Foam::burningSolid::calcInterfaceTransfer()
                 scalar Cg = Kg[mc]/tmpLg;
                 scalar Cs = Ks[sc]/tmpLs;
 
-                Info << "Cell " << sc <<" is full" << endl;
-                Info << "Lg/Ls: " << tmpLg << ", " << tmpLs << endl;
-                Info << "Kg/Ks: " << Kg[mc] << ", " << Ks[sc] << endl;
-                Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
+                // Info << "Cell " << sc <<" is full" << endl;
+                // Info << "Lg/Ls: " << tmpLg << ", " << tmpLs << endl;
+                // Info << "Kg/Ks: " << Kg[mc] << ", " << Ks[sc] << endl;
+                // Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
 
                 // Calculate interface temperature
                 scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
                        / (Cs + Cg);
-                Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
+                // Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
 
                 if (testPyro_ != "solid")
                 {

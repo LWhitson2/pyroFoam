@@ -6,6 +6,6 @@ import matplotlib.pyplot as plt
 plt.figure(0)
 plt.plot(t, Ti, 'k-', label='Ti')
 plt.plot(t, Ts, 'r-', label='Ts')
-plt.legend()
+plt.legend(loc=0)
 plt.grid(b=True, which='major', color='b', linestyle='-')
 plt.show()

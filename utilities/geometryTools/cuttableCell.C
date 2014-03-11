@@ -185,7 +185,7 @@ Foam::plane Foam::cuttableCell::constructInterface
                 Info<< "  alpha = " << alpha << endl;
                 Info<< "  cell = " << points_ << endl;
                 Info<< "  centroid = " << centroid_ << endl;
-                FatalError << "bisection method failed " << abort(FatalError);
+                FatalError << "bisection method failed " << endl; //abort(FatalError);
                 break;
             }
 

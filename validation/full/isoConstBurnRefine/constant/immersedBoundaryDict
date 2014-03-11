@@ -11,33 +11,14 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      immersedBoundaryDict;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solidName   EMs;
-gasName     EMg;
+// Minimum alpha for full cell treatment
+alphaMin  alphaMin  [ 0 0 0 0 0 0 0 ] 0.05;
 
-pyrolysisModel    Constant;
-
-ConstantCoeffs
-{
-    mb    mb    [1 -2 1 0 0 0 0]    2.259;
-    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
-}
-
-WSBCoeffs
-{
-    Ac    Ac    [0 0 -1 0 0 0 0]    1.637e15;
-    Ec    Ec    [1 2 -2 0 -1 0 0]   176.e6;
-    Qc    Qc    [0 2 -2 0 0 0 0]    400.e3;
-    T0    T0    [0 0 0 1 0 0 0]     300.;
-}
-
-ignTime   ignTime     [0 0 1 0 0 0 0]     0.0;
-ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.0;
-ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.0;
-
-testPyro  momentum;
+// Minimum alpha to use planar reconstruction algorithm on
+reconstructTol  reconstructTol  [ 0 0 0 0 0 0 0 ] 1e-3;
 
 // ************************************************************************* //

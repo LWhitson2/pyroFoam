@@ -11,33 +11,34 @@ FoamFile
     format      ascii;
     class       dictionary;
     location    "constant";
-    object      pyrolysisProperties;
+    object      chemistryProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solidName   EMs;
-gasName     EMg;
+psiChemistryModel   ODEChemistryModel<constGasThermoPhysics>;
 
-pyrolysisModel    Constant;
+chemistry           on;
 
-ConstantCoeffs
+chemistrySolver     ode;
+
+initialChemicalTimeStep 1e-7;
+
+sequentialCoeffs
 {
-    mb    mb    [1 -2 1 0 0 0 0]    2.259;
-    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
+    cTauChem        0.001;
 }
 
-WSBCoeffs
+EulerImplicitCoeffs
 {
-    Ac    Ac    [0 0 -1 0 0 0 0]    1.637e15;
-    Ec    Ec    [1 2 -2 0 -1 0 0]   176.e6;
-    Qc    Qc    [0 2 -2 0 0 0 0]    400.e3;
-    T0    T0    [0 0 0 1 0 0 0]     300.;
+    cTauChem        0.05;
+    equilibriumRateLimiter off;
 }
 
-ignTime   ignTime     [0 0 1 0 0 0 0]     0.0;
-ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.0;
-ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.0;
-
-testPyro  momentum;
+odeCoeffs
+{
+    solver          SIBS;
+    eps             0.05;
+    scale           1;
+}
 
 // ************************************************************************* //

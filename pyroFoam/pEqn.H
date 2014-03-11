@@ -7,6 +7,8 @@ volScalarField rAU(1.0/UEqn.A());
 surfaceScalarField rhorAUf(rAU.name() + 'f', ib.interpolate(rho*rAU, "gas"));
 U = rAU*UEqn.H();
 
+UestOut = U;
+
 Info<< "Min,max Uest = " << Foam::min(Foam::mag(U)).value()
     << ", " << Foam::max(Foam::mag(U)).value() << endl;
 
@@ -92,6 +94,8 @@ Info<< "Min,max p = " << Foam::min(p).value()
 
 Info<< "Min,max U = " << Foam::min(Foam::mag(U)).value()
     << ", " << Foam::max(Foam::mag(U)).value() << endl;
+
+// Info << "Balance: " << (fvc::ddt(rhoAlpha, U) + fvc::div(phi, U))()[4] << endl;
 
 K = 0.5*magSqr(U);
 

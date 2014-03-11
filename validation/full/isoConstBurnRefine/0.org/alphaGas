@@ -9,35 +9,36 @@ FoamFile
 {
     version     2.0;
     format      ascii;
-    class       dictionary;
-    location    "constant";
-    object      pyrolysisProperties;
+    class       volScalarField;
+    location    "0";
+    object      alphaGas;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-solidName   EMs;
-gasName     EMg;
+dimensions      [0 0 0 0 0 0 0];
 
-pyrolysisModel    Constant;
+internalField   uniform 1.0;
 
-ConstantCoeffs
+boundaryField
 {
-    mb    mb    [1 -2 1 0 0 0 0]    2.259;
-    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
+    bottom
+    {
+        type            zeroGradient;
+    }
+    sides
+    {
+        type            symmetryPlane;
+    }
+    frontAndBack
+    {
+        type            symmetryPlane;
+    }
+    top
+    {
+        type            inletOutlet;
+        inletValue           uniform 1;
+    }
 }
 
-WSBCoeffs
-{
-    Ac    Ac    [0 0 -1 0 0 0 0]    1.637e15;
-    Ec    Ec    [1 2 -2 0 -1 0 0]   176.e6;
-    Qc    Qc    [0 2 -2 0 0 0 0]    400.e3;
-    T0    T0    [0 0 0 1 0 0 0]     300.;
-}
-
-ignTime   ignTime     [0 0 1 0 0 0 0]     0.0;
-ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.0;
-ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.0;
-
-testPyro  momentum;
 
 // ************************************************************************* //

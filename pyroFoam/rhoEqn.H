@@ -38,17 +38,17 @@ Description
         fvm::ddt(ib.alphaCorr(), rho)
       + fvc::div(phi)
      ==
-        solid.mgen()
-      + solid.rhoSu()
+       solid.rhoSu()
       - fvm::Sp(solid.rhoSp(), rho)
+      + solid.mgen()
     );
 
-    // Info<< rho[99] << endl;
-    // Info<< ib.alphaCorr().oldTime()[99] << endl;
-    // Info<< ib.alphaCorr()[99] << endl;
-    // Info << rho.oldTime()[99] << endl;
-    // Info << fvc::div(phi)()[99] << endl;
-    // Info<< solid.mgen()[99] << endl;
+    // Info<< rho[4] << endl;
+    // Info<< ib.alphaCorr().oldTime()[4] << endl;
+    // Info<< ib.alphaCorr()[4] << endl;
+    // Info << rho.oldTime()[4] << endl;
+    // Info << fvc::div(phi)()[4] << endl;
+    // Info<< solid.mgen()[4] << endl;
     // Info<< "Min,max rho = " << Foam::min(rho).value()
     //     << ", " << Foam::max(rho).value() << endl;
     // Info<< "Max alphaDiff = " << Foam::max(Foam::mag(

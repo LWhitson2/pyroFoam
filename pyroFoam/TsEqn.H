@@ -7,8 +7,6 @@
 
     fvScalarMatrix TsEqn
     (
-      //   rhos*Cps*(ib.largeSolidCells()*fvm::ddt(Ts)
-      // - fvm::ddt(ib.alphaCorr(), Ts))
         alphas*rhos*Cps*fvm::ddt(Ts)
       - fvm::laplacian(KEff, Ts)
      ==

@@ -34,7 +34,7 @@ WSBCoeffs
     T0    T0    [0 0 0 1 0 0 0]     300.;
 }
 
-ignTime   ignTime     [0 0 1 0 0 0 0]     0.0765;// 15.0e-2;
+ignTime   ignTime     [0 0 1 0 0 0 0]     0.125; //15.0e-2;
 ignFlux   ignFlux     [1 0 -3 0 0 0 0]    1.034e6;
 ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.00;
 
