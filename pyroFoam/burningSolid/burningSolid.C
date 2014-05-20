@@ -837,8 +837,6 @@ void Foam::burningSolid::calcInterfaceTransfer()
     volScalarField fullCell = pos(Ai - dimensionedScalar("tmp", dimArea, SMALL))
                             * neg(ib_.reconstructedCells() - SMALL);
 
-    Info << "Cell 99 Full: " << fullCell[99] << endl;
-
     // Initialize Ti to Ts
     Ti_ = Ts_;
 
@@ -861,8 +859,8 @@ void Foam::burningSolid::calcInterfaceTransfer()
             // Info << Cg << " " << Cs << endl;
 
             // Calculate interface temperature
-            // Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
-            //            / (Cs + Cg);
+            Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
+                       / (Cs + Cg);
 
             if ((testPyro_ != "solid"))
             {
@@ -871,15 +869,23 @@ void Foam::burningSolid::calcInterfaceTransfer()
                 if (Cg > SMALL) Req += 1./Cg;
                 if (Cs > SMALL) Req += 1./Cs;
 
-                // Gas source terms
-                QgSp_[cellI] = Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
-                QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
-                            * Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
+                // Solid source terms (dirchlet boundary at Ti)
+                // QsSp_[cellI] = Ai[cellI]/(Req*Vc[cellI]);
+                // QsSu_[cellI] = Tg[cellI]
+                //             * Ai[cellI]/(Req*Vc[cellI]);
+                QsSp_[cellI] = Ai[cellI]*Cs/Vc[cellI];
+                QsSu_[cellI] = Ti_[cellI]
+                            * Ai[cellI]*Cs/Vc[cellI];
 
-                // Solid source terms
-                QsSp_[cellI] = Ai[cellI]/(Req*Vc[cellI]);
-                QsSu_[cellI] = Tg[cellI]
-                            * Ai[cellI]/(Req*Vc[cellI]);
+                // Gas source terms (neumann boundary)
+                // QgSp_[cellI] = Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
+                // QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
+                //             * Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
+                QgSp_[cellI] = 0.;
+                QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])
+                            * Ai[cellI]*Cg/Vc[cellI];
+
+                
 
                 // Transfer to Qgen for small cells
                 if (smallGasCell[cellI])
@@ -936,14 +942,20 @@ void Foam::burningSolid::calcInterfaceTransfer()
                     if (Cs > SMALL) Req += 1./Cs;
 
                     // Gas source terms
-                    QgSp_[mc] += tmpA/(Req*Cpg()[mc]*Vc[mc]);
-                    QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
-                               * tmpA/(Req*Cpg()[mc]*Vc[mc]);
+                    // QgSp_[mc] += tmpA/(Req*Cpg()[mc]*Vc[mc]);
+                    // QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
+                    //            * tmpA/(Req*Cpg()[mc]*Vc[mc]);
+                    QgSp_[mc] += 0.;
+                    QgSu_[mc] += (tmpTi - Tg[mc])
+                               * tmpA*Cg/Vc[mc];
 
                     // Solid source terms
-                    QsSp_[sc] += tmpA/(Req*Vc[sc]);
-                    QsSu_[sc] += Tg[mc]
-                               * tmpA/(Req*Vc[sc]);
+                    // QsSp_[sc] += tmpA/(Req*Vc[sc]);
+                    // QsSu_[sc] += Tg[mc]
+                    //            * tmpA/(Req*Vc[sc]);
+                    QsSp_[sc] += tmpA*Cs/Vc[sc];
+                    QsSu_[sc] += tmpTi
+                               * tmpA*Cs/Vc[sc];
                 }
             }
         }

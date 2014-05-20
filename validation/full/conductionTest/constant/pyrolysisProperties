@@ -10,50 +10,34 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      controlDict;
+    location    "constant";
+    object      pyrolysisProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     pyroFoam;
+solidName   EMs;
+gasName     EMg;
 
-startFrom       latestTime;
+pyrolysisModel    Constant;
 
-//startFrom       startTime;
+ConstantCoeffs
+{
+    mb    mb    [1 -2 1 0 0 0 0]    0.;
+    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
+}
 
-startTime       0.0;
+WSBCoeffs
+{
+    Ac    Ac    [0 0 -1 0 0 0 0]    1.637e15;
+    Ec    Ec    [1 2 -2 0 -1 0 0]   176.e6;
+    Qc    Qc    [0 2 -2 0 0 0 0]    400.e3;
+    T0    T0    [0 0 0 1 0 0 0]     300.;
+}
 
-stopAt          endTime;
+ignTime   ignTime     [0 0 1 0 0 0 0]     0.; //15.0e-2;
+ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.;
+ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.00;
 
-endTime         7.0;
-
-deltaT          1e-4;
-
-maxDeltaT       1e-4;
-
-writeControl    adjustableRunTime;
-writeInterval   1e-4;
-
-//writeControl    timeStep;
-//writeInterval   1;
-
-purgeWrite      0;
-
-writeFormat     binary;
-
-writePrecision  10;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-adjustTimeStep  no;
-
-maxCo           0.1;
-
+testPyro  off;
 
 // ************************************************************************* //

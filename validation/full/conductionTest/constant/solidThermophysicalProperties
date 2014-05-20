@@ -10,50 +10,27 @@ FoamFile
     version     2.0;
     format      ascii;
     class       dictionary;
-    location    "system";
-    object      controlDict;
+    object      solidThermophysicalProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-application     pyroFoam;
+thermoType constSolidThermo;
 
-startFrom       latestTime;
+constSolidThermoCoeffs
+{
+    //- thermo properties
+    rho rho [1 -3  0  0 0 0 0] 1800.;
+    Cp  Cp  [0  2 -2 -1 0 0 0] 1400.;
+    K   K   [1  1 -3 -1 0 0 0] 0.2;
 
-//startFrom       startTime;
+    //- radiation properties
+    kappa kappa [0 -1 0 0 0 0 0]            0;
+    sigmaS sigmaS [0 -1 0 0 0 0 0]          0;
+    emissivity  emissivity  [0 0 0 0 0 0 0] 0;
 
-startTime       0.0;
-
-stopAt          endTime;
-
-endTime         7.0;
-
-deltaT          1e-4;
-
-maxDeltaT       1e-4;
-
-writeControl    adjustableRunTime;
-writeInterval   1e-4;
-
-//writeControl    timeStep;
-//writeInterval   1;
-
-purgeWrite      0;
-
-writeFormat     binary;
-
-writePrecision  10;
-
-writeCompression on;
-
-timeFormat      general;
-
-timePrecision   6;
-
-runTimeModifiable true;
-
-adjustTimeStep  no;
-
-maxCo           0.1;
+    //- chemical properties
+    Hf  Hf  [0  2 -2  0 0 0 0] 0;
+}
 
 
 // ************************************************************************* //

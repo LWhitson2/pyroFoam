@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
     //Time for fluid flow to run before enableing heat transfer to solid
     scalar flowRelaxTime =
         runTime.controlDict().lookupOrDefault<scalar>("flowRelaxTime", -1.0);
+    scalar coe = 0.;
 
     pimpleControl pimple(mesh);
 
@@ -183,6 +184,7 @@ int main(int argc, char *argv[])
               << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
               << T.weightedAverage(ib.area()).value() << endl;
 
+        #include "energyBalance.H"
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
