@@ -286,6 +286,7 @@
     \end{align*}
     The addition of the above source terms lead to the following modified versions of the solid and gas governing equations respectively:
     \begin{empheq}[box=\fbox]{align}
+      \label{eq:solidEnergyWithBoundary}
         \rho_s c_s \alpha_s \frac{T_s - T_s^0}{\Delta t}
       - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
       = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_s^0) A_i}{V_c} + Su_{t,s} - Sp_{t,s} T_s
@@ -309,6 +310,122 @@
     The following section details the derivation of the small cell approximation for each governing equation.
 
     \subsection{Solid Energy Equation}
+      Starting with the previously derived solid energy equation, \ref{eq:solidEnergyWithBoundary}, and removing the time varying terms, we end with the equation
+      \begin{equation*}
+        - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
+        = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_s^0) A_i}{V_c} + \frac{k_s A_i (T_i - T_s)}{L_s V_c}.
+      \end{equation*}
+
+    \subsection{Gas Continuity Equation}
+      Starting with the immersed boundary form of the gas continuity equation, \eqref{eq:gasCont}, and splitting the time derivative terms yields
+      \begin{equation*}
+          \alpha_g^0 \frac{\rho - \rho^0}{\Delta t}
+        + \rho \frac{\alpha_g - \alpha_g^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f}\rho (\vec{u}\cdot\vec{A_{f}})\alpha_f
+        = \frac{\dot{m}'' A_i}{V_c}.
+      \end{equation*}
+      Setting the density time derivative to zero and substituting \eqref{eq:solidContinuity} for the volume fraction time derivative transforms the equation to
+      \begin{equation*}
+          \frac{\dot{m}'' A_i}{V_c} \frac{rho}{rho_s}
+        + \frac{1}{V_c}\sum_{f}\rho (\vec{u}\cdot\vec{A_{f}})\alpha_f
+        = \frac{\dot{m}'' A_i}{V_c}.
+      \end{equation*}
+      Rearranging this equation and defining the implicit and explicit source terms as $Sp_{\rho} = \dot{m}'' Ai / rho_s V_c$ and $Su_{\rho} = \dot{m}'' Ai / V_c$ respectively further yields
+      \begin{empheq}[box=\fbox]{align}
+          \frac{1}{V_c}\sum_{f}\rho (\vec{u}\cdot\vec{A_{f}})\alpha_f
+        = Su_{\rho} - Sp_{\rho} \rho.
+      \end{empheq}
+
+    \subsection{Gas Momentum Equation}
+      Starting with the immersed boundary form of the gas momentum equation, \eqref{eq:gasMom}, and splitting the time derivative yields
+      \begin{equation}
+          \vec{u} \frac{\rho \alpha_g - \rho^0 \alpha_g^0}{\Delta t}
+        + \rho^0 \alpha_g^0 \frac{\vec{u} - \vec{u}^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f} \vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
+        + \frac{\vec{F}_p \alpha_f}{V_c}
+        = S_{\vec{u}} \alpha_g.
+      \end{equation}
+      Setting the velocity time derivative to zero and further splitting the density, volume fraction time derivative yields
+      \begin{equation}
+          \vec{u} \left(
+          \alpha_g^0 \frac{\rho - \rho^0}{\Delta t}
+        + \rho \frac{\alpha_g - \alpha_g^0}{\Delta t}
+          \right)
+        + \frac{1}{V_c}\sum_{f} \vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
+        + \frac{\vec{F}_p \alpha_f}{V_c}
+        = S_{\vec{u}} \alpha_g.
+      \end{equation}
+      Again, assuming the density time derivative is zero and substituting \eqref{eq:solidContinuity} for the volume fraction derivative
+      \begin{equation}
+          \vec{u} \frac{\rho \dot{m}'' A_i}{\rho_s V_c}
+        + \frac{1}{V_c}\sum_{f} \vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
+        + \frac{\vec{F}_p \alpha_f}{V_c}
+        = S_{\vec{u}} \alpha_g.
+      \end{equation}
+      Defining the implicit source term $Su_{\vec{u}} = \rho \dot{m}'' Ai / rho_s V_c$ and rearranging the equation leaves a final form of the momentum equation as
+      \begin{empheq}[box=\fbox]{align}
+          \frac{1}{V_c}\sum_{f} \vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
+        + \frac{\vec{F}_p \alpha_f}{V_c}
+        = S_{\vec{u}} \alpha_g - Su_{\vec{u}} \vec{u}.
+      \end{empheq}
+
+    \subsection{Gas Energy Equation}
+      Starting with the immersed boundary form of the gas energy equation and splitting the time derivative yields
+      \begin{align*}
+          &\rho h_s \frac{\alpha_g - \alpha_g^0}{\Delta t}
+        + \alpha_g^0\frac{\rho h_s - \rho^0 h_s^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \notag\\
+        + &\frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+        + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}\notag\\
+        = & S_E \alpha_g
+        + Su_{t,g}.\notag
+      \end{align*}
+      Setting the density and sensible enthalpy time derivatives to zero and substituting \eqref{eq:solidContinuity} for the volume fraction time derivative leaves
+      \begin{align*}
+          &h_s \frac{\rho \dot{m}'' A_i}{\rho_s V_c}
+        + \frac{1}{V_c}\sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \notag\\
+        + &\frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+        + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}\notag\\
+        = & S_E \alpha_g
+        + Su_{t,g}.\notag
+      \end{align*}
+      Defining the implicit source term as $Sp_{hs} = \rho \dot{m}'' Ai / rho_s V_c$ yields the final form of the equation
+      \begin{empheq}[box=\fbox]{align}
+          &\frac{1}{V_c}\sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \notag\\
+        + &\frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+        + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}\notag\\
+        = & S_E \alpha_g
+        + Su_{t,g} - Sp_{hs} h_s.\notag
+      \end{empheq}
+
+    \subsection{Gas Species Equation}
+      Starting with the immersed boundary form of the gas species equation and splitting the time derivative yields
+      \begin{align*}
+          &\rho Y_i \frac{\alpha_g - \alpha_g^0}{\Delta t}
+        + \alpha_g^0 \frac{\rho Y_i - \rho^0 Y_i^0}{\Delta t}
+        + \frac{1}{V_c}\sum_{f} Y_i (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f \\
+        + &\frac{1}{V_c}\sum_{f,g} (\vec{G}_i \cdot \vec{A_{f}})\alpha_f 
+        = S_{Y_i} \alpha_g
+        + \frac{Y_{i,b} \dot{m}'' A_i}{V_c} \notag
+      \end{align*}
+      Setting the density and mass fraction time derivatives to zero and substituting \eqref{eq:solidContinuity} for the volume fraction time derivative leaves
+      \begin{align*}
+          &Y_i \frac{\rho \dot{m}'' A_i}{\rho_s V_c}
+        + \frac{1}{V_c}\sum_{f} Y_i (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f \\
+        + &\frac{1}{V_c}\sum_{f,g} (\vec{G}_i \cdot \vec{A_{f}})\alpha_f 
+        = S_{Y_i} \alpha_g
+        + \frac{Y_{i,b} \dot{m}'' A_i}{V_c} \notag
+      \end{align*}
+      Defining the implicit and explicit source terms as $Sp_{Yi} = \rho \dot{m}'' Ai / rho_s V_c$ and $Su_{Yi} = Y_{i,b} \dot{m}'' Ai / V_c$ respectively yields the final form of the equation
+      \begin{empheq}[box=\fbox]{align}
+          \frac{1}{V_c}\sum_{f} Y_i (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
+        + \frac{1}{V_c}\sum_{f,g} (\vec{G}_i \cdot \vec{A_{f}})\alpha_f 
+        = S_{Y_i} \alpha_g
+        + Su_{Yi} - Sp_{Yi} Y_i
+      \end{empheq}
 
   \section*{Nomenclature}
     \begin{multicols}{2}
