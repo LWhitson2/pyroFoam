@@ -310,6 +310,11 @@ class burningSolid
         return solidThermo_();
         }
 
+        const volScalarField& qflux()
+        {
+            return qflux_;
+        }
+        
         const volScalarField& QgSp()
         {
             return QgSp_;

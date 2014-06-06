@@ -102,7 +102,7 @@ Foam::burningSolid::burningSolid
             "Ti",
             mesh_.time().timeName(),
             mesh_,
-            IOobject::NO_READ,
+            IOobject::READ_IF_PRESENT,
             IOobject::AUTO_WRITE
         ),
         mesh_,
@@ -489,7 +489,7 @@ void Foam::burningSolid::fixSmallCells()
 
     volScalarField rhog = gasThermo_.p()/(Ti_*Rg);
 
-    volScalarField mgen_transferred = mgen_*(rhog/rhoSolid);
+    volScalarField mgen_transferred = mgen_*(1. - rhog/rhoSolid);
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
@@ -641,11 +641,12 @@ void Foam::burningSolid::calcSurfaceEnergy()
 {
     // Convert surface flux to source
     // TODO add an AbyV or ArV function to ib
-    qgens_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
-    if (testPyro_ == "enthalpy")
-    {
-        qgeng_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
-    }
+    // Handled in the surface balance for Ti.
+    // qgens_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
+    // if (testPyro_ == "enthalpy")
+    // {
+    //     qgeng_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
+    // }
 
     // Calculate energy transferred between solid and gas
     forAll(mflux_, cellI)
@@ -932,7 +933,7 @@ void Foam::burningSolid::calcInterfaceTransfer()
                 // Calculate interface temperature
                 scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
                        / (Cs + Cg);
-                // Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
+                Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
 
                 if (testPyro_ != "solid")
                 {
