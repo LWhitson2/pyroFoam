@@ -18,6 +18,7 @@ linux64GccDPOpt/
 
 # Text backup files
 *~
+.DS_Store
 
 # Log files
 *.log

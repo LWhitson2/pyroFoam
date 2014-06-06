@@ -26,80 +26,81 @@
 \title{pyroFoam Governing Equations Derivations}
 
 \begin{document}
-  \section{Governing Equations}
-    The governing equations for the gas and solid portion of a given cell are derived in the following section.
-    Figure \ref{fig:VOF} shows a representative cell within the domain that contains a volume fraction of solid and gas denoted by $\alpha_s$ and $\alpha_g$ respectively.
-    Each cell face is also assigned a solid and gas face fraction ($\alpha_f$) based on the amount of face area that is covered by the solid and gas.
-    Finally, the interface area ($A_i$) represents the boundary between the solid and gas domains within the cell.
-    The decomposition of each cell and determination of the volume fractions, face fractions, and interface area will be covered in Section \ref{sec:decomp}.
+\section{Governing Equations}
+  \label{sec:governingEquations}
+  The governing equations for the gas and solid portion of a given cell are derived in the following section.
+  Figure \ref{fig:VOF} shows a representative cell within the domain that contains a volume fraction of solid and gas denoted by $\alpha_s$ and $\alpha_g$ respectively.
+  Each cell face is also assigned a solid and gas face fraction ($\alpha_f$) based on the amount of face area that is covered by the solid and gas.
+  Finally, the interface area ($A_i$) represents the boundary between the solid and gas domains within the cell.
+  The decomposition of each cell and determination of the volume fractions, face fractions, and interface area will be covered in Section \ref{sec:decomp}.
 
-    \begin{figure}
-      \centering
-      \label{fig:VOF}
-      \def\svgwidth{0.5\textwidth}
-      \input{./figures/VOF.pdf_tex}
-      \caption{Diagram of Interface Cell}
-    \end{figure}
+  \begin{figure}
+    \centering
+    \label{fig:VOF}
+    \def\svgwidth{0.5\textwidth}
+    \input{./figures/VOF.pdf_tex}
+    \caption{Diagram of Interface Cell}
+  \end{figure}
 
-    \subsection{Solid Phase}
-      The mass continuity equation for the shaded solid control volume is
-      \begin{equation*}
-          \frac{\partial}{\partial t}\int_{V_s} \rho_s \d V_s
-        + \int_{A_s} \rho_s (\vec{u}_{rel} \cdot \vec{n}) \d A_s
-        = 0.
-      \end{equation*}
-      Discretizing the solid continuity equation using a first-order approximation in time and a second-order approximation for the surface integral, the equation is written as
-      \begin{equation*}
-          \frac{\rho_s V_s - \rho_s^0 V_s^0}{\Delta t}
-        + \sum_{f,s}\rho_s(\vec{u}_{rel}\cdot\vec{A}_{f,s})
-        = 0.
-      \end{equation*}
-      Assuming that the solid is incompressible, the surface is regressing at a constant rate ($\dot{r}$), and the solid phase is stationary, the continuity equation becomes
-      \begin{equation*}
-          \frac{V_s - V_s^0}{\Delta t}
-        = -\frac{\dot{m}'' A_i}{\rho_s},
-      \end{equation*}
-      where $\dot{m}'' = \rho_s \dot{r}$.
-      Furthermore, transferring the equation from the solid control volume to the cell control volume using the volume and area fractions, the final form of the solid continuity equation is
-      \begin{equation}
-        \label{eq:solidContinuity}
-          \frac{\alpha_s - \alpha_s^0}{\Delta t}
-        = -\frac{\dot{m}'' A_i}{\rho_s V_c}.
-      \end{equation}
+  \subsection{Solid Phase}
+    The mass continuity equation for the shaded solid control volume is
+    \begin{equation*}
+        \frac{\partial}{\partial t}\int_{V_s} \rho_s \d V_s
+      + \int_{A_s} \rho_s (\vec{u}_{rel} \cdot \vec{n}) \d A_s
+      = 0.
+    \end{equation*}
+    Discretizing the solid continuity equation using a first-order approximation in time and a second-order approximation for the surface integral, the equation is written as
+    \begin{equation*}
+        \frac{\rho_s V_s - \rho_s^0 V_s^0}{\Delta t}
+      + \sum_{f,s}\rho_s(\vec{u}_{rel}\cdot\vec{A}_{f,s})
+      = 0.
+    \end{equation*}
+    Assuming that the solid is incompressible, the surface is regressing at a constant rate ($\dot{r}$), and the solid phase is stationary, the continuity equation becomes
+    \begin{equation*}
+        \frac{V_s - V_s^0}{\Delta t}
+      = -\frac{\dot{m}'' A_i}{\rho_s},
+    \end{equation*}
+    where $\dot{m}'' = \rho_s \dot{r}$.
+    Furthermore, transferring the equation from the solid control volume to the cell control volume using the volume and area fractions, the final form of the solid continuity equation is
+    \begin{empheq}[box=\fbox]{align}
+      \label{eq:solidContinuity}
+        \frac{\alpha_s - \alpha_s^0}{\Delta t}
+      = -\frac{\dot{m}'' A_i}{\rho_s V_c}.
+    \end{empheq}
 
-      Similarly, the energy equation for the shaded solid control volume is
-      \begin{equation*}
-          \frac{\partial}{\partial t} \int_{V_s} \rho_s c_s T_s \d V_s
-        + \int_{A_s} c_s T_s (\rho_s \vec{u}_{rel} \cdot \vec{n}) \d A_s
-        - \int_{A_s} \rho_s c_s (\nabla T_s \cdot \vec{n}) \d A_s
-        = \int_{V_s} S_{T_s} \d V_s,
-      \end{equation*}
-      where $S_{T_s}$ is any volumetric source within the solid domain. Discretizing the solid energy equation and assuming constant thermophysical properties within the solid yields
-      \begin{equation*}
-          \rho_s c_s \frac{T_s V_s - T_s^0 V_s^0}{\Delta t}
-        - \sum_{f} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f,s})
-        = S_{T_s} V_s - \dot{m}'' c_s (T_i - T_{ref}) A_i,
-      \end{equation*}
-      where $T_i$ is the temperature of the solid at the interface and $T_{ref}$ is a combustion reference temperature.
-      Finally, transferring the equation from the solid volume to the entire cell volume shows that
-      \begin{equation*}
-          \rho_s c_s \frac{T_s \alpha_s - T_s^0 \alpha_s^0}{\Delta t}
-        - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
-        = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_{ref}) A_i}{V_c}.
-      \end{equation*}
-      Using \eqref{eq:solidContinuity} in conjunction with
-      \begin{equation*}
-          \frac{T_s \alpha_s - T_s^0 \alpha_s^0}{\Delta t}
-        = \alpha_s \frac{T_s - T_s^0}{\Delta t} + T_s^0 \frac{\alpha_s - \alpha_s^0}{\Delta t},
-      \end{equation*}
-      the final form of the solid energy equation is obtained as
-      \begin{equation}
-          \rho_s c_s \alpha_s \frac{T_s - T_s^0}{\Delta t}
-        - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
-        = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_s^0) A_i}{V_c}.
-      \end{equation}
+    Similarly, the energy equation for the shaded solid control volume is
+    \begin{equation*}
+        \frac{\partial}{\partial t} \int_{V_s} \rho_s c_s T_s \d V_s
+      + \int_{A_s} c_s T_s (\rho_s \vec{u}_{rel} \cdot \vec{n}) \d A_s
+      - \int_{A_s} \rho_s c_s (\nabla T_s \cdot \vec{n}) \d A_s
+      = \int_{V_s} S_{T_s} \d V_s,
+    \end{equation*}
+    where $S_{T_s}$ is any volumetric source within the solid domain. Discretizing the solid energy equation and assuming constant thermophysical properties within the solid yields
+    \begin{equation*}
+        \rho_s c_s \frac{T_s V_s - T_s^0 V_s^0}{\Delta t}
+      - \sum_{f} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f,s})
+      = S_{T_s} V_s - \dot{m}'' c_s (T_i - T_{ref}) A_i,
+    \end{equation*}
+    where $T_i$ is the temperature of the solid at the interface and $T_{ref}$ is a combustion reference temperature.
+    Finally, transferring the equation from the solid volume to the entire cell volume shows that
+    \begin{equation*}
+        \rho_s c_s \frac{T_s \alpha_s - T_s^0 \alpha_s^0}{\Delta t}
+      - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
+      = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_{ref}) A_i}{V_c}.
+    \end{equation*}
+    Using \eqref{eq:solidContinuity} in conjunction with
+    \begin{equation*}
+        \frac{T_s \alpha_s - T_s^0 \alpha_s^0}{\Delta t}
+      = \alpha_s \frac{T_s - T_s^0}{\Delta t} + T_s^0 \frac{\alpha_s - \alpha_s^0}{\Delta t},
+    \end{equation*}
+    the final form of the solid energy equation is obtained as
+    \begin{empheq}[box=\fbox]{align}
+        \rho_s c_s \alpha_s \frac{T_s - T_s^0}{\Delta t}
+      - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
+      = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_s^0) A_i}{V_c}.
+    \end{empheq}
 
-  \section{Gas Continuity Equation}
+  \subsection{Gas Continuity Equation}
     Mass continuity on gray (gas) control volume (Vg) surround by boundary Ag
     \begin{equation*}
         \frac{\partial}{\partial t}\int_{V_g} \rho \d V_g 
@@ -128,7 +129,7 @@
       }
     \end{equation}
 
-  \section{Gas Momentum Equation}
+  \subsection{Gas Momentum Equation}
     Conservation of momentum on gray (gas) control volume (Vg) surround by boundary Ag
     \begin{equation*}
         \frac{\partial}{\partial t}\int_{V_g} \rho \vec{u} \d V_g
@@ -149,8 +150,9 @@
       + \sum_{f}\vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f 
       + \vec{F}_p \alpha_f
       = S(\vec{u}) \alpha_g V_c
-      + \vec{u_b} \dot{m}'' A_i
+      + \vec{u_s} \dot{m}'' A_i
     \end{equation*}
+    It is important to note that the velocity of the solid is zero by definition and therefore does not add any additional momentum to the system.
     Divide by cell volume, $V_c$, to give the equation in OpenFOAM form that we want to solve
     \begin{equation}
       \label{eq:gasMom}
@@ -159,16 +161,14 @@
       + \frac{1}{V_c}\sum_{f} \vec{u} (\rho \vec{u}\cdot\vec{A_{f}})\alpha_f
       + \frac{\vec{F}_p \alpha_f}{V_c}
       = S_{\vec{u}} \alpha_g
-      + \frac{\vec{u_b} \dot{m}'' A_i}{V_c}
       }
     \end{equation}
 
-  \section{Gas Energy Equation}
+  \subsection{Gas Energy Equation}
     Conservation of energy on the gray (gas) control volume surrounded by boundary Ag
     \begin{equation*}
         \frac{\partial}{\partial t}\int_{V_g} \rho E \d V_g
       + \int_{A_g} (E + \frac{p}{\rho}) (\rho \vec{u} \cdot \vec{n}) \d A_g
-      + \int_{A_g} (\vec{q} \cdot \vec{n}) \d A_g
       = \int_{V_g} S_{E} \d V_g
     \end{equation*}
     The total energy of the fluid can be rewritten in terms of the specific enthalpy ($h_s$) such that
@@ -182,7 +182,6 @@
     \begin{equation*}
           \frac{\partial}{\partial t}\int_{V_g} \rho (h_s + K - \frac{p}{\rho}) \d V_g
         + \int_{A_g} (h_s + K) (\rho \vec{u} \cdot \vec{n}) \d A_g
-        + \int_{A_g} (\vec{q} \cdot \vec{n}) \d A_g
         = \int_{V_g} S_{E} \d V_g
     \end{equation*}
     Using second-order approximations of the integrals and a first-order time derivative
@@ -191,8 +190,7 @@
       + \sum_{f,g} h_s (\rho \vec{u}\cdot\vec{A}_{f,g}) \\
       + &\frac{\rho K V_g - \rho^0 K^0 V_g^0}{\Delta t}
       + \sum_{f,g} K (\rho \vec{u}\cdot\vec{A}_{f,g}) \\
-      + &\frac{p V_g - p^0 V_g^0}{\Delta t}
-      + \sum_{f,g} (\vec{q}\cdot\vec{A}_{f,g}) \\
+      + &\frac{p V_g - p^0 V_g^0}{\Delta t}\\
       = & S_E V_g
     \end{align*}
     Translate equation to full cell
@@ -201,26 +199,21 @@
       + \sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
       + &V_c \frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
       + \sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
-      + &V_c \frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}
-      + \sum_{f} (\vec{q}\cdot\vec{A}_{f}) \alpha_f \\
+      + &V_c \frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}\\
       = & S_E \alpha_g V_c
-      + K_b \dot{m}'' A_i
-      + \vec{q}_b \cdot \vec{A}_b
     \end{align*}
+    Similar to the momentum equation, the solid does not contribute any kinetic energy to the flow due to it having zero velocity.
     Divide by cell volume, $V_c$, to give the equation in OpenFOAM form that we want to solve
     \begin{empheq}[box=\fbox]{align}
         &\frac{\rho h_s \alpha_g - \rho^0 h_s^0 \alpha_g^0}{\Delta t}
       + \frac{1}{V_c}\sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \notag\\
       + &\frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
       + \frac{1}{V_c}\sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
-      + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}
-      + \frac{1}{V_c}\sum_{f} (\vec{q}\cdot\vec{A}_{f}) \alpha_f \notag\\
-      = & S_E \alpha_g
-      + \frac{K_b \dot{m}'' A_i}{V_c}
-      + \frac{\vec{q}_b \cdot \vec{A}_b}{V_c}\notag
+      + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}\notag\\
+      = & S_E \alpha_g\notag
     \end{empheq}
 
-  \section{Gas Species Equation}
+  \subsection{Gas Species Equation}
     Conservation of a given species mass fraction ($Y_i$) on gray (gas) control volume (Vg) surround by boundary Ag
     \begin{equation*}
         \frac{\partial}{\partial t}\int_{V_g} \rho Y_i \d V_g
@@ -253,10 +246,71 @@
       + \frac{Y_{i,b} \dot{m}'' A_i}{V_c} \notag
     \end{empheq}
 
-    \section{Cell Decomposition}
-    \label{sec:decomp}
+  \section{Interface Temperature and Phase Linking}
+    \label{sec:interface}
+    The governing equations derived in Section \ref{sec:governingEquations} account for the transfer of mass, momentum, and species between the solid and gas phase;
+    however, these governing equations only account for the energy transfer between the domains due to the mass transfer and do not account for the energy conduction across the boundary or any surface fluxes that may be present such as the pyrolysis energy release.
+    \begin{figure}
+      \centering
+      \label{fig:interface}
+      \def\svgwidth{0.5\textwidth}
+      % \input{./figures/Interface.pdf_tex}
+      \caption{Interface Transfer Diagram}
+    \end{figure}
 
-    \section*{Nomenclature}
+    Completing an energy balance across the infinitesimal solid gas interface leads to the equation
+    \begin{equation*}
+      \dot{m}'' h_{s,s}[T_i] - k_s \frac{\partial T_s}{\partial x} + q''_{ext} - \dot{m}'' h_{s,g}[T_i] + k_g \frac{\partial T_g}{\partial x} = 0.
+    \end{equation*}
+    Applying a first order discretization to the derivatives and collecting similar terms, the equation is then rewritten as
+    \begin{equation*}
+      \dot{m}'' (h_{s,s}[T_i] - h_{s,g}[T_i]) - k_s \frac{T_i - T_s}{L_s} + k_g \frac{T_g - T_i}{L_g} + q''_{ext} = 0.
+    \end{equation*}
+    The first term in this equation contains the condensed phase heat release value, $Q_c = h_{s,s}[T] - h_{s,g}[T]$.
+    Substituting this value into the equation and solving for the interface temperature yields
+    \begin{equation}
+      T_i = \frac{\dot{m}'' Q_c + k_s T_s/L_s + k_g T_g/L_g + q''_{ext}}{k_s/L_s + k_g/L_g}
+    \end{equation}
+
+    Using this interface temperature, source terms for the solid and gas phase energy equation are determined.
+    One method of applying consistent boundary conditions across the phase linking is to allow one boundary to have a constant temperature condition while the other boundary has a constant flux condition.
+    The present code implements this method by setting a constant temperature boundary on the solid and a constant flux boundary on the gas.
+    The additional solid source terms are
+    \begin{align*}
+      Sp_{t,s} &= \frac{k_s A_i}{L_s V_c} \\
+      Su_{t,s} &= \frac{k_s T_i A_i}{L_s V_c}
+    \end{align*}
+    and the additional gas source terms are
+    \begin{align*}
+      Su_{t,g} &= \frac{k_g (T_i - T_g) A_i}{L_g V_c}.
+    \end{align*}
+    The addition of the above source terms lead to the following modified versions of the solid and gas governing equations respectively:
+    \begin{empheq}[box=\fbox]{align}
+        \rho_s c_s \alpha_s \frac{T_s - T_s^0}{\Delta t}
+      - \frac{1}{V_c}\sum_{f,s} \rho_s c_s (\nabla T_s \cdot \vec{A}_{f}\alpha_{f,s})
+      = S_{T_s} \alpha_s - \frac{\dot{m}'' c_s (T_i - T_s^0) A_i}{V_c} + Su_{t,s} - Sp_{t,s} T_s
+    \end{empheq}
+    \begin{empheq}[box=\fbox]{align}
+        &\frac{\rho h_s \alpha_g - \rho^0 h_s^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} h_s (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \notag\\
+      + &\frac{\rho K \alpha_g - \rho^0 K^0 \alpha_g^0}{\Delta t}
+      + \frac{1}{V_c}\sum_{f} K (\rho \vec{u}\cdot\vec{A}_{f}) \alpha_f \\
+      + &\frac{p \alpha_g - p^0 \alpha_g^0}{\Delta t}\notag\\
+      = & S_E \alpha_g
+      + \frac{\vec{q}_b \cdot \vec{A}_b}{V_c}
+      + Su_{t,g}.\notag
+    \end{empheq}
+
+  \section{Small Cell Handling}
+    \label{sec:smallcells}
+    A common problem in immersed boundary methods is that small cells within the domain cause numeric instability.
+    Typically these small cells are solved using an approximation in order to limit the effect of the aforementioned instability.
+    The approximation chosen in the current code is to determine the small cell values based on a steady state solution between the small cell and it's neighboring cells.
+    The following section details the derivation of the small cell approximation for each governing equation.
+
+    \subsection{Solid Energy Equation}
+
+  \section*{Nomenclature}
     \begin{multicols}{2}
       \subsection*{Symbols}
         \begin{tabbing}
@@ -282,6 +336,8 @@
           $\bar{R}$ \> universal gas constant \\
           $\dot{r}$ \> surface regression rate \\
           $S$ \> volumetric source term \\
+          $Sp$ \> implicit source term \\
+          $Su$ \> explicit source term \\
           $T$ \> temperature \\
           $t$ \> time \\
           $\vec{u}$ \> velocity vector \\
