@@ -1,9 +1,10 @@
 {
     // Calculate corrected thermal conductivity
-    tmp<volScalarField> Cps = solid.Cps();
-    tmp<volScalarField> alphas = ib.alphasCorr();
-    surfaceScalarField KEff = ib.interpolate(Ks, "solid")
-                               *ib.alphafsU()*ib.lapCorr("solid");
+    const tmp<volScalarField> Cps = solid.Cps();
+    const tmp<volScalarField> alphas = ib.alphasCorr();
+    const tmp<volScalarField> Ks = solid.Ks();
+    surfaceScalarField KEff = ib.interpolate(Ks(), "solid")
+                            * ib.alphafsU()*ib.lapCorr("solid");
 
     fvScalarMatrix TsEqn
     (
@@ -32,6 +33,6 @@
         << max((ib.solidCells()+ib.mixedCells())*Ts).value() << endl;
 
     // Update solidThermo
-    solid.solidThermo().T() = Ts;
-    solid.solidThermo().correct();
+    solid.thermo().T() = Ts;
+    solid.thermo().correct();
 }

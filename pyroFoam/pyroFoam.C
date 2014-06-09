@@ -32,11 +32,13 @@ Description
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
 #include "turbulenceModel.H"
-#include "psiChemistryCombustionModel.H"
+#include "rhoCombustionModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
 #include "burningSolid.H"
 #include "OFstream.H"
+
+#include "thermoPhysicsTypes.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -170,7 +172,7 @@ int main(int argc, char *argv[])
 
         Tall = Ts*ib.alphas() + T*ib.alpha();
 
-        hsOut = thermo.hs();
+        heOut = thermo.he();
 
         runTime.write();
 

@@ -23,22 +23,22 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "burningSolid.H"
+//#include "burningSolid.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-Foam::burningSolid::burningSolid
+template<class GasThermoType, class ReactionThermoType>
+Foam::burningSolid<GasThermoType,ReactionThermoType>::burningSolid
 (
     const fvMesh& mesh,
     immersedBoundary& ib,
-    const hsCombustionThermo& gasThermo
+    const ReactionThermoType& gasThermo
 )
 :
     mesh_(mesh),
 
     solidThermo_
     (
-        basicSolidThermo::New( mesh )
+        solidThermo::New( mesh )
     ),
 
     ib_(ib),
@@ -47,7 +47,7 @@ Foam::burningSolid::burningSolid
 
     mCM_
     (
-        dynamic_cast<const multiComponentMixture<constGasThermoPhysics>& >
+        dynamic_cast<const multiComponentMixture<GasThermoType>& >
         ( gasThermo_.composition() )
     ),
 
@@ -440,15 +440,17 @@ Foam::burningSolid::burningSolid
     solidThermo_->rho().rename("rhos");
 
     // Find gasName in species
-    const multiComponentMixture<constGasThermoPhysics>& composition =
-        dynamic_cast<const multiComponentMixture<constGasThermoPhysics>& >
+    const multiComponentMixture<GasThermoType>& composition =
+        dynamic_cast<const multiComponentMixture<GasThermoType>& >
         ( gasThermo_.composition() );
 
-    const PtrList<constGasThermoPhysics>& speciesData = composition.speciesData();
+    const PtrList<GasThermoType>& speciesData = composition.speciesData();
 
     forAll(speciesData, s)
     {
-        if (speciesData[s].name() == gasName_)
+        const specie& specieS = dynamic_cast<const specie&>(speciesData[s]);
+        
+        if (specieS.name() == gasName_ )
         {
             Info<< "  Linked burningSolid with gas specie" << endl;
             EMg_ = speciesData(s);
@@ -468,8 +470,8 @@ Foam::burningSolid::burningSolid
 }
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
-
-void Foam::burningSolid::fixSmallCells()
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
 {
     tmp<volScalarField> TsGas = gasThermo_.T();
     
@@ -534,13 +536,24 @@ void Foam::burningSolid::fixSmallCells()
     // Values to set in the solid region
     tmp<volScalarField> pSolid = (gasThermo_.p() - gasThermo_.p())
                                + gasThermo_.p().weightedAverage(ib_.area());
+                               
+    //TODO: Fix these to do a proper creation rather than this X-X
     tmp<volVectorField> USolid = (burnU_ - burnU_)
                                + dimensionedVector("Us",dimVelocity,vector::zero);
-    tmp<volScalarField> hsSolid = (gasThermo_.hs() - gasThermo_.hs());
-    forAll(hsSolid(),cellI)
+                               
+    tmp<volScalarField> heSolid = (gasThermo_.he() - gasThermo_.he());
+    
+    forAll(heSolid(),cellI)
     {
-        hsSolid()[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI]);
+        heSolid()[cellI] = mCM_.cellMixture(cellI).Hs
+        (
+            pSolid()[cellI],
+            Ts_[cellI]
+        );
     }
+
+    tmp<volScalarField> TsGas = gasThermo_.T();
+    tmp<volScalarField> rhoSolid = solidThermo_->rho();
 
     // Calculate transfer weights
     tmp<surfaceScalarField> tw = ib_.scTransferWeights("gas");
@@ -556,8 +569,8 @@ void Foam::burningSolid::fixSmallCells()
                            USolid, rhordT, "fix", "gas");
     ib_.setScValue<scalar>(w, pSu_, pSp_, gasThermo_.p(),
                            pSolid, psirdT, "avg", "gas");
-    ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.hs(),
-                           hsSolid, hsrdT, "avg", "gas");
+    ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.he(),
+                           heSolid, hsrdT, "avg", "gas");
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
     ib_.setScValue<scalar>(w, rhoSu_, rhoSp_, rhog,
@@ -587,7 +600,8 @@ void Foam::burningSolid::fixSmallCells()
 }
 
 // Calculate the burn gas velocity
-void Foam::burningSolid::calcBurnU()
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcBurnU()
 {
     //Get the gas constant for the pyrolysis gas
     dimensionedScalar Rg
@@ -601,8 +615,8 @@ void Foam::burningSolid::calcBurnU()
            * mflux_*ib_.normal().oldTime(); //should use oldTime??
 }
 
-
-void Foam::burningSolid::calcInterfaceFlux()
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceFlux()
 {
     mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
     qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
@@ -637,7 +651,8 @@ void Foam::burningSolid::calcInterfaceFlux()
     }
 }
 
-void Foam::burningSolid::calcSurfaceEnergy()
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
 {
     // Convert surface flux to source
     // TODO add an AbyV or ArV function to ib
@@ -649,6 +664,7 @@ void Foam::burningSolid::calcSurfaceEnergy()
     // }
 
     // Calculate energy transferred between solid and gas
+    tmp<volScalarField> Cps = solidThermo_->Cp();
     forAll(mflux_, cellI)
     {
         // Energy lost by solid
@@ -662,14 +678,16 @@ void Foam::burningSolid::calcSurfaceEnergy()
     }
 }
 
-void Foam::burningSolid::calcSurfaceMomentum(const volVectorField& U)
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceMomentum(const volVectorField& U)
 {
     // Convert surface momentum flux to source
     // TODO add an AbyV or ArV function to ib
     mU_ = burnU_*m_pyro_;
 }
 
-void Foam::burningSolid::calcSurfaceMass()
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceMass()
 {
     // Convert surface mass flux to source
     // TODO add an AbyV or ArV function to ib
@@ -678,7 +696,8 @@ void Foam::burningSolid::calcSurfaceMass()
 
 // * * * * * * * * * * * * * Public Member Functions * * * * * * * * * * * * //
 
-void Foam::burningSolid::correct
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::correct
 (
     const volVectorField& U,
     surfaceScalarField& phi,
@@ -734,7 +753,11 @@ void Foam::burningSolid::correct
 }
 
 
-tmp<volScalarField> Foam::burningSolid::YSu(const word& Yname) const
+template<class GasThermoType, class ReactionThermoType>
+tmp<volScalarField> Foam::burningSolid<GasThermoType,ReactionThermoType>::YSu
+(
+    const word& Yname
+) const
 {
     dimensionedScalar onerDt
     (
@@ -753,8 +776,8 @@ tmp<volScalarField> Foam::burningSolid::YSu(const word& Yname) const
     }
 }
 
-
-tmp<volScalarField> Foam::burningSolid::YSp() const
+template<class GasThermoType, class ReactionThermoType>
+tmp<volScalarField> Foam::burningSolid<GasThermoType,ReactionThermoType>::YSp() const
 {
     return ib_.smallAndSolidCells()*gasThermo_.rho()
             *dimensionedScalar
@@ -765,11 +788,11 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
             );
 }
 
-
-// void Foam::burningSolid::calcSurfaceStress()
-// {
-//     // Centroid lengths
-//     const volScalarField& Lg = ib_.gasL();
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceStress()
+{
+    // Centroid lengths
+    const volScalarField& Lg = ib_.gasL();
 
 //     // Interface area and volume
 //     const volScalarField& Ai = ib_.area();
@@ -795,14 +818,15 @@ tmp<volScalarField> Foam::burningSolid::YSp() const
 //     }
 // }
 
-
-void Foam::burningSolid::calcInterfaceTransfer()
+template<class GasThermoType, class ReactionThermoType>
+void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer()
 {
     // Solid Properties
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
     volScalarField Ks = solidThermo_->K();
     // if (testPyro_ == "enthalpy") Ks = Ks*0.;
+    // volScalarField Ks = solidThermo_->kappa();
 
     // Gas Properties
     volScalarField rhog = gasThermo_.rho();

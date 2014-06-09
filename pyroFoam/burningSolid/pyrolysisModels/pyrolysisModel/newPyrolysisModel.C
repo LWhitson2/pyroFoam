@@ -31,7 +31,7 @@ Foam::autoPtr<Foam::pyrolysisModel>
 Foam::pyrolysisModel::New
 (
     dictionary pyroDict,
-    basicSolidThermo const* solidThermo
+    solidThermo const* solidThermo
 )
 {
     // Look in pyroDict to see which model is specified

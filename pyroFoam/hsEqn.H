@@ -10,24 +10,24 @@
 //         if (ib.smallCells()()[cellI]) Info << solid.QgSu()[cellI] << ", " << solid.QgSp()[cellI] << endl;
 //     }
 
-    fvScalarMatrix hsEqn
+    fvScalarMatrix heEqn
     (
         fvm::ddt(rhoAlpha, hs)
-      + mvConvection->fvmDiv(phi, hs)
-      - fvm::laplacian(alphaEff, hs)
+      + mvConvection->fvmDiv(phi, he)
+      - fvm::laplacian(alphaEff, he)
      ==
-        dpdt
+        ib.alphaCorr()*dpdt
       - (fvc::ddt(rhoAlpha, K) + fvc::div(phi, K))
-      + ib.alphaCorr()*combustion->Sh()
+      + ib.alphaCorr()*reaction->Sh()
       + solid.hsSu()
-      - fvm::Sp(solid.hsSp(), hs)
+      - fvm::Sp(solid.hsSp(), he)
       + solid.QgSu()
-      - fvm::Sp(solid.QgSp(), hs)
+      - fvm::Sp(solid.QgSp(), he)
       + solid.Qgeng()
     );
 
-    hsEqn.relax();
-    hsEqn.solve();
+    heEqn.relax();
+    heEqn.solve();
 
     Info<< "hs Curr: " << hs[99] << endl;
     Info << "hs Old: " << hs.oldTime()[99] << endl;

@@ -41,7 +41,7 @@ namespace pyrolysisModels
 Foam::pyrolysisModels::WSB::WSB
 (
     dictionary pyroDict,
-    basicSolidThermo const* solidThermo_
+    solidThermo const* solidThermo_
 )
 :
     pyrolysisModel(typeName, pyroDict, solidThermo_),
@@ -62,9 +62,9 @@ Foam::dimensionedScalar Foam::pyrolysisModels::WSB::mass_burning_rate
     dimensionedScalar Ru("Ru",dimEnergy/dimMoles/dimTemperature,8314.);
     scalar mb = 0.;
 
-    scalar rho = solidThermo_->rho()[cell];
-    scalar k = solidThermo_->K()()[cell];
-    scalar cp = solidThermo_->Cp()()[cell];
+    scalar rho = solidThermo_->rho()()[cell]; //TODO: This is very inefficient
+    scalar k = solidThermo_->kappa()()[cell]; //TODO: This is very inefficient
+    scalar cp = solidThermo_->Cp()()[cell];   //TODO: This is very inefficient
     scalar denom = Ec_.value()*(cp*(T.value() - T0_.value()) - Qc_.value()/2.);
     if (denom > 0.0)
     {

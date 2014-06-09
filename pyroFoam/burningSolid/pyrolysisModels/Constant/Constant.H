@@ -67,7 +67,7 @@ public:
         Constant
         (
             dictionary pyroDict,
-            basicSolidThermo const* solidThermo_
+            solidThermo const* solidThermo_
         );
 
     //- Destructor

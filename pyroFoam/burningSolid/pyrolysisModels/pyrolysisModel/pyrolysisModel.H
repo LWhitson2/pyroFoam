@@ -41,7 +41,7 @@ SourceFiles
 #include "fvCFD.H"
 #include "dimensionedScalar.H"
 #include "dimensionedScalarFwd.H"
-#include "basicSolidThermo.H"
+#include "solidThermo.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -66,7 +66,7 @@ class pyrolysisModel
 
         void operator=(const pyrolysisModel&);
 
-        basicSolidThermo const* solidThermo_;
+        solidThermo const* solidThermo_;
 
         dimensionedScalar Qc_; // J/kg
 
@@ -84,7 +84,7 @@ class pyrolysisModel
             components,
             (
                 dictionary pyroDict,
-                basicSolidThermo const* solidThermo
+                solidThermo const* solidThermo
             ),
             (
                 pyroDict,
@@ -99,7 +99,7 @@ class pyrolysisModel
             static autoPtr<pyrolysisModel> New
             (
                 dictionary pyroDict,
-                basicSolidThermo const* solidThermo
+                solidThermo const* solidThermo
             );
 
         // Constructors
@@ -108,7 +108,7 @@ class pyrolysisModel
             (
                 const word& type,
                 dictionary pyroDict,
-                basicSolidThermo const* solidThermo
+                solidThermo const* solidThermo
             );
 
             virtual ~pyrolysisModel() {}
