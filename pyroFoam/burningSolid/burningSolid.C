@@ -545,15 +545,12 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
     
     forAll(heSolid(),cellI)
     {
-        heSolid()[cellI] = mCM_.cellMixture(cellI).Hs
+        heSolid()[cellI] = mCM_.cellMixture(cellI).He
         (
             pSolid()[cellI],
             Ts_[cellI]
         );
     }
-
-    tmp<volScalarField> TsGas = gasThermo_.T();
-    tmp<volScalarField> rhoSolid = solidThermo_->rho();
 
     // Calculate transfer weights
     tmp<surfaceScalarField> tw = ib_.scTransferWeights("gas");
@@ -674,7 +671,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
 
         // Energy gained by gas
         qgeng_.internalField()[cellI] += m_pyro_[cellI]
-            * mCM_.cellMixture(cellI).Hs(Ti_[cellI]);
+            * mCM_.cellMixture(cellI).He(Ti_[cellI]);
     }
 }
 
@@ -788,11 +785,11 @@ tmp<volScalarField> Foam::burningSolid<GasThermoType,ReactionThermoType>::YSp() 
             );
 }
 
-template<class GasThermoType, class ReactionThermoType>
-void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceStress()
-{
-    // Centroid lengths
-    const volScalarField& Lg = ib_.gasL();
+// template<class GasThermoType, class ReactionThermoType>
+// void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceStress()
+// {
+//     // Centroid lengths
+//     const volScalarField& Lg = ib_.gasL();
 
 //     // Interface area and volume
 //     const volScalarField& Ai = ib_.area();
@@ -824,9 +821,9 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
     // Solid Properties
     volScalarField rhos = solidThermo_->rho();
     volScalarField Cps = solidThermo_->Cp();
-    volScalarField Ks = solidThermo_->K();
+    volScalarField Ks = solidThermo_->kappa();
     // if (testPyro_ == "enthalpy") Ks = Ks*0.;
-    // volScalarField Ks = solidThermo_->kappa();
+    
 
     // Gas Properties
     volScalarField rhog = gasThermo_.rho();
@@ -917,7 +914,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 {
                     Info << "QgSu/QgSp: " << QgSu_[cellI] << ", " << QgSp_[cellI] << endl;
                     qgeng_[cellI] += QgSu_[cellI]
-                                  - QgSp_[cellI]*mCM_.cellMixture(cellI).Hs(Tg[cellI]);
+                                  - QgSp_[cellI]*mCM_.cellMixture(cellI).He(Tg[cellI]);
                     QgSu_[cellI] = 0.;
                     QgSp_[cellI] = 0.;
                 }
