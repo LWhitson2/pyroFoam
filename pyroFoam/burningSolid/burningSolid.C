@@ -545,7 +545,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
     
     forAll(heSolid(),cellI)
     {
-        heSolid()[cellI] = mCM_.cellMixture(cellI).He
+        heSolid()[cellI] = mCM_.cellMixture(cellI).Hs
         (
             pSolid()[cellI],
             Ts_[cellI]
@@ -671,7 +671,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
 
         // Energy gained by gas
         qgeng_.internalField()[cellI] += m_pyro_[cellI]
-            * mCM_.cellMixture(cellI).He(Ti_[cellI]);
+            * mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Ti_[cellI]);
     }
 }
 
@@ -914,7 +914,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 {
                     Info << "QgSu/QgSp: " << QgSu_[cellI] << ", " << QgSp_[cellI] << endl;
                     qgeng_[cellI] += QgSu_[cellI]
-                                  - QgSp_[cellI]*mCM_.cellMixture(cellI).He(Tg[cellI]);
+                                  - QgSp_[cellI]*mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Tg[cellI]);
                     QgSu_[cellI] = 0.;
                     QgSp_[cellI] = 0.;
                 }
