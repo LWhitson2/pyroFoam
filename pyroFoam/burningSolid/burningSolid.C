@@ -823,13 +823,11 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
     volScalarField Cps = solidThermo_->Cp();
     volScalarField Ks = solidThermo_->kappa();
     // if (testPyro_ == "enthalpy") Ks = Ks*0.;
-    
 
     // Gas Properties
     volScalarField rhog = gasThermo_.rho();
     tmp<volScalarField> Cpg = gasThermo_.Cp();
-    volScalarField alphag = gasThermo_.alpha();
-    volScalarField Kg = alphag*Cpg();
+    tmp<volScalarField> Kg = gasThermo_.kappa();
     if (testPyro_ == "solid") Kg = Kg*0.;
     const volScalarField& Tg = gasThermo_.T();
 
@@ -870,7 +868,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
         {
             // Calculate thermal constants
             // Info << ib_.alpha()[cellI] << endl;
-            scalar Cg = Kg[cellI]/Lg[cellI];
+            scalar Cg = Kg()[cellI]/Lg[cellI];
             scalar Cs = Ks[cellI]/Ls[cellI];
             
             // Info << "Cell " << cellI <<" is normal" << endl;
@@ -943,7 +941,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI]);
 
                 // Calculate thermal resistance
-                scalar Cg = Kg[mc]/tmpLg;
+                scalar Cg = Kg()[mc]/tmpLg;
                 scalar Cs = Ks[sc]/tmpLs;
 
                 // Info << "Cell " << sc <<" is full" << endl;

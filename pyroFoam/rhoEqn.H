@@ -38,7 +38,7 @@ Description
         fvm::ddt(ib.alphaCorr(), rho)
       + fvc::div(phi)
      ==
-       solid.rhoSu()
+        solid.rhoSu()
       - fvm::Sp(solid.rhoSp(), rho)
       + solid.mgen()
     );
