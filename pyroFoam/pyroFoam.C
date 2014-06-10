@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
               << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
               << T.weightedAverage(ib.area()).value() << endl;
 
-        #include "energyBalance.H"
+        #include "conservationCheck.H"
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

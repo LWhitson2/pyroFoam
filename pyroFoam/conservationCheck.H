@@ -8,6 +8,12 @@ rhoAlpha.oldTime() = rho.oldTime() * ib.alphaCorr().oldTime();
 
 if( patchID >= 0 )
 {
+    // Mass conservation
+    scalar massChange = Foam::fvc::domainIntegrate(
+        Foam::fvc::ddt(rhoAlpha) + rhos*fvc::ddt(alphas())).value();
+    scalar massFlow = Foam::sum(phi.boundaryField());
+    scalar massConserve = massChange - massFlow;
+
     scalar energyFlow = Foam::sum(phi.boundaryField()[patchID]
                       *heOut.boundaryField()[patchID])
                       +Foam::sum(solid.qflux().internalField()*ib.area().internalField());
@@ -26,9 +32,6 @@ if( patchID >= 0 )
 
     coe = coe + (energyChange + energyFlow)*runTime.deltaTValue();
 
-    Info<< runTime.value() << token::TAB 
-          << energyFlow << token::TAB
-          << energyChange << token::TAB
-          << totalEnergy << token::TAB
-          << coe/totalEnergy << endl;
+    logConserve << runTime.value() << token::TAB 
+                << massConserve << endl;
 }

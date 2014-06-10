@@ -177,3 +177,10 @@ log << "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
 logTi << "Time" << token::TAB
       << "Avg Tg at Interface" << token::TAB
       << "Avg Ts at Interface" << endl;
+
+// Conservation Check log
+OFstream logConserve(args.path()/"TimeStepConserve.out");
+logConserve << "Time" << token::TAB
+            << "Mass" << token::TAB
+            << "Momentum" << token::TAB
+            << "Energy" << endl;

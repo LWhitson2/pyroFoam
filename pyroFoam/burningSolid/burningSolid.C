@@ -36,9 +36,21 @@ Foam::burningSolid<GasThermoType,ReactionThermoType>::burningSolid
 :
     mesh_(mesh),
 
+    solidDict_
+    (
+        IOobject
+        (
+            "solidThermophysicalProperties",
+            mesh_.time().constant(),
+            mesh_,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+        )
+    ),
+
     solidThermo_
     (
-        solidThermo::New( mesh )
+        solidThermo::New( mesh , solidDict_)
     ),
 
     ib_(ib),

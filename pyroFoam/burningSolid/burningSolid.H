@@ -65,6 +65,9 @@ class burningSolid
         //- Mesh
         const fvMesh& mesh_;
 
+        //- Solid thermo dictionary
+        IOdictionary solidDict_;
+
         //- Solid thermo pointer
         autoPtr<solidThermo> solidThermo_;
 

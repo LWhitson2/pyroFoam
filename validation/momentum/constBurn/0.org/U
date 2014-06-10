@@ -23,7 +23,7 @@ boundaryField
 {
     sides
     {
-        type            symmetryPlane;
+        type            symmetry;
     }
 
     bottom
@@ -40,7 +40,7 @@ boundaryField
 
     frontAndBack
     {
-        type            symmetryPlane;
+        type            symmetry;
     }
 }
 
