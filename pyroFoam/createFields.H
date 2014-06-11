@@ -1,12 +1,12 @@
 Info<< "Creating reaction model\n" << endl;
 
-autoPtr<combustionModels::rhoCombustionModel> reaction
+autoPtr<combustionModels::psiCombustionModel> reaction
 (
-    combustionModels::rhoCombustionModel::New(mesh)
+    combustionModels::psiCombustionModel::New(mesh)
 );
 
 
-rhoReactionThermo& thermo = reaction->thermo();
+psiReactionThermo& thermo = reaction->thermo();
 thermo.validate(args.executable(), "h", "e");
 
 
@@ -144,7 +144,7 @@ immersedBoundary ib(mesh);
 
 // Create the burning solid object defined by the immersed boundary
 //  For now, just set thermo type here to match what is in dictionary
-burningSolid<gasHThermoPhysics,rhoReactionThermo> solid(mesh, ib, thermo);
+burningSolid<constGasHThermoPhysics,psiReactionThermo> solid(mesh, ib, thermo);
 
 // Create Solid Fields
 volScalarField& Ts = solid.Ts();

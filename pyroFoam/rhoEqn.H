@@ -63,8 +63,8 @@ Description
     //     << ", " << Foam::max(fvc::ddt(rho)).value() << endl;
     // Info<< "Min,max ddtrhoalpha = " << Foam::min(fvc::ddt(ib.alpha(), rho)).value()
     //     << ", " << Foam::max(fvc::ddt(ib.alpha(), rho)).value() << endl;
-    // Info<< "Min,max ddtrhoalphaCorr = " << Foam::min(fvc::ddt(ib.alphaCorr(), rho)).value()
-    //     << ", " << Foam::max(fvc::ddt(ib.alphaCorr(), rho)).value() << endl;
+    Info<< "Min,max ddtrhoalphaCorr = " << Foam::min(fvc::ddt(ib.alphaCorr(), rho)).value()
+        << ", " << Foam::max(fvc::ddt(ib.alphaCorr(), rho)).value() << endl;
 }
 
 // ************************************************************************* //

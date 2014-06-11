@@ -32,7 +32,7 @@ Description
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
 #include "turbulenceModel.H"
-#include "rhoCombustionModel.H"
+#include "psiCombustionModel.H"
 #include "multivariateScheme.H"
 #include "pimpleControl.H"
 #include "burningSolid.H"
@@ -58,7 +58,6 @@ int main(int argc, char *argv[])
     //Time for fluid flow to run before enableing heat transfer to solid
     scalar flowRelaxTime =
         runTime.controlDict().lookupOrDefault<scalar>("flowRelaxTime", -1.0);
-    scalar coe = 0.;
 
     pimpleControl pimple(mesh);
 
