@@ -18,27 +18,42 @@ if( patchID >= 0 )
         Foam::fvc::ddt(rhosAlphas)).value();
     scalar gasMassChange = Foam::fvc::domainIntegrate(
         Foam::fvc::ddt(rhoAlpha)).value();
-    scalar massFlow = Foam::sum(phi.boundaryField());
+    scalar massFlow = Foam::sum(phi.boundaryField()[patchID]);
     scalar massConserve = solidMassChange + gasMassChange + massFlow;
+    coMass = coMass + massConserve*runTime.deltaTValue();
 
-    // scalar energyFlow = Foam::sum(phi.boundaryField()[patchID]
-    //                   *heOut.boundaryField()[patchID])
-    //                   +Foam::sum(solid.qflux().internalField()*ib.area().internalField());
+    // Momentum conservation
+    vector gasMomChange = Foam::fvc::domainIntegrate(
+        Foam::fvc::ddt(rhoAlpha, U)).value();
+    vector momFlow = Foam::sum(phi.boundaryField()[patchID]
+                             * U.boundaryField()[patchID]);
+    vector momConserve = gasMomChange + momFlow;
+    coMom = coMom + momConserve*runTime.deltaTValue();
 
-    // scalar energyChange = Foam::fvc::domainIntegrate(
-    //     Foam::fvc::ddt(rhoAlpha, he) + alphas*rhos*Cps*fvc::ddt(Ts)).value();
+    // Energy conservation
+    scalar solidEnergyChange = Foam::fvc::domainIntegrate(
+        Cps*Foam::fvc::ddt(rhosAlphas, Ts)).value();
+    scalar gasEnthalpyChange = Foam::fvc::domainIntegrate(
+        Foam::fvc::ddt(rhoAlpha, he)).value();
+    scalar gasKineticChange = Foam::fvc::domainIntegrate(
+        Foam::fvc::ddt(rhoAlpha, K)).value();
+    scalar gasPressureChange = Foam::fvc::domainIntegrate(
+        Foam::fvc::ddt(ib.alphaCorr(), p)).value();
+    scalar energyFlow = Foam::sum(phi.boundaryField()[patchID]
+                                * he.boundaryField()[patchID]);
+    scalar energyConserve = solidEnergyChange + 0.*(gasEnthalpyChange
+                          + gasKineticChange + gasPressureChange
+                          + energyFlow);
+    coEnergy = coEnergy + energyConserve*runTime.deltaTValue();
 
-    // scalar totalEnergy = Foam::fvc::domainIntegrate(
-    //     rhoAlpha*he
-    //     + ib.alphasCorr()*solid.rhos()*solid.Cps()*(Ts - dimensionedScalar("T0", dimTemperature, 273.15)
-    //     )).value();
-
-    // Foam::reduce(energyFlow, sumOp<scalar>());
-
-    // Foam::reduce(energyChange, sumOp<scalar>());
-
-    // coe = coe + (energyChange + energyFlow)*runTime.deltaTValue();
-
+    // Output values to logs
     logConserve << runTime.value() << token::TAB 
-                << massConserve << endl;
+                << massConserve << token::TAB
+                << momConserve << token::TAB
+                << energyConserve << endl;
+
+    logConserve2 << runTime.value() << token::TAB
+                 << coMass << token::TAB
+                 << coMom << token::TAB
+                 << coEnergy << endl;
 }

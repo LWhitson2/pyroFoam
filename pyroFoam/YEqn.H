@@ -55,5 +55,6 @@
             << Foam::min(Yt).value() << ", "
             << Foam::max(Yt).value() << endl;
 
+    Info << "Correcting Thermodynamics" << endl;
     thermo.correct();
 }

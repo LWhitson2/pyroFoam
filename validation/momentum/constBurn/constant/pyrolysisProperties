@@ -38,6 +38,6 @@ ignTime   ignTime     [0 0 1 0 0 0 0]     0.0;
 ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.0;
 ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.0;
 
-testPyro  momentum;
+testPyro  none;
 
 // ************************************************************************* //

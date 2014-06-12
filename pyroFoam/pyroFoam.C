@@ -59,6 +59,11 @@ int main(int argc, char *argv[])
     scalar flowRelaxTime =
         runTime.controlDict().lookupOrDefault<scalar>("flowRelaxTime", -1.0);
 
+    // Overall conservation fields
+    scalar coMass = 0.;
+    vector coMom = vector(0., 0., 0.);
+    scalar coEnergy = 0.;
+
     pimpleControl pimple(mesh);
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

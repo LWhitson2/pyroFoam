@@ -503,7 +503,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
 
     volScalarField rhog = gasThermo_.p()/(Ti_*Rg);
 
-    volScalarField mgen_transferred = mgen_*(rhog/rhoSolid);
+    volScalarField mgen_transferred = mgen_*(1 - rhog/rhoSolid);
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT

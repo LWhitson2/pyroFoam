@@ -7,23 +7,24 @@ species
 
 reactions
 {
-    gasReaction
-    {
-        type        irreversiblethirdBodyArrheniusReaction;
-        reaction    "EMg = EMp";
-        A           0.05472;
-        beta        2.0;
-        Ta          0.;
-        defaultEfficiency    1;
-        thirdBodyEfficiencies
-        {
-            coeffs
-            3
-            (
-                (EMp 1)
-                (EMg 1)
-                (EMs 0)
-            );
-        }
-    }
+    // gasReaction
+    // {
+        // type        irreversiblethirdBodyArrheniusReaction;
+        // type        irreversibleArrheniusReaction;
+        // reaction    "EMg = EMp";
+        // A           0.05472;
+        // beta        2.0;
+        // Ta          0.;
+        // defaultEfficiency    1;
+        // thirdBodyEfficiencies
+        // {
+        //     coeffs
+        //     3
+        //     (
+        //         (EMp 1)
+        //         (EMg 1)
+        //         (EMs 0)
+        //     );
+        // }
+    // }
 }

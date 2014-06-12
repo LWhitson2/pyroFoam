@@ -184,3 +184,10 @@ logConserve << "Time" << token::TAB
             << "Mass" << token::TAB
             << "Momentum" << token::TAB
             << "Energy" << endl;
+
+// Overall Conservation log
+OFstream logConserve2(args.path()/"OverallConserve.out");
+logConserve << "Time" << token::TAB
+            << "Mass" << token::TAB
+            << "Momentum" << token::TAB
+            << "Energy" << endl;
