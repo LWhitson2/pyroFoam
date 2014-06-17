@@ -47,6 +47,7 @@ void immersedBoundary::transfer
 {
     const tmp<volScalarField> alphastmp = 1.0 - alpha_;
     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
+    const volScalarField::DimensionedInternalField& Vc = mesh_.V();
 
     volScalarField wtot = fvc::surfaceSum(w);
 
@@ -64,12 +65,13 @@ void immersedBoundary::transfer
             label sc = (alpha[own] < alphaMin_.value()) ? own : nei;
             label rc = (sc == own) ? nei : own;
 
-            dest[rc] += w[faceI]/wtot[sc] * src[sc];
+            dest[rc] += w[faceI]/wtot[sc] * src[sc] * Vc[sc]/Vc[rc];
             dest[sc] = zero;
         }
     }
 
     // Now do transfer at parallel patches
+    // TODO: Add V(src)/V(dest) to the final calculation.
     const typename GeometricField<Type, fvPatchField, volMesh>::GeometricBoundaryField&
         srcBf = src.boundaryField();
 

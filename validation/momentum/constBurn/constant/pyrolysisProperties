@@ -23,7 +23,7 @@ pyrolysisModel    Constant;
 ConstantCoeffs
 {
     mb    mb    [1 -2 1 0 0 0 0]    2.259;
-    Qc    Qc    [0 2 -2 0 0 0 0]    0.;
+    Qc    Qc    [0 2 -2 0 0 0 0]    140000.;
 }
 
 WSBCoeffs
@@ -38,6 +38,6 @@ ignTime   ignTime     [0 0 1 0 0 0 0]     0.0;
 ignFlux   ignFlux     [1 0 -3 0 0 0 0]    0.0;
 ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.0;
 
-testPyro  none;
+testPyro  enthalpy;
 
 // ************************************************************************* //

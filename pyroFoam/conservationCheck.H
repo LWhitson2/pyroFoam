@@ -1,9 +1,9 @@
 // Find outlet patch at top
 word patchName = "top";
 label patchID = mesh.boundaryMesh().findPatchID(patchName);
-tmp<volScalarField> Cps = solid.Cps();
 
 // Solid Fields
+tmp<volScalarField> Cps = solid.Cps();
 volScalarField rhosAlphas = rhos*(1. - ib.alpha());
 rhosAlphas.oldTime() = rhos*(1. - ib.alpha().oldTime());
 
@@ -41,10 +41,14 @@ if( patchID >= 0 )
         Foam::fvc::ddt(ib.alphaCorr(), p)).value();
     scalar energyFlow = Foam::sum(phi.boundaryField()[patchID]
                                 * he.boundaryField()[patchID]);
-    scalar energyConserve = solidEnergyChange + 0.*(gasEnthalpyChange
-                          + gasKineticChange + gasPressureChange
-                          + energyFlow);
+    scalar energyConserve = solidEnergyChange + gasEnthalpyChange
+                          + (gasKineticChange + gasPressureChange)
+                          + energyFlow;
     coEnergy = coEnergy + energyConserve*runTime.deltaTValue();
+
+    // Debug outputs
+    tmp<volScalarField> Is = solid.Is();
+    Info << endl << endl << max(Is()).value() << ", " << max(Is().oldTime()).value() << endl << endl; 
 
     // Output values to logs
     logConserve << runTime.value() << token::TAB 

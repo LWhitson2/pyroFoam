@@ -905,17 +905,17 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 // QsSp_[cellI] = Ai[cellI]/(Req*Vc[cellI]);
                 // QsSu_[cellI] = Tg[cellI]
                 //             * Ai[cellI]/(Req*Vc[cellI]);
-                QsSp_[cellI] = Ai[cellI]*Cs/Vc[cellI];
-                QsSu_[cellI] = Ti_[cellI]
-                            * Ai[cellI]*Cs/Vc[cellI];
+                // QsSp_[cellI] = Ai[cellI]*Cs/Vc[cellI];
+                // QsSu_[cellI] = Ti_[cellI]
+                //             * Ai[cellI]*Cs/Vc[cellI];
 
                 // Gas source terms (neumann boundary)
                 // QgSp_[cellI] = Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
                 // QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
                 //             * Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
-                QgSp_[cellI] = 0.;
-                QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])
-                            * Ai[cellI]*Cg/Vc[cellI];
+                // QgSp_[cellI] = 0.;
+                // QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])
+                //             * Ai[cellI]*Cg/Vc[cellI];
 
                 
 
@@ -977,17 +977,17 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     // QgSp_[mc] += tmpA/(Req*Cpg()[mc]*Vc[mc]);
                     // QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
                     //            * tmpA/(Req*Cpg()[mc]*Vc[mc]);
-                    QgSp_[mc] += 0.;
-                    QgSu_[mc] += (tmpTi - Tg[mc])
-                               * tmpA*Cg/Vc[mc];
+                    // QgSp_[mc] += 0.;
+                    // QgSu_[mc] += (tmpTi - Tg[mc])
+                    //            * tmpA*Cg/Vc[mc];
 
                     // Solid source terms
                     // QsSp_[sc] += tmpA/(Req*Vc[sc]);
                     // QsSu_[sc] += Tg[mc]
                     //            * tmpA/(Req*Vc[sc]);
-                    QsSp_[sc] += tmpA*Cs/Vc[sc];
-                    QsSu_[sc] += tmpTi
-                               * tmpA*Cs/Vc[sc];
+                    // QsSp_[sc] += tmpA*Cs/Vc[sc];
+                    // QsSu_[sc] += tmpTi
+                    //            * tmpA*Cs/Vc[sc];
                 }
             }
         }

@@ -308,6 +308,11 @@ class burningSolid
             return solidThermo_->Cp();
         }
 
+        const tmp<volScalarField> Is()
+        {
+            return solidThermo_->he();
+        }
+
         solidThermo& thermo()
         {
             return solidThermo_();
