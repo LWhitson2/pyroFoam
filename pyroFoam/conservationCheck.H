@@ -31,6 +31,8 @@ if( patchID >= 0 )
     coMom = coMom + momConserve*runTime.deltaTValue();
 
     // Energy conservation
+    scalar solidCombustion = Foam::sum(ib.area()*solid.qflux()).value();
+
     scalar solidEnergyChange = Foam::fvc::domainIntegrate(
         Cps*Foam::fvc::ddt(rhosAlphas, Ts)).value();
     scalar gasEnthalpyChange = Foam::fvc::domainIntegrate(
@@ -42,13 +44,13 @@ if( patchID >= 0 )
     scalar energyFlow = Foam::sum(phi.boundaryField()[patchID]
                                 * he.boundaryField()[patchID]);
     scalar energyConserve = solidEnergyChange + gasEnthalpyChange
-                          + (gasKineticChange + gasPressureChange)
-                          + energyFlow;
+                          + gasKineticChange + gasPressureChange
+                          + energyFlow - solidCombustion;
     coEnergy = coEnergy + energyConserve*runTime.deltaTValue();
 
     // Debug outputs
-    tmp<volScalarField> Is = solid.Is();
-    Info << endl << endl << max(Is()).value() << ", " << max(Is().oldTime()).value() << endl << endl; 
+    // tmp<volScalarField> Is = solid.Is();
+    // Info << endl << endl << max(Is()).value() << ", " << max(Is().oldTime()).value() << endl << endl; 
 
     // Output values to logs
     logConserve << runTime.value() << token::TAB 
