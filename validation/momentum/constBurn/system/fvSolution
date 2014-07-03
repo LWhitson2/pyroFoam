@@ -80,7 +80,7 @@ solvers
 
     Yi
     {
-        $hsFinal;
+        $hFinal;
     }
 }
 

@@ -10,7 +10,6 @@ reactions
     gasReaction
     {
         type        irreversiblethirdBodyArrheniusReaction;
-        // type        irreversibleArrheniusReaction;
         reaction    "EMg = EMp";
         A           0.05472;
         beta        2.0;

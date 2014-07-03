@@ -1,5 +1,5 @@
 {
-//     solid.calcInterfaceTransfer();
+    solid.calcInterfaceTransfer();
 
     // Calculate corrected thermal diffusivity
     surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff(),"solid")
@@ -19,7 +19,7 @@
      ==
         ib.alphaCorr()*dpdt
       - (fvc::ddt(rhoAlpha, K) + fvc::div(phi, K))
-      // + ib.alphaCorr()*reaction->Sh()
+      + ib.alphaCorr()*reaction->Sh()
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), he)
       + solid.QgSu()
