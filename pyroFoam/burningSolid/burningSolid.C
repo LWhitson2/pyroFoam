@@ -560,7 +560,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
         heSolid()[cellI] = mCM_.cellMixture(cellI).Hs
         (
             pSolid()[cellI],
-            Ts_[cellI]
+            Ti_[cellI]
         );
     }
 
