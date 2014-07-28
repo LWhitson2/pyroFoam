@@ -14,7 +14,7 @@ basicMultiComponentMixture& composition = thermo.composition();
 PtrList<volScalarField>& Y = composition.Y();
 
 
-//word inertSpecie(thermo.lookup("inertSpecie"));
+word inertSpecie(thermo.lookup("inertSpecie"));
 
 volScalarField rho
 (

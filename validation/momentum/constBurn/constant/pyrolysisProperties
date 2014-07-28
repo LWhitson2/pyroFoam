@@ -23,7 +23,7 @@ pyrolysisModel    Constant;
 ConstantCoeffs
 {
     mb    mb    [1 -2 1 0 0 0 0]    2.259;
-    Qc    Qc    [0 2 -2 0 0 0 0]    140000.;
+    Qc    Qc    [0 2 -2 0 0 0 0]    400000.;//140000.;
 }
 
 WSBCoeffs

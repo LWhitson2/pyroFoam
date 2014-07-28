@@ -491,8 +491,6 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
 
     volVectorField mU_transferred = mU_;
 
-    volScalarField qgeng_transferred = qgeng_;
-
     // Small cell density value
     dimensionedScalar Rg
     (
@@ -503,7 +501,8 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
 
     volScalarField rhog = gasThermo_.p()/(Ti_*Rg);
 
-    volScalarField mgen_transferred = mgen_*(1 - rhog/rhoSolid);
+    volScalarField mgen_transferred = mgen_*(1. - rhog/rhoSolid);
+    volScalarField qgeng_transferred = qgeng_*(1. - rhog/rhoSolid);
 
     // Value to force small cells to designated velocity
     dimensionedScalar rhordT
@@ -594,11 +593,11 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
     // Solve conduction for small cells only
     forAll(QgSu_, cellI)
     {
-        // if (smallGasCell[cellI])
-        // {
-        //     hsSp_[cellI] = 0.0;
-        //     hsSu_[cellI] = 0.0;
-        // }
+        if (ib_.smallCells()()[cellI])
+        {
+            hsSp_[cellI] = 0.0;
+            hsSu_[cellI] = 0.0;
+        }
 
         if (ib_.smallSolidCells()()[cellI])
         {
@@ -916,27 +915,24 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                             * Ai[cellI]*Cs/Vc[cellI];
 
                 // Gas source terms (neumann boundary)
-                // QgSp_[cellI] = Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
-                // QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(Ts_[cellI])
-                //             * Ai[cellI]/(Req*Cpg()[cellI]*Vc[cellI]);
+                QgSp_[cellI] = Ai[cellI]*Cg/(Cpg()[cellI]*Vc[cellI]);
+                QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Ti_[cellI])
+                            * Ai[cellI]*Cg/(Cpg()[cellI]*Vc[cellI]);
                 // QgSp_[cellI] = 0.;
-                // QgSu_[cellI] = (Ts_[cellI] - Tg[cellI])
-                //             * Ai[cellI]/(Req*Vc[cellI]);
-                QgSp_[cellI] = 0.;
-                QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])
-                            * Ai[cellI]*Cg/Vc[cellI];
+                // QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])
+                //             * Ai[cellI]*Cg/Vc[cellI];
 
                 
 
                 // Transfer to Qgen for small cells
-                if (smallGasCell[cellI])
-                {
-                    Info << "QgSu/QgSp: " << QgSu_[cellI] << ", " << QgSp_[cellI] << endl;
-                    qgeng_[cellI] += QgSu_[cellI]
-                                  - QgSp_[cellI]*mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Tg[cellI]);
-                    QgSu_[cellI] = 0.;
-                    QgSp_[cellI] = 0.;
-                }
+                // if (smallGasCell[cellI])
+                // {
+                //     Info << "QgSu/QgSp: " << QgSu_[cellI] << ", " << QgSp_[cellI] << endl;
+                //     qgeng_[cellI] += QgSu_[cellI]
+                //                   - QgSp_[cellI]*mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Tg[cellI]);
+                //     QgSu_[cellI] = 0.;
+                //     QgSp_[cellI] = 0.;
+                // }
             }
         }
     }
@@ -983,15 +979,12 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     if (Cs > SMALL) Req += 1./Cs;
 
                     // Gas source terms
-                    // QgSp_[mc] += tmpA/(Req*Cpg()[mc]*Vc[mc]);
-                    // QgSu_[mc] += mCM_.cellMixture(mc).Hs(Ts_[sc])
-                    //            * tmpA/(Req*Cpg()[mc]*Vc[mc]);
+                    QgSp_[mc] += tmpA*Cg/(Cpg()[mc]*Vc[mc]);
+                    QgSu_[mc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[mc], tmpTi)
+                               * tmpA*Cg/(Cpg()[mc]*Vc[mc]);
                     // QgSp_[mc] += 0.;
-                    // QgSu_[mc] += (Ts_[sc] - Tg[mc])
-                    //            * tmpA/(Req*Vc[mc]);
-                    QgSp_[mc] += 0.;
-                    QgSu_[mc] += (tmpTi - Tg[mc])
-                               * tmpA*Cg/Vc[mc];
+                    // QgSu_[mc] += (tmpTi - Tg[mc])
+                    //            * tmpA*Cg/Vc[mc];
 
                     // Solid source terms
                     // QsSp_[sc] += tmpA/(Req*Vc[sc]);
@@ -1000,6 +993,12 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     QsSp_[sc] += tmpA*Cs/Vc[sc];
                     QsSu_[sc] += tmpTi
                                * tmpA*Cs/Vc[sc];
+
+                    // Solid side gas source terms
+                    QgSu_[sc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc], Ts_[sc])
+                               * Cs*tmpA/(Cpg()[sc]*Vc[sc])
+                               + qflux_[sc]*tmpA/Vc[sc];
+                    QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
                 }
             }
         }

@@ -62,11 +62,11 @@ else*/
 
     while (pimple.correctNonOrthogonal())
     {
-        volScalarField psiAlpha = psi*ib.alphaCorr();
-        psiAlpha.oldTime() = psi.oldTime() * ib.alphaCorr().oldTime();
+        volScalarField psiAlphaCorr = psi*ib.alphaCorr();
+        psiAlphaCorr.oldTime() = psi.oldTime() * ib.alphaCorr().oldTime();
         fvScalarMatrix pEqn
         (
-            fvm::ddt(psiAlpha, p)
+            fvm::ddt(psiAlphaCorr, p)
           + fvc::div(phiEst)
           - fvm::laplacian(rhorAUf*ib.alphaf()*ib.lapCorr("gas"), p)
          ==

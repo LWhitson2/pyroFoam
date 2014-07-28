@@ -21,27 +21,27 @@ FoamFile
     {
         type            patch;
         nFaces          1;
-        startFace       299;
+        startFace       199;
     }
     sides
     {
         type            symmetry;
         inGroups        1(symmetry);
-        nFaces          600;
-        startFace       300;
+        nFaces          400;
+        startFace       200;
     }
     frontAndBack
     {
         type            symmetry;
         inGroups        1(symmetry);
-        nFaces          600;
-        startFace       900;
+        nFaces          400;
+        startFace       600;
     }
     top
     {
         type            patch;
         nFaces          1;
-        startFace       1500;
+        startFace       1000;
     }
 )
 

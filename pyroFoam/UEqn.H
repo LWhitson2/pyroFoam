@@ -15,12 +15,14 @@ tmp<fv::convectionScheme<scalar> > mvConvection
                                *ib.alphaf();
     surfaceVectorField gradUeff = fvc::interpolate(dev2(Foam::T(fvc::grad(U))))
                                 & mesh.Sf();
-    volScalarField rhoAlpha = rho*ib.alphaCorr();
-    rhoAlpha.oldTime() = rho.oldTime() * ib.alphaCorr().oldTime();
+    volScalarField rhoAlphaCorr = rho*ib.alphaCorr();
+    rhoAlphaCorr.oldTime() = rho.oldTime() * ib.alphaCorr().oldTime();
+    volScalarField rhoAlpha = rho*ib.alpha();
+    rhoAlpha.oldTime() = rho.oldTime() * ib.alpha().oldTime();
 
     fvVectorMatrix UEqn
     (
-        fvm::ddt(rhoAlpha, U)
+        fvm::ddt(rhoAlphaCorr, U)
       + fvm::div(phi, U)
       // - fvm::laplacian(muEff*ib.lapCorr("gas"), U)
       // - fvc::div(muEff*gradUeff)

@@ -21,11 +21,11 @@
     TsEqn.relax();
     TsEqn.solve();
 
-    Info << "ddtTs: " << fvc::ddt(Ts)()[99] << endl;
-    Info << "ddtAlphaTs: " << fvc::ddt(ib.alphaCorr(), Ts)()[99] << endl;
-    Info << "laplacian: " << -fvc::laplacian(KEff, Ts)()[99] << endl;
-    Info << "Qs Terms: " << solid.QsSu()[99] - fvc::Sp(solid.QsSp(), Ts)()[99] << endl;
-    Info << "Ts Terms: " << solid.TsSu()[99] - fvc::Sp(solid.TsSp(), Ts)()[99] << endl;
+    // Info << "ddtTs: " << fvc::ddt(Ts)()[99] << endl;
+    // Info << "ddtAlphaTs: " << fvc::ddt(ib.alphaCorr(), Ts)()[99] << endl;
+    // Info << "laplacian: " << -fvc::laplacian(KEff, Ts)()[99] << endl;
+    // Info << "Qs Terms: " << solid.QsSu()[99] - fvc::Sp(solid.QsSp(), Ts)()[99] << endl;
+    // Info << "Ts Terms: " << solid.TsSu()[99] - fvc::Sp(solid.TsSp(), Ts)()[99] << endl;
 
     Info<< "T solid min/max   = " <<
         min(ib.fullGasCells()*dimensionedScalar("tmpT", dimTemperature, 100000.0)
