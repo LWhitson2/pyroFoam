@@ -24,7 +24,7 @@ boundaryField
 {
     sides
     {
-        type            symmetryPlane;
+        type            symmetry;
     }
 
     top
@@ -40,7 +40,7 @@ boundaryField
 //         fieldInf        1e5;
 
         /*type            totalPressure;
-        p0              uniform 5.05e5;
+        p0              uniform 131.2737e6;
         U               U;
         phi             phi;
         rho             none;
@@ -57,7 +57,7 @@ boundaryField
 
     frontAndBack
     {
-        type            symmetryPlane;
+        type            symmetry;
     }
 }
 

@@ -43,12 +43,12 @@ Description
       + solid.mgen()
     );
 
-    // Info<< rho[4] << endl;
-    // Info<< ib.alphaCorr().oldTime()[4] << endl;
-    // Info<< ib.alphaCorr()[4] << endl;
-    // Info << rho.oldTime()[4] << endl;
-    // Info << fvc::div(phi)()[4] << endl;
-    // Info<< solid.mgen()[4] << endl;
+    // Info<< rho[37] << endl;
+    // Info<< ib.alphaCorr().oldTime()[37] << endl;
+    // Info<< ib.alphaCorr()[37] << endl;
+    // Info << rho.oldTime()[37] << endl;
+    // Info << fvc::div(phi)()[37] << endl;
+    // Info<< solid.mgen()[37] << endl;
     // Info<< "Min,max rho = " << Foam::min(rho).value()
     //     << ", " << Foam::max(rho).value() << endl;
     // Info<< "Max alphaDiff = " << Foam::max(Foam::mag(
@@ -63,8 +63,8 @@ Description
     //     << ", " << Foam::max(fvc::ddt(rho)).value() << endl;
     // Info<< "Min,max ddtrhoalpha = " << Foam::min(fvc::ddt(ib.alpha(), rho)).value()
     //     << ", " << Foam::max(fvc::ddt(ib.alpha(), rho)).value() << endl;
-    Info<< "Min,max ddtrhoalphaCorr = " << Foam::min(fvc::ddt(ib.alphaCorr(), rho)).value()
-        << ", " << Foam::max(fvc::ddt(ib.alphaCorr(), rho)).value() << endl;
+    // Info<< "Min,max ddtrhoalphaCorr = " << Foam::min(fvc::ddt(ib.alphaCorr(), rho)).value()
+    //     << ", " << Foam::max(fvc::ddt(ib.alphaCorr(), rho)).value() << endl;
 }
 
 // ************************************************************************* //

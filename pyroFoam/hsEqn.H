@@ -17,9 +17,9 @@
       + mvConvection->fvmDiv(phi, he)
       - fvm::laplacian(alphaEff, he)
      ==
-        ib.alphaCorr()*dpdt
-      - (fvc::ddt(rhoAlphaCorr, K) + fvc::div(phi, K))
-      + ib.alphaCorr()*reaction->Sh()
+      //   ib.alphaCorr()*dpdt
+      // - (fvc::ddt(rhoAlphaCorr, K) + fvc::div(phi, K))
+       ib.alphaCorr()*reaction->Sh()
       + solid.hsSu()
       - fvm::Sp(solid.hsSp(), he)
       + solid.QgSu()

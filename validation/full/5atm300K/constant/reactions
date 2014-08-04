@@ -1,8 +1,8 @@
 species
 (
     EMp
-    EMs
     EMg
+    EMs
 );
 
 reactions

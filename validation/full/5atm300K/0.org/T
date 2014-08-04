@@ -34,12 +34,12 @@ boundaryField
 
     sides
     {
-        type            symmetryPlane;
+        type            symmetry;
     }
 
     frontAndBack
     {
-        type            symmetryPlane;
+        type            symmetry;
     }
 }
 

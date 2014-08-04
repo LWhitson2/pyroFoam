@@ -899,6 +899,9 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
             Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
                        / (Cs + Cg);
 
+            // Set Ti explicitly
+            // Ti_[cellI] = 714.64;
+
             if ((testPyro_ != "solid"))
             {
                 // Calculate thermal resistance
@@ -971,6 +974,10 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                        / (Cs + Cg);
                 Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
 
+                // Set Ti explicitly
+                // Ti_[sc] = 714.64;
+                // tmpTi = 714.64;
+
                 if (testPyro_ != "solid")
                 {
                     // Calculate thermal resistance
@@ -995,10 +1002,10 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                                * tmpA*Cs/Vc[sc];
 
                     // Solid side gas source terms
-                    QgSu_[sc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc], Ts_[sc])
-                               * Cs*tmpA/(Cpg()[sc]*Vc[sc])
-                               + qflux_[sc]*tmpA/Vc[sc];
-                    QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
+                    // QgSu_[sc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc], Ts_[sc])
+                    //            * Cs*tmpA/(Cpg()[sc]*Vc[sc])
+                    //            + qflux_[sc]*tmpA/Vc[sc];
+                    // QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
                 }
             }
         }
