@@ -290,6 +290,9 @@ public:
         //- Return a mask for reconstructed cells
         tmp<volScalarField> reconstructedCells() const;
 
+        //- Return a mask for reconstructed gas cells
+        tmp<volScalarField> reconstructedGasCells() const;
+
         //- IB-aware interpolation
         template<class Type>
         tmp<GeometricField<Type, fvsPatchField, surfaceMesh> > ibInterpolate

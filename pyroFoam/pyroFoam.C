@@ -184,11 +184,26 @@ int main(int argc, char *argv[])
             << Ts.weightedAverage(ib.alphasCorr()).value() << endl;
 
         // Record average Interface Temperature
-        dimensionedScalar smallA("dA", dimArea, SMALL);
-        logTi << runTime.value() << token::TAB
-              << Ts.weightedAverage(ib.area()).value() << token::TAB
-              << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
-              << T.weightedAverage(ib.area()).value() << endl;
+        {
+            dimensionedScalar smallA("dA", dimArea, SMALL);
+            forAll(Y, i)
+            {
+                // Info << Y[i].name() << endl;
+                if (Y[i].name() == "EMg")
+                {
+                    volScalarField& Yi = Y[i];
+                    logTi << runTime.value() << token::TAB
+                          << ib.alpha().weightedAverage(ib.area()).value() << token::TAB
+                          << Ts.weightedAverage(ib.area()).value() << token::TAB
+                          << solid.Ti().weightedAverage(ib.area()).value() << token::TAB
+                          << T.weightedAverage(ib.area()).value() << token::TAB
+                          << p.weightedAverage(ib.area()).value() << token::TAB
+                          << Yi.weightedAverage(ib.area()).value() << token::TAB
+                          << ib.gasL().weightedAverage(ib.area()).value() << token::TAB
+                          << ib.solidL().weightedAverage(ib.area()).value() << endl;
+                }
+            }
+        }
 
         #include "conservationCheck.H"
 

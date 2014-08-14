@@ -973,4 +973,9 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::reconstructedCells() con
     return pos(alpha_ - reconstructTol_)*pos(alphas() - reconstructTol_);
 }
 
+Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::reconstructedGasCells() const
+{
+    return pos(alpha_ - reconstructTol_);
+}
+
 // ************************************************************************* //
