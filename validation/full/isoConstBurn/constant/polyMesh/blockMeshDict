@@ -60,7 +60,7 @@ boundary
     }
     sides
     {
-        type symmetryPlane;
+        type symmetry;
         faces
         (
             (1 2 6 5)
@@ -71,7 +71,7 @@ boundary
     }
     frontAndBack
     {
-        type symmetryPlane;
+        type symmetry;
         faces
         (
             (4 5 6 7)

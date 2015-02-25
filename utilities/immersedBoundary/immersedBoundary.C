@@ -603,7 +603,7 @@ void Foam::immersedBoundary::correct()
         // is the one that will be burning at the next time step.
         else if (mag(alpha_[own] - alpha_[nei]) > 0.1)
         {
-            alphaf_[faceI] = 1.0;
+            alphaf_[faceI] = 0.0;
 
             //set iNormal and a_burn for this case
             label solidcell = (alpha_[own] < 0.1) ? own : nei;
