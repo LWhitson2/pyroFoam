@@ -3,7 +3,7 @@
 
     // Calculate corrected thermal diffusivity
     surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff(),"gas")
-                               *ib.alphafU()*ib.lapCorr("gas");
+                               *ib.alphaf()*ib.lapCorr("gas");
 
 //     forAll(hs, cellI)
 //     {
