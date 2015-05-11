@@ -17,6 +17,12 @@ FoamFile
 
 psiChemistryModel   ODEChemistryModel<constGasThermoPhysics>;
 
+chemistryType
+{
+    chemistrySolver   EulerImplicit;
+    chemistryThermo   psi;
+}
+
 chemistry           on;
 
 chemistrySolver     ode;

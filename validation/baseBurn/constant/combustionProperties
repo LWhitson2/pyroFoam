@@ -15,10 +15,15 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-combustionModel  PaSR<psiChemistryCombustionModel>;
+combustionModel  laminar<psiChemistryCombustion>;
 //combustionModel  bananas;
 
 active  true;
+
+laminarCoeffs
+{
+  
+}
 
 infinitelyFastChemistryCoeffs
 {
