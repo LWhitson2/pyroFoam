@@ -21,7 +21,7 @@ internalField   uniform 1.0;
 
 boundaryField
 {
-top
+    top
     {
         type            inletOutlet;
         inletValue      uniform 1.0;

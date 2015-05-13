@@ -7,7 +7,7 @@ cd ${0%/*} || exit 1    # run from this directory
 
 cp -r 0.org 0
 blockMesh
-VOFSetFields
+VOFSetFields-pf
 
 #-- Run on single processor
 pyroFoam

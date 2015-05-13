@@ -18,11 +18,11 @@ FoamFile
 solidName   EMs;
 gasName     EMg;
 
-pyrolysisModel    Constant;
+pyrolysisModel    NoPyrolysis;
 
 ConstantCoeffs
 {
-    mb    mb    [1 -2 1 0 0 0 0]    2.259;
+    mb    mb    [1 -2 1 0 0 0 0]    0.; //2.259;
     Qc    Qc    [0 2 -2 0 0 0 0]    0.;
 }
 
@@ -38,6 +38,6 @@ ignTime   ignTime     [0 0 1 0 0 0 0]     5.0;
 ignFlux   ignFlux     [1 0 -3 0 0 0 0]    1311287.64368;
 ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.00;
 
-testPyro  momentum;
+testPyro  none;
 
 // ************************************************************************* //
