@@ -1,4 +1,4 @@
-
+Info << "Entering conservationCheck.H" << endl;
 // Find outlet patch at top
 word patchName = "top";
 label patchID = mesh.boundaryMesh().findPatchID(patchName);
@@ -85,4 +85,5 @@ if( patchID >= 0 )
                  << coMom[1]/totalMomentum[1] << token::TAB
                  << coMom[2]/totalMomentum[2] << token::TAB
                  << coEnergy/totalEnergy << endl;
+Info << "Exiting conservationCheck.H" << endl;
 }

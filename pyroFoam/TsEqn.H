@@ -1,4 +1,5 @@
 {
+    Info << "Entering TsEqn.H" << endl;
     // Calculate corrected thermal conductivity
     const tmp<volScalarField> Cps = solid.Cps();
     const tmp<volScalarField> alphas = ib.alphasCorr();
@@ -35,4 +36,5 @@
     // Update solidThermo
     solid.thermo().T() = Ts;
     solid.thermo().correct();
+    Info << "Exiting TsEqn.H" << endl;
 }

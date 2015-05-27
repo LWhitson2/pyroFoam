@@ -526,6 +526,7 @@ void Foam::immersedBoundary::correct()
     // Step 4: Calculate alphaf on all faces, valid only in the homogeneous
     //         regions away from the interface
     alphaf_ = fvc::interpolate(alpha_);
+    alphafs_ = 1.0 - alphaf_;
 
     // Step 5: Use the planes in intermediate cells to correct alphaf
     //         near the interface. Also catch solid cells that have a partial
@@ -597,6 +598,7 @@ void Foam::immersedBoundary::correct()
                 iArea_[nei] += mesh_.magSf()[faceI] * alphaf_[faceI];
                 iNormal_[nei] += outwardNormal(faceI, nei)*alphaf_[faceI];
             }
+            alphafs_[faceI] = alphaf_[faceI];
         }
 
         // Catch sharp face-coincident interfaces. In this case, the solid cell
@@ -604,6 +606,7 @@ void Foam::immersedBoundary::correct()
         else if (mag(alpha_[own] - alpha_[nei]) > 0.1)
         {
             alphaf_[faceI] = 0.0;
+            alphafs_[faceI] = 0.0;
 
             //set iNormal and a_burn for this case
             label solidcell = (alpha_[own] < 0.1) ? own : nei;
@@ -623,114 +626,114 @@ void Foam::immersedBoundary::correct()
     iPoint_.correctBoundaryConditions();
     alpha_.correctBoundaryConditions();
 
-    // Now set alphaf on parallel patches
-    const volScalarField::GeometricBoundaryField& alphaBf =
-        alpha_.boundaryField();
-    const volVectorField::GeometricBoundaryField& iPointBf =
-        iPoint_.boundaryField();
-    volVectorField::GeometricBoundaryField& iNormalBf =
-        iNormal_.boundaryField();
-    volScalarField::GeometricBoundaryField& iAreaBf =
-        iArea_.boundaryField();
-    const surfaceScalarField::GeometricBoundaryField& hasIntermedsBf =
-        hasIntermeds.boundaryField();
-    surfaceScalarField::GeometricBoundaryField& alphafBf =
-        alphaf_.boundaryField();
+    // // Now set alphaf on parallel patches
+    // const volScalarField::GeometricBoundaryField& alphaBf =
+    //     alpha_.boundaryField();
+    // const volVectorField::GeometricBoundaryField& iPointBf =
+    //     iPoint_.boundaryField();
+    // volVectorField::GeometricBoundaryField& iNormalBf =
+    //     iNormal_.boundaryField();
+    // volScalarField::GeometricBoundaryField& iAreaBf =
+    //     iArea_.boundaryField();
+    // const surfaceScalarField::GeometricBoundaryField& hasIntermedsBf =
+    //     hasIntermeds.boundaryField();
+    // surfaceScalarField::GeometricBoundaryField& alphafBf =
+    //     alphaf_.boundaryField();
 
-    forAll(alphafBf, patchI)
-    {
-        const fvPatchScalarField& alphaPf = alphaBf[patchI];
-        const fvPatchVectorField& iPointPf = iPointBf[patchI];
+    // forAll(alphafBf, patchI)
+    // {
+    //     const fvPatchScalarField& alphaPf = alphaBf[patchI];
+    //     const fvPatchVectorField& iPointPf = iPointBf[patchI];
 
-        fvPatchVectorField& iNormalPf = iNormalBf[patchI];
-        fvPatchScalarField& iAreaPf = iAreaBf[patchI];
+    //     fvPatchVectorField& iNormalPf = iNormalBf[patchI];
+    //     fvPatchScalarField& iAreaPf = iAreaBf[patchI];
 
-        const scalarField& hasIntermedsPf = hasIntermedsBf[patchI];
-        scalarField& alphafPf = alphafBf[patchI];
+    //     const scalarField& hasIntermedsPf = hasIntermedsBf[patchI];
+    //     scalarField& alphafPf = alphafBf[patchI];
 
-        const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
+    //     const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
 
-        if (alphaPf.coupled()) //returns true for parallel and cyclic patches
-        {
-            // Get values across parallel patch
-            const vectorField iPointPNf(iPointPf.patchNeighbourField());
-            const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
-            const scalarField alphaPNf(alphaPf.patchNeighbourField());
-            const scalarField iAreaPNf(iAreaPf.patchNeighbourField());
+    //     if (alphaPf.coupled()) //returns true for parallel and cyclic patches
+    //     {
+    //         // Get values across parallel patch
+    //         const vectorField iPointPNf(iPointPf.patchNeighbourField());
+    //         const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
+    //         const scalarField alphaPNf(alphaPf.patchNeighbourField());
+    //         const scalarField iAreaPNf(iAreaPf.patchNeighbourField());
 
-            //patch face starting IDs in mesh.faces()
-            label patchFs = alphaPf.patch().start();
-            const fvPatch& meshPf = mesh_.boundary()[patchI];
+    //         //patch face starting IDs in mesh.faces()
+    //         label patchFs = alphaPf.patch().start();
+    //         const fvPatch& meshPf = mesh_.boundary()[patchI];
 
-            forAll(alphafPf, pFaceI)
-            {
-                label pfCellI = pFaceCells[pFaceI];
+    //         forAll(alphafPf, pFaceI)
+    //         {
+    //             label pfCellI = pFaceCells[pFaceI];
 
-                if (hasIntermedsPf[pFaceI] > SMALL)
-                {
-                    cuttableFace cf(mesh_, patchFs+pFaceI);
+    //             if (hasIntermedsPf[pFaceI] > SMALL)
+    //             {
+    //                 cuttableFace cf(mesh_, patchFs+pFaceI);
 
-                    scalar alphafNei = 1.0;
-                    scalar alphafOwn = 1.0;
+    //                 scalar alphafNei = 1.0;
+    //                 scalar alphafOwn = 1.0;
 
-                    if (mag(iNormalPNf[pFaceI]) > SMALL)
-                    {
-                        Foam::plane p(iPointPNf[pFaceI], iNormalPNf[pFaceI]);
-                        alphafNei = cf.cut(p);
-                    }
+    //                 if (mag(iNormalPNf[pFaceI]) > SMALL)
+    //                 {
+    //                     Foam::plane p(iPointPNf[pFaceI], iNormalPNf[pFaceI]);
+    //                     alphafNei = cf.cut(p);
+    //                 }
 
-                    if (mag(iNormal_[pfCellI]) > SMALL)
-                    {
-                        Foam::plane p(iPoint_[pfCellI], iNormal_[pfCellI]);
-                        alphafOwn = cf.cut(p);
-                    }
+    //                 if (mag(iNormal_[pfCellI]) > SMALL)
+    //                 {
+    //                     Foam::plane p(iPoint_[pfCellI], iNormal_[pfCellI]);
+    //                     alphafOwn = cf.cut(p);
+    //                 }
 
 
-                    alphafPf[pFaceI] = min(alphafNei, alphafOwn);
-                    if (alphaPNf[pFaceI]*alpha_[pfCellI] > SMALL)
-                    {
-                        alphafPf[pFaceI] = (alphafNei + alphafOwn)/2.0;
-                    }
+    //                 alphafPf[pFaceI] = min(alphafNei, alphafOwn);
+    //                 if (alphaPNf[pFaceI]*alpha_[pfCellI] > SMALL)
+    //                 {
+    //                     alphafPf[pFaceI] = (alphafNei + alphafOwn)/2.0;
+    //                 }
 
-                    // now catch sharp edges
-                    if (alpha_[pfCellI] < reconstructTol_.value()
-                        && alphafPf[pFaceI] > SMALL)
-                    {
-                        //own is solid
-                        iArea_[pfCellI] += meshPf.magSf()[pFaceI]
-                                           *alphafPf[pFaceI];
+    //                 // now catch sharp edges
+    //                 if (alpha_[pfCellI] < reconstructTol_.value()
+    //                     && alphafPf[pFaceI] > SMALL)
+    //                 {
+    //                     //own is solid
+    //                     iArea_[pfCellI] += meshPf.magSf()[pFaceI]
+    //                                        *alphafPf[pFaceI];
 
-                        iNormal_[pfCellI] +=
-                                outwardNormal(patchFs+pFaceI, pfCellI)
-                                *alphafPf[pFaceI];
-                    }
+    //                     iNormal_[pfCellI] +=
+    //                             outwardNormal(patchFs+pFaceI, pfCellI)
+    //                             *alphafPf[pFaceI];
+    //                 }
 
-                }
-                else if (mag(alpha_[pfCellI] - alphaPNf[pFaceI]) > 0.1)
-                {
-                    alphafPf[pFaceI] = 0.0;
+    //             }
+    //             else if (mag(alpha_[pfCellI] - alphaPNf[pFaceI]) > 0.1)
+    //             {
+    //                 alphafPf[pFaceI] = 0.0;
 
-                    //set iNormal and a_burn for this case
-                    if (alpha_[pfCellI] < 0.1)
-                    {
-                        // than one sharp boundary
-                        iArea_[pfCellI] += meshPf.magSf()[pFaceI];
+    //                 //set iNormal and a_burn for this case
+    //                 if (alpha_[pfCellI] < 0.1)
+    //                 {
+    //                     // than one sharp boundary
+    //                     iArea_[pfCellI] += meshPf.magSf()[pFaceI];
 
-                        // Increment iNormal_
-                        iNormal_[pfCellI] +=
-                            outwardNormal(patchFs+pFaceI, pfCellI);
-                    }
-                }
-            }
-        }
-    }
+    //                     // Increment iNormal_
+    //                     iNormal_[pfCellI] +=
+    //                         outwardNormal(patchFs+pFaceI, pfCellI);
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     //Re-normalize iNormal (only needed for the cases when it is incremented)
     iNormal_ /= (mag(iNormal_) + VSMALL);
 
     // Currently the original value of alphaf_ is stored in alphafCorr_. Need to clean this up later.
     sumalphaf_ = fvc::surfaceSum(alphaf_);
-    alphafs_ = 1.0 - alphaf_;
+    sumalphafs_ = fvc::surfaceSum(alphafs_);
     alphafsCorr_ = alphafs_;
     alphafCorr_ = alphaf_;
 
@@ -817,66 +820,66 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
 
 
 
-    // Now set alphaf on parallel patches
-    const volScalarField::GeometricBoundaryField& alphaShiftBf =
-        alphaShift.boundaryField();
-    const volVectorField::GeometricBoundaryField& iNormalBf =
-        iNormal_.boundaryField();
+    // // Now set alphaf on parallel patches
+    // const volScalarField::GeometricBoundaryField& alphaShiftBf =
+    //     alphaShift.boundaryField();
+    // const volVectorField::GeometricBoundaryField& iNormalBf =
+    //     iNormal_.boundaryField();
 
 
-    surfaceScalarField::GeometricBoundaryField& wBf =
-        w.boundaryField();
-    surfaceScalarField::GeometricBoundaryField& alphafBf =
-        alphaf.boundaryField();
+    // surfaceScalarField::GeometricBoundaryField& wBf =
+    //     w.boundaryField();
+    // surfaceScalarField::GeometricBoundaryField& alphafBf =
+    //     alphaf.boundaryField();
 
-    forAll(alphafBf, patchI)
-    {
-        const fvPatchScalarField& alphaShiftPf = alphaShiftBf[patchI];
-        const fvPatchVectorField& iNormalPf = iNormalBf[patchI];
+    // forAll(alphafBf, patchI)
+    // {
+    //     const fvPatchScalarField& alphaShiftPf = alphaShiftBf[patchI];
+    //     const fvPatchVectorField& iNormalPf = iNormalBf[patchI];
 
-        scalarField& alphafPf = alphafBf[patchI];
-        scalarField& wPf = wBf[patchI];
+    //     scalarField& alphafPf = alphafBf[patchI];
+    //     scalarField& wPf = wBf[patchI];
 
-        const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
+    //     const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
 
-        if (alphaShiftPf.coupled())
-        {
-            // Get values across parallel patch
-            const scalarField alphaShiftPNf(alphaShiftPf.patchNeighbourField());
-            const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
+    //     if (alphaShiftPf.coupled())
+    //     {
+    //         // Get values across parallel patch
+    //         const scalarField alphaShiftPNf(alphaShiftPf.patchNeighbourField());
+    //         const vectorField iNormalPNf(iNormalPf.patchNeighbourField());
 
-            const fvPatch& meshPf = mesh_.boundary()[patchI];
+    //         const fvPatch& meshPf = mesh_.boundary()[patchI];
 
-            forAll(alphafPf, pFaceI)
-            {
-                label pfCellI = pFaceCells[pFaceI];
+    //         forAll(alphafPf, pFaceI)
+    //         {
+    //             label pfCellI = pFaceCells[pFaceI];
 
-                //Calculate weight on small-large cell faces and close
-                // small cell faces
-                if ( alphaShift[pfCellI] * alphaShiftPNf[pFaceI]
-                     * alphafPf[pFaceI] < 0.0)
-                {
+    //             //Calculate weight on small-large cell faces and close
+    //             // small cell faces
+    //             if ( alphaShift[pfCellI] * alphaShiftPNf[pFaceI]
+    //                  * alphafPf[pFaceI] < 0.0)
+    //             {
 
-                    vector scNorm = (alphaShift[pfCellI] < 0.0)
-                                    ? iNormal_[pfCellI]
-                                    : iNormalPNf[pFaceI];
+    //                 vector scNorm = (alphaShift[pfCellI] < 0.0)
+    //                                 ? iNormal_[pfCellI]
+    //                                 : iNormalPNf[pFaceI];
 
-                    wPf[pFaceI] = mag
-                    (
-                        scNorm & meshPf.Sf()[pFaceI]
-                    ) * alphafPf[pFaceI];
+    //                 wPf[pFaceI] = mag
+    //                 (
+    //                     scNorm & meshPf.Sf()[pFaceI]
+    //                 ) * alphafPf[pFaceI];
 
-                    alphafPf[pFaceI] = 0.0;
-                }
+    //                 alphafPf[pFaceI] = 0.0;
+    //             }
 
-                //Close faces between small cells
-                if (alphaShift[pfCellI] < 0.0 && alphaShiftPNf[pFaceI] < 0.0)
-                {
-                    alphafPf[pFaceI] = 0.0;
-                }
-            }
-        }
-    }
+    //             //Close faces between small cells
+    //             if (alphaShift[pfCellI] < 0.0 && alphaShiftPNf[pFaceI] < 0.0)
+    //             {
+    //                 alphafPf[pFaceI] = 0.0;
+    //             }
+    //         }
+    //     }
+    // }
 
     sumalphaf = fvc::surfaceSum(alphaf);
 
