@@ -969,17 +969,17 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 // Info << "Kg/Ks: " << Kg[mc] << ", " << Ks[sc] << endl;
                 // Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
 
-                // Calculate interface temperature
-                scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
-                       / (Cs + Cg);
-                Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
-
                 // Set Ti explicitly
                 // Ti_[sc] = 714.64;
                 // tmpTi = 714.64;
 
                 if (testPyro_ != "solid")
                 {
+                    // Calculate interface temperature
+                    scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
+                           / (Cs + Cg);
+                    Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
+
                     // Calculate thermal resistance
                     scalar Req = 0.;
                     if (Cg > SMALL) Req += 1./Cg;
@@ -1006,6 +1006,15 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                                * Cs*tmpA/(Cpg()[sc]*Vc[sc])
                                - qflux_[sc]*tmpA/Vc[sc];
                     QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
+                }
+                else
+                {
+                    // Calculate interface temperature
+                    scalar tmpTi = (Cs*Ts_[sc] + qflux_[sc]) / Cs;
+                    Ti_[sc] = tmpTi;
+
+                    // Solid Source Terms
+                    
                 }
             }
         }
