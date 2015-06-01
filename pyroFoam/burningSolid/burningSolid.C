@@ -1013,8 +1013,10 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     scalar tmpTi = (Cs*Ts_[sc] + qflux_[sc]) / Cs;
                     Ti_[sc] = tmpTi;
 
-                    // Solid Source Terms
-                    
+                    // Implicit Solid Source Terms
+                    QsSp_[sc] += tmpA*Cs/Vc[sc];
+                    QsSu_[sc] += tmpTi
+                               * tmpA*Cs/Vc[sc];
                 }
             }
         }
