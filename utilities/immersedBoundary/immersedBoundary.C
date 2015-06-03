@@ -598,7 +598,7 @@ void Foam::immersedBoundary::correct()
                 iArea_[nei] += mesh_.magSf()[faceI] * alphaf_[faceI];
                 iNormal_[nei] += outwardNormal(faceI, nei)*alphaf_[faceI];
             }
-            alphafs_[faceI] = alphaf_[faceI];
+            alphafs_[faceI] = 1.0 - alphaf_[faceI];
         }
 
         // Catch sharp face-coincident interfaces. In this case, the solid cell
@@ -783,7 +783,7 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
 
     const tmp<volScalarField> alphastmp = 1.0 - alpha_;
     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
-    surfaceScalarField& alphaf = (input == "gas") ? alphaf_:alphafs_;
+    surfaceScalarField& alphaf = (input == "gas") ? alphafCorr_:alphafsCorr_;
     volScalarField& sumalphaf = (input == "gas") ? sumalphaf_:sumalphafs_;
 
     // If negative, alpha is a small cell

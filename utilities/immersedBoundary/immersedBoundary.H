@@ -150,12 +150,12 @@ public:
             return alphafs_;
         }
 
-        const surfaceScalarField& alphafU() const
+        const surfaceScalarField& alphafCorr() const
         {
             return alphafCorr_;
         }
 
-        const surfaceScalarField& alphafsU() const
+        const surfaceScalarField& alphafsCorr() const
         {
             return alphafsCorr_;
         }

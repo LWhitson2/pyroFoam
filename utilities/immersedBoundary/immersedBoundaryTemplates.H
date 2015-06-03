@@ -166,40 +166,40 @@ void immersedBoundary::setScValue
         }
 
         // Now do transfer at parallel patches
-        const typename GeometricField
-            <Type, fvPatchField, volMesh>::GeometricBoundaryField&
-            srcBf = src.boundaryField();
+        // const typename GeometricField
+        //     <Type, fvPatchField, volMesh>::GeometricBoundaryField&
+        //     srcBf = src.boundaryField();
 
-        const surfaceScalarField::GeometricBoundaryField&
-            wBf = w.boundaryField();
+        // const surfaceScalarField::GeometricBoundaryField&
+        //     wBf = w.boundaryField();
 
-        forAll(srcBf, patchI)
-        {
-            const fvPatchField<Type>& srcPf = srcBf[patchI];
-            const scalarField& wPf = wBf[patchI];
+        // forAll(srcBf, patchI)
+        // {
+        //     const fvPatchField<Type>& srcPf = srcBf[patchI];
+        //     const scalarField& wPf = wBf[patchI];
 
-            const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
+        //     const labelList& pFaceCells = mesh_.boundary()[patchI].faceCells();
 
-            if (srcPf.coupled())
-            {
-                // Get values across parallel patch
-                const Field<Type> srcPNf(srcPf.patchNeighbourField());
+        //     if (srcPf.coupled())
+        //     {
+        //         // Get values across parallel patch
+        //         const Field<Type> srcPNf(srcPf.patchNeighbourField());
 
-                forAll(srcPf, pFaceI)
-                {
-                    label pfCellI = pFaceCells[pFaceI];
+        //         forAll(srcPf, pFaceI)
+        //         {
+        //             label pfCellI = pFaceCells[pFaceI];
 
-                    if ( wPf[pFaceI] > 0.0)
-                    {
-                        if (alpha[pfCellI] < alphaMin_.value())
-                        {//I own the small cell
-                            Su[pfCellI] += wPf[pFaceI]/wtot[pfCellI]
-                                          * srcPNf[pFaceI] * diag.value();
-                        }
-                    }
-                }
-            }
-        }
+        //             if ( wPf[pFaceI] > 0.0)
+        //             {
+        //                 if (alpha[pfCellI] < alphaMin_.value())
+        //                 {//I own the small cell
+        //                     Su[pfCellI] += wPf[pFaceI]/wtot[pfCellI]
+        //                                   * srcPNf[pFaceI] * diag.value();
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
     else
     {

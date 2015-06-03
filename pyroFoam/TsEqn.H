@@ -5,7 +5,7 @@
     const tmp<volScalarField> alphas = ib.alphasCorr();
     const tmp<volScalarField> Ks = solid.Ks();
     surfaceScalarField KEff = ib.interpolate(Ks(), "solid")
-                            * ib.alphafsU()*ib.lapCorr("solid");
+                            * ib.alphafs()*ib.lapCorr("solid");
 
     fvScalarMatrix TsEqn
     (

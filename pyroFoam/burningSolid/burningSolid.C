@@ -631,6 +631,19 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceFlux()
     qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
     qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
 
+    // Set ignition flux
+    dimensionedScalar ignFlux("zero", dimPower/dimArea, 0.);
+    if (mesh_.time().timeOutputValue() < ignTime_.value())
+    {
+        ignFlux = ignFlux_;
+    }
+    else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
+    {
+        scalar time = mesh_.time().timeOutputValue();
+        scalar maxTime = (ignTime_.value() + ignRelax_.value());
+        ignFlux = ignFlux_*(maxTime - time)/ignRelax_.value();
+    }
+
     // Surface pyrolysis fluxes
     forAll(Ts_, cellI)
     {
@@ -640,23 +653,12 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceFlux()
                 Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
 
             qflux_[cellI] = pyroModel_->energy_generation(
-                Ti_[cellI], gasThermo_.p()[cellI], cellI).value();
+                Ti_[cellI], gasThermo_.p()[cellI], cellI).value()
+                + ignFlux.value();
         }
     }
 
-    // Laser ignition flux
-    volScalarField Cps = solidThermo_->Cp();
-    if (mesh_.time().timeOutputValue() < ignTime_.value())
-    {
-        qflux_ += ignFlux_;
-    }
-    else if (mesh_.time().timeOutputValue() < (ignTime_ + ignRelax_).value())
-    {
-        scalar time = mesh_.time().timeOutputValue();
-        scalar maxTime = (ignTime_.value() + ignRelax_.value());
-        dimensionedScalar ignFlux = ignFlux_*(maxTime - time)/ignRelax_.value();
-        qflux_ += ignFlux;
-    }
+    Info << "Min/Max Surface Flux: " << min(qflux_).value() << ", " << max(qflux_).value() << endl;
 }
 
 template<class GasThermoType, class ReactionThermoType>
@@ -664,16 +666,6 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
 {
     // Convert surface flux to source
     // TODO add an AbyV or ArV function to ib
-    // Handled in the surface balance for Ti.
-    // qgens_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
-    // if (testPyro_ == "enthalpy")
-    // {
-    //     qgeng_.internalField() += qflux_*ib_.area().oldTime()/mesh_.V();
-    // }
-
-    // Interface area and volume
-    const volScalarField& Ai = ib_.area();
-    const volScalarField::DimensionedInternalField& Vc = mesh_.V();
 
     // Calculate energy transferred between solid and gas
     tmp<volScalarField> Cps = solidThermo_->Cp();
@@ -687,8 +679,6 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
         // Energy gained by gas
         qgeng_.internalField()[cellI] += m_pyro_[cellI]
             * mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Ti_[cellI]);
-            // + pyroModel_->energy_generation(
-            //     Ts_[cellI], gasThermo_.p()[cellI], cellI).value()*Ai[cellI]/Vc[cellI];
     }
 }
 
@@ -884,35 +874,22 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
         if (normalCell[cellI])
         {
             // Calculate thermal constants
-            // Info << ib_.alpha()[cellI] << endl;
             scalar Cg = Kg()[cellI]/Lg[cellI];
             scalar Cs = Ks[cellI]/Ls[cellI];
             
-            // Info << "Cell " << cellI <<" is normal" << endl;
-            // Info << "Lg/Ls: " << Lg[cellI] << ", " << Ls[cellI] << endl;
-            // Info << "Kg/Ks: " << Kg[cellI] << ", " << Ks[cellI] << endl;
-            // Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
-
-            // Info << Cg << " " << Cs << endl;
-
-            // Calculate interface temperature
-            Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
-                       / (Cs + Cg);
-
-            // Set Ti explicitly
-            // Ti_[cellI] = 714.64;
+            Info << endl << "Cell " << cellI <<" is normal" << endl;
+            Info << "Alpha: " << ib_.alpha()[cellI] << endl;
+            Info << "Lg/Ls: " << Lg[cellI] << ", " << Ls[cellI] << endl;
+            Info << "Kg/Ks: " << Kg()[cellI] << ", " << Ks[cellI] << endl;
+            Info << "Cg/Cs: " << Cg << ", " << Cs << endl << endl;
 
             if ((testPyro_ != "solid"))
             {
-                // Calculate thermal resistance
-                scalar Req = 0.;
-                if (Cg > SMALL) Req += 1./Cg;
-                if (Cs > SMALL) Req += 1./Cs;
+                // Calculate interface temperature
+                Ti_[cellI] = (Cs*Ts_[cellI] + Cg*Tg[cellI] + qflux_[cellI])
+                       / (Cs + Cg);
 
-                // Solid source terms (dirchlet boundary at Ti)
-                // QsSp_[cellI] = Ai[cellI]/(Req*Vc[cellI]);
-                // QsSu_[cellI] = Tg[cellI]
-                //             * Ai[cellI]/(Req*Vc[cellI]);
+                // Implicit Solid source terms
                 QsSp_[cellI] = Ai[cellI]*Cs/Vc[cellI];
                 QsSu_[cellI] = Ti_[cellI]
                             * Ai[cellI]*Cs/Vc[cellI];
@@ -936,6 +913,18 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 //     QgSu_[cellI] = 0.;
                 //     QgSp_[cellI] = 0.;
                 // }
+            }
+            else
+            {
+                // Calculate interface temperature
+                Ti_[cellI] = (Cs*Ts_[cellI] + qflux_[cellI])/Cs;
+
+                Ti_[cellI] = 700.;
+
+                // Implicit Solid source terms
+                QsSp_[cellI] = Ai[cellI]*Cs/Vc[cellI];
+                QsSu_[cellI] = Ti_[cellI]
+                            * Ai[cellI]*Cs/Vc[cellI];
             }
         }
     }
@@ -968,10 +957,6 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 // Info << "Lg/Ls: " << tmpLg << ", " << tmpLs << endl;
                 // Info << "Kg/Ks: " << Kg[mc] << ", " << Ks[sc] << endl;
                 // Info << "Cg/Cs: " << Cg << ", " << Cs << endl;
-
-                // Set Ti explicitly
-                // Ti_[sc] = 714.64;
-                // tmpTi = 714.64;
 
                 if (testPyro_ != "solid")
                 {
@@ -1013,9 +998,11 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     scalar tmpTi = (Cs*Ts_[sc] + qflux_[sc]) / Cs;
                     Ti_[sc] = tmpTi;
 
+                    Ti_[sc] = 700.;
+
                     // Implicit Solid Source Terms
                     QsSp_[sc] += tmpA*Cs/Vc[sc];
-                    QsSu_[sc] += tmpTi
+                    QsSu_[sc] += Ti_[sc]
                                * tmpA*Cs/Vc[sc];
                 }
             }
