@@ -107,20 +107,6 @@ Foam::burningSolid<GasThermoType,ReactionThermoType>::burningSolid
         zeroGradientFvPatchScalarField::typeName
     ),
 
-    Ti_
-    (
-        IOobject
-        (
-            "Ti",
-            mesh_.time().timeName(),
-            mesh_,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh_,
-        dimensionedScalar("Ti", dimTemperature, 298.0)
-    ),
-
     burnU_
     (
         IOobject
@@ -160,6 +146,20 @@ Foam::burningSolid<GasThermoType,ReactionThermoType>::burningSolid
             IOobject::AUTO_WRITE
         ),
         mesh_
+    ),
+
+    Ti_
+    (
+        IOobject
+        (
+            "Ti",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("Ti", dimTemperature, 298.)
     ),
 
     USp_
@@ -628,8 +628,6 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceFlux()
 {
     mflux_ = dimensionedScalar("zero", dimMass/dimArea/dimTime, 0.);
     qflux_ = dimensionedScalar("zero", dimPower/dimArea, 0.);
-    qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
-    qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
 
     // Set ignition flux
     dimensionedScalar ignFlux("zero", dimPower/dimArea, 0.);
@@ -664,8 +662,8 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceFlux()
 template<class GasThermoType, class ReactionThermoType>
 void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
 {
-    // Convert surface flux to source
-    // TODO add an AbyV or ArV function to ib
+    qgens_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
+    qgeng_ = dimensionedScalar("zero", dimPower/dimVolume, 0.);
 
     // Calculate energy transferred between solid and gas
     tmp<volScalarField> Cps = solidThermo_->Cp();
@@ -675,6 +673,13 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcSurfaceEnergy()
         qgens_.internalField()[cellI] -=
               m_pyro_[cellI]*solidThermo_->Cp()()[cellI]
             * (Ti_[cellI] - Ts_.oldTime()[cellI]);
+
+        // TODO: Delete this once fixed.
+        if (qgens_.internalField()[cellI] != 0.)
+        {
+            Info << "Ti/Ts.oldTime: " << Ti_[cellI] << ", "
+             << Ts_.oldTime()[cellI] << endl;
+        }
 
         // Energy gained by gas
         qgeng_.internalField()[cellI] += m_pyro_[cellI]
@@ -736,12 +741,11 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::correct
     Foam::Info << "Calculate momentum source" << Foam::endl;
     calcSurfaceMomentum(U);
 
-    // Calculate energy source
-    Foam::Info << "Calculate energy source" << Foam::endl;
-    calcSurfaceEnergy();
-
     Foam::Info << "Calculate gas/solid interface" << Foam::endl;
     calcInterfaceTransfer();
+
+    Foam::Info << "Calculate energy source" << Foam::endl;
+    calcSurfaceEnergy();
 
     // Fix small cells by transferring momentum (mU) and mass (m_pyro)
     // to neighbouring larger cells
@@ -919,7 +923,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 // Calculate interface temperature
                 Ti_[cellI] = (Cs*Ts_[cellI] + qflux_[cellI])/Cs;
 
-                Ti_[cellI] = 700.;
+                // Ti_[cellI] = 700.;
 
                 // Implicit Solid source terms
                 QsSp_[cellI] = Ai[cellI]*Cs/Vc[cellI];
@@ -995,10 +999,11 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 else
                 {
                     // Calculate interface temperature
-                    scalar tmpTi = (Cs*Ts_[sc] + qflux_[sc]) / Cs;
+                    scalar tmpTi = (Cs*Ts_[sc] 
+                        + max(qflux_[sc], qflux_[mc])) / Cs;
                     Ti_[sc] = tmpTi;
 
-                    Ti_[sc] = 700.;
+                    // Ti_[sc] = 700.;
 
                     // Implicit Solid Source Terms
                     QsSp_[sc] += tmpA*Cs/Vc[sc];

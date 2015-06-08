@@ -92,9 +92,6 @@ class burningSolid
         //- Gas mass generation from burning (kg/m^3-s)
         volScalarField mgen_;
 
-        //- Interface temperature (K)
-        volScalarField Ti_;
-
         //- Burning gas velocity (m/s)
         volVectorField burnU_;
 
@@ -103,6 +100,9 @@ class burningSolid
 
         //- solid Temperature field
         volScalarField Ts_;
+
+        //- Interface temperature (K)
+        volScalarField Ti_;
 
         //- Momentum implicit source term
         volScalarField USp_;
