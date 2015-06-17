@@ -124,7 +124,6 @@ void immersedBoundary::setScValue
     GeometricField<Type, fvPatchField, volMesh>& Su,
     GeometricField<scalar, fvPatchField, volMesh>& Sp,
     const GeometricField<Type, fvPatchField, volMesh>& src,
-//     const dimensioned<Type>& solidValue,
     const GeometricField<Type, fvPatchField, volMesh>& solidValue,
     const dimensionedScalar& diag,
     const word& mode,

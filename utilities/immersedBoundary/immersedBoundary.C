@@ -784,6 +784,7 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
     const tmp<volScalarField> alphastmp = 1.0 - alpha_;
     const volScalarField& alpha = (input == "gas") ? alpha_:alphastmp();
     surfaceScalarField& alphaf = (input == "gas") ? alphafCorr_:alphafsCorr_;
+    surfaceScalarField& alphafs = (input == "gas") ? alphafsCorr_:alphafCorr_;
     volScalarField& sumalphaf = (input == "gas") ? sumalphaf_:sumalphafs_;
 
     // If negative, alpha is a small cell
@@ -797,8 +798,14 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
     {
         label own = owner[faceI];
         label nei = neighbor[faceI];
+        scalar gasBoundary = alphaf[faceI];
 
-        if (alphaShift[own] * alphaShift[nei] * alphaf[faceI] < 0.0)
+        if (alphaf[faceI] == 0 && alphafs[faceI] == 0)
+        {
+            gasBoundary = 1.0;
+        }
+
+        if (alphaShift[own] * alphaShift[nei] * gasBoundary < 0.0)
         { //one is small, one is not, and they share a gas boundary
 
             label sc = (alphaShift[own] < 0.0) ? own : nei;
@@ -806,7 +813,7 @@ Foam::immersedBoundary::scTransferWeights(const word& input)
             w[faceI] = mag
             (
                 iNormal_[sc] & mesh_.Sf()[faceI]
-            ) * alphaf[faceI];
+            ) * gasBoundary;
 
             alphaf[faceI] = 0.0;
         }

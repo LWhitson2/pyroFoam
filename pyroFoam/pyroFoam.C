@@ -199,8 +199,8 @@ int main(int argc, char *argv[])
                           << T.weightedAverage(ib.area()).value() << token::TAB
                           << p.weightedAverage(ib.area()).value() << token::TAB
                           << Yi.weightedAverage(ib.area()).value() << token::TAB
-                          << ib.gasL().weightedAverage(ib.area()).value() << token::TAB
-                          << ib.solidL().weightedAverage(ib.area()).value() << endl;
+                          << rho.weightedAverage(ib.area()).value() << token::TAB
+                          << U.weightedAverage(ib.area()).component(1).value() << endl;
                 }
             }
         }

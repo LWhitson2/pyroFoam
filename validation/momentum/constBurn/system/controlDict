@@ -25,7 +25,7 @@ startTime       0.0;
 
 stopAt          endTime;
 
-endTime         2.0;
+endTime         1.0;
 
 deltaT          1.e-6;
 
@@ -34,8 +34,8 @@ maxDeltaT       1.e-6;
 writeControl    runTime;
 writeInterval   1e-3;
 
-//writeControl    timeStep;
-//writeInterval   1;
+// writeControl    timeStep;
+// writeInterval   1;
 
 purgeWrite      0;
 

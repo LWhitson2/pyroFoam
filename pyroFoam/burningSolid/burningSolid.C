@@ -620,7 +620,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcBurnU()
     );
 
     burnU_ = (Ti_*Rg/gasThermo_.p() - 1./solidThermo_->rho())
-           * mflux_*ib_.normal().oldTime(); //should use oldTime??
+           * mflux_*ib_.normal(); //TODO: should use oldTime??
 }
 
 template<class GasThermoType, class ReactionThermoType>
@@ -738,7 +738,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::correct
     calcSurfaceMass();
 
     // Calculate momentum source
-    Foam::Info << "Calculate momentum source" << Foam::endl;
+    // Foam::Info << "Calculate momentum source" << Foam::endl;
     calcSurfaceMomentum(U);
 
     Foam::Info << "Calculate gas/solid interface" << Foam::endl;
@@ -753,7 +753,8 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::correct
     fixSmallCells();
 
     // Calculate mass flux field that includes alphaf
-    phi = (ib_.interpolate(U*gasThermo_.rho(), "gas") & mesh_.Sf())*ib_.alphaf();
+    phi = (ib_.interpolate(U*gasThermo_.rho(), "gas")
+        & mesh_.Sf())*ib_.alphafCorr();
 
     // Calculate surface stress in interface cells
     Foam::Info << "Calculate surface stress" << Foam::endl;
@@ -952,6 +953,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI]);
                 scalar tmpLs = (mag((mesh_.Cf()[faceI] - mesh_.C()[sc])
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI]);
+                scalar tmpTi = 0.;
 
                 // Calculate thermal resistance
                 scalar Cg = Kg()[mc]/tmpLg;
@@ -965,9 +967,9 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 if (testPyro_ != "solid")
                 {
                     // Calculate interface temperature
-                    scalar tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc] + qflux_[sc])
+                    tmpTi = (Cs*Ts_[sc] + Cg*Tg[mc]
+                          + max(qflux_[sc], qflux_[mc]))
                            / (Cs + Cg);
-                    Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
 
                     // Calculate thermal resistance
                     scalar Req = 0.;
@@ -978,38 +980,31 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     QgSp_[mc] += tmpA*Cg/(Cpg()[mc]*Vc[mc]);
                     QgSu_[mc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[mc], tmpTi)
                                * tmpA*Cg/(Cpg()[mc]*Vc[mc]);
-                    // QgSp_[mc] += 0.;
-                    // QgSu_[mc] += (tmpTi - Tg[mc])
-                    //            * tmpA*Cg/Vc[mc];
 
                     // Solid source terms
-                    // QsSp_[sc] += tmpA/(Req*Vc[sc]);
-                    // QsSu_[sc] += Tg[mc]
-                    //            * tmpA/(Req*Vc[sc]);
                     QsSp_[sc] += tmpA*Cs/Vc[sc];
                     QsSu_[sc] += tmpTi
                                * tmpA*Cs/Vc[sc];
 
                     // Solid side gas source terms
-                    QgSu_[sc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc], Ti_[sc])
-                               * Cs*tmpA/(Cpg()[sc]*Vc[sc])
-                               - qflux_[sc]*tmpA/Vc[sc];
-                    QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
+                    // QgSu_[sc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc], Ti_[sc])
+                    //            * Cs*tmpA/(Cpg()[sc]*Vc[sc])
+                    //            - qflux_[sc]*tmpA/Vc[sc];
+                    // QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
                 }
                 else
                 {
                     // Calculate interface temperature
-                    scalar tmpTi = (Cs*Ts_[sc] 
+                    tmpTi = (Cs*Ts_[sc] 
                         + max(qflux_[sc], qflux_[mc])) / Cs;
-                    Ti_[sc] = tmpTi;
-
-                    // Ti_[sc] = 700.;
 
                     // Implicit Solid Source Terms
                     QsSp_[sc] += tmpA*Cs/Vc[sc];
-                    QsSu_[sc] += Ti_[sc]
+                    QsSu_[sc] += tmpTi
                                * tmpA*Cs/Vc[sc];
                 }
+
+                Ti_[sc] = tmpTi; // TODO Add function to calculate average Ti
             }
         }
     }

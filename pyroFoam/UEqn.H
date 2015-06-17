@@ -11,12 +11,13 @@ tmp<fv::convectionScheme<scalar> > mvConvection
 
     Info<< "Solving UEqn" << endl;
 
-    surfaceScalarField muEff = ib.interpolate(turbulence->muEff(), "gas")
-                               *ib.alphaf();
-    surfaceVectorField gradUeff = fvc::interpolate(dev2(Foam::T(fvc::grad(U))))
-                                & mesh.Sf();
+    // surfaceScalarField muEff = ib.interpolate(turbulence->muEff(), "gas")
+    //                            *ib.alphaf();
+    // surfaceVectorField gradUeff = fvc::interpolate(dev2(Foam::T(fvc::grad(U))))
+    //                             & mesh.Sf();
     volScalarField rhoAlphaCorr = rho*ib.alphaCorr();
     rhoAlphaCorr.oldTime() = rho.oldTime() * ib.alphaCorr().oldTime();
+    
     volScalarField rhoAlpha = rho*ib.alpha();
     rhoAlpha.oldTime() = rho.oldTime() * ib.alpha().oldTime();
 
@@ -30,7 +31,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
      ==
         solid.USu()
       - fvm::Sp(solid.USp(), U)
-      // + solid.mU()
+      + solid.mU()
       // - rho.oldTime()*U.oldTime()*fvc::ddt(ib.alphaCorr())
       // + fvm::Sp(solid.mgen(), U)
 
@@ -40,9 +41,9 @@ tmp<fv::convectionScheme<scalar> > mvConvection
     UEqn.relax();
 
     // Info << "Ueqn Coefficients: rho*U*ddt(alpha), div(phi,U)" << endl;
-    // Info << "Balance: " << (fvc::ddt(rhoAlpha, U) + fvc::div(phi, U))()[4] << endl;
-    // Info << "Cell 4: " << (ib.alphaCorr().oldTime()*rho*fvc::ddt(U))()[4] << ", " << (rho.oldTime()*U.oldTime()*fvc::ddt(ib.alphaCorr()))()[4] << ", " << fvc::div(phi, U)()[4] << endl;
-    // Info << "Cell 5: " << (ib.alphaCorr().oldTime()*rho*fvc::ddt(U))()[5] << ", "  << (rho.oldTime()*U.oldTime()*fvc::ddt(ib.alphaCorr()))()[5] << ", " << fvc::div(phi, U)()[5] << endl;
+    // Info << "Balance: " << (fvc::ddt(rhoAlpha, U) + fvc::div(phi, U))()[99] << endl;
+    Info << "Cell 99: " << (rhoAlphaCorr.oldTime()*fvc::ddt(U))()[99] << ", " << (U.oldTime()*fvc::ddt(rhoAlphaCorr))()[99] << ", " << fvc::div(phi, U)()[99] << endl;
+    Info << "Cell 98: " << (rhoAlphaCorr.oldTime()*fvc::ddt(U))()[98] << ", " << (U.oldTime()*fvc::ddt(rhoAlphaCorr))()[98] << ", " << fvc::div(phi, U)()[98] << endl;
     // Info << "Cell 6: " << (ib.alphaCorr().oldTime()*rho*fvc::ddt(U))()[6] << ", "  << (rho.oldTime()*U.oldTime()*fvc::ddt(ib.alphaCorr()))()[6] << ", " << fvc::div(phi, U)()[6] << endl;
     // Info << "Cell 20: " << fvc::div(phi, U)()[20] << endl;
 
@@ -50,7 +51,7 @@ tmp<fv::convectionScheme<scalar> > mvConvection
     {
         solve
         (
-           UEqn == ib.reconstruct(-fvc::snGrad(p)*mesh.magSf()*ib.alphaf())
+           UEqn == ib.reconstruct(-fvc::snGrad(p)*mesh.magSf()*ib.alphafCorr())
         );
         K = 0.5*magSqr(U); // scale this by ib.alpha() ?
     }

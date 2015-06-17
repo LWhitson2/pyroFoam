@@ -54,7 +54,7 @@ else*/
     (
         ib.interpolate(rho, "gas")*
         (
-            (ib.interpolate(U, "gas") & mesh.Sf())*ib.alphaf()
+            (ib.interpolate(U, "gas") & mesh.Sf())*ib.alphafCorr()
             // + fvc::ddtPhiCorr(rAU, rho, U, phi)
             // + ib.ddtPhiCorr(rAU, rho, U, phi)
         )
@@ -68,7 +68,7 @@ else*/
         (
             fvm::ddt(psiAlphaCorr, p)
           + fvc::div(phiEst)
-          - fvm::laplacian(rhorAUf*ib.alphaf()*ib.lapCorr("gas"), p)
+          - fvm::laplacian(rhorAUf*ib.alphafCorr()*ib.lapCorr("gas"), p)
          ==
             solid.pSu()
           - fvm::Sp(solid.pSp(), p)
