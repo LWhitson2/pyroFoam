@@ -25,12 +25,14 @@ thermoType
     specie          specie;
 }
 
+// Ward Coefficients
 mixture
 {
     specie
     {
         nMoles      1;
-        molWeight   34.2;
+        // molWeight   34.2; // Ward
+        molWeight   36.; // Weber
     }
 
     transport

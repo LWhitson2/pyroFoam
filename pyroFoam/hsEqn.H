@@ -3,7 +3,7 @@
 
     // Calculate corrected thermal diffusivity
     surfaceScalarField alphaEff = ib.interpolate(turbulence->alphaEff(),"gas")
-                               *ib.alphaf()*ib.lapCorr("gas");
+                               *ib.alphafCorr()*ib.lapCorr("gas");
 
 //     forAll(hs, cellI)
 //     {
@@ -32,18 +32,21 @@
     // Info << "Solving gas enthalpy equation" << endl;
     heEqn.solve();
 
-    // Info<< "hs Curr: " << he[68] << endl;
-    // Info << "hs Old: " << he.oldTime()[68] << endl;
-    // Info<< "rhoAlph Curr: " << rhoAlpha.oldTime()[68] << endl;
-    // Info<< "rhoAlph Old: " << rhoAlpha[68] << endl;
-    // Info<< "rhoAlphCorr Curr: " << rhoAlphaCorr.oldTime()[68] << endl;
-    // Info<< "rhoAlphCorr Old: " << rhoAlphaCorr[68] << endl;
-    // Info << "Sum phi hs: " << mvConvection->fvcDiv(phi,he)()[68] << endl;
-    // Info << "Laplacian: " << -fvc::laplacian(alphaEff, he)()[68] << endl;
-    // Info << "dpdt: " << dpdt[68] << endl;
-    // Info << "Kinetic Energy: " << -(fvc::ddt(rhoAlphaCorr, K) + fvc::div(phi, K))()[68] << endl;
-    // Info << "Combustion: " << ib.alphaCorr()[68]*reaction->Sh()()[68] << endl;
-    // Info<< "hs Gen: " << solid.Qgeng()[68] << endl;
+    scalar ci = 99;
+    Info << "hs Curr: " << he[ci] << endl;
+    Info << "hs Old: " << he.oldTime()[ci] << endl;
+    Info << "rhoAlph Curr: " << rhoAlpha.oldTime()[ci] << endl;
+    Info << "rhoAlph Old: " << rhoAlpha[ci] << endl;
+    Info << "rhoAlphCorr Curr: " << rhoAlphaCorr.oldTime()[ci] << endl;
+    Info << "rhoAlphCorr Old: " << rhoAlphaCorr[ci] << endl;
+    Info << "Sum phi hs: " << mvConvection->fvcDiv(phi,he)()[ci] << endl;
+    Info << "Laplacian: " << -fvc::laplacian(alphaEff, he)()[ci] << endl;
+    Info << "dpdt: " << dpdt[ci] << endl;
+    Info << "Kinetic Energy: " << -(fvc::ddt(rhoAlphaCorr, K) + fvc::div(phi, K))()[ci] << endl;
+    Info << "Combustion: " << ib.alphaCorr()[ci]*reaction->Sh()()[ci] << endl;
+    Info << "hs Gen: " << solid.Qgeng()[ci] << endl;
+    Info << "hsSu: " << solid.hsSu()[ci] << endl;
+    Info << "hsSp: " << solid.hsSp()[ci] << endl;
 
     Info << "Correcting gas thermo" << endl;
     thermo.correct();

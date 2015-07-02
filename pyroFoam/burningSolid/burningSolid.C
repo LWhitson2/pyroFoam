@@ -162,6 +162,20 @@ Foam::burningSolid<GasThermoType,ReactionThermoType>::burningSolid
         dimensionedScalar("Ti", dimTemperature, 298.)
     ),
 
+    heSmall_
+    (
+        IOobject
+        (
+            "heSmall",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar("heSmall", dimEnergy/dimMass, 0.)
+    ),
+
     USp_
     (
         IOobject
@@ -577,8 +591,10 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
                            USolid, rhordT, "fix", "gas");
     ib_.setScValue<scalar>(w, pSu_, pSp_, gasThermo_.p(),
                            pSolid, psirdT, "avg", "gas");
-    ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.he(),
-                           heSolid, hsrdT, "avg", "gas");
+    // ib_.setScValue<scalar>(w, hsSu_, hsSp_, gasThermo_.he(),
+    //                        heSolid, hsrdT, "avg", "gas");
+    ib_.setScValue<scalar>(w, hsSu_, hsSp_, heSmall_,
+                           heSolid, hsrdT, "fix", "gas");
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
     ib_.setScValue<scalar>(w, rhoSu_, rhoSp_, rhog,
@@ -593,11 +609,11 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
     // Solve conduction for small cells only
     forAll(QgSu_, cellI)
     {
-        if (ib_.smallCells()()[cellI])
-        {
-            hsSp_[cellI] = 0.0;
-            hsSu_[cellI] = 0.0;
-        }
+        // if (ib_.smallCells()()[cellI])
+        // {
+        //     hsSp_[cellI] = 0.0;
+        //     hsSu_[cellI] = 0.0;
+        // }
 
         if (ib_.smallSolidCells()()[cellI])
         {
@@ -860,6 +876,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
     QsSp_ = dimensionedScalar("zero", dimPower/dimTemperature/dimVolume, 0.0);
     QgSu_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
     QsSu_ = dimensionedScalar("zero", dimPower/dimVolume, 0.0);
+    heSmall_ = dimensionedScalar("zero", dimEnergy/dimMass, 0.0);
 
     // Cell identification
     volScalarField normalCell = ib_.reconstructedCells()*pos(Lg - vsL)*pos(Ls - vsL);
@@ -903,21 +920,6 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 QgSp_[cellI] = Ai[cellI]*Cg/(Cpg()[cellI]*Vc[cellI]);
                 QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Ti_[cellI])
                             * Ai[cellI]*Cg/(Cpg()[cellI]*Vc[cellI]);
-                // QgSp_[cellI] = 0.;
-                // QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])
-                //             * Ai[cellI]*Cg/Vc[cellI];
-
-                
-
-                // Transfer to Qgen for small cells
-                // if (smallGasCell[cellI])
-                // {
-                //     Info << "QgSu/QgSp: " << QgSu_[cellI] << ", " << QgSp_[cellI] << endl;
-                //     qgeng_[cellI] += QgSu_[cellI]
-                //                   - QgSp_[cellI]*mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Tg[cellI]);
-                //     QgSu_[cellI] = 0.;
-                //     QgSp_[cellI] = 0.;
-                // }
             }
             else
             {
@@ -954,6 +956,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 scalar tmpLs = (mag((mesh_.Cf()[faceI] - mesh_.C()[sc])
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI]);
                 scalar tmpTi = 0.;
+                scalar tmpTgSmall = 0.;
 
                 // Calculate thermal resistance
                 scalar Cg = Kg()[mc]/tmpLg;
@@ -986,11 +989,10 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                     QsSu_[sc] += tmpTi
                                * tmpA*Cs/Vc[sc];
 
-                    // Solid side gas source terms
-                    // QgSu_[sc] += mCM_.cellMixture(mc).Hs(gasThermo_.p()[sc], Ti_[sc])
-                    //            * Cs*tmpA/(Cpg()[sc]*Vc[sc])
-                    //            - qflux_[sc]*tmpA/Vc[sc];
-                    // QgSp_[sc] += tmpA*Cs/(Cpg()[sc]*Vc[sc]);
+                    // Extrapolate gas temperature
+                    tmpTgSmall = tmpTi + (Tg[mc] - tmpTi)*tmpLs/(tmpLs + tmpLg)/2.;
+                    heSmall_[sc] = mCM_.cellMixture(mc).Hs(gasThermo_.p()[mc], tmpTgSmall);
+                    Info << "tmpTgSmall/heSmall: " << tmpTgSmall << ", " << heSmall_[sc] << endl;
                 }
                 else
                 {

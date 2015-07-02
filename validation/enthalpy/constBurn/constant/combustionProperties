@@ -15,10 +15,10 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-combustionModel  PaSR<psiChemistryCombustionModel>;
-//combustionModel  bananas;
+combustionModel  laminar<psiChemistryCombustion>;
+//combustionModel  laminar<rhoChemistryCombustion>;
 
-active  false;
+active  true;
 
 infinitelyFastChemistryCoeffs
 {
@@ -27,8 +27,13 @@ infinitelyFastChemistryCoeffs
 
 PaSRCoeffs
 {
-    Cmix                Cmix [ 0 0 0 0 0 0 0 ] 0.1;
+    Cmix                0.1;
     turbulentReaction   on;
+}
+
+laminarCoeffs
+{
+  
 }
 
 

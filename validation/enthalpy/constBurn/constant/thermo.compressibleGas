@@ -35,6 +35,25 @@ EMg
     }
 }
 
+EMs
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              3018.e3;
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+
 EMp
 {
     specie
@@ -106,25 +125,7 @@ EMp
 //     }
 // }
 
-// Energetic Material Solid Placeholder
-EMs
-{
-    specie
-    {
-        nMoles          1.;
-        molWeight       34.2;
-    }
-    thermodynamics
-    {
-        Cp              1400.;
-        Hf              3018.e3;
-    }
-    transport
-    {
-        Pr              0.7;
-        mu              35.e-6;
-    }
-}
+
 // EMs
 // {
 //     specie

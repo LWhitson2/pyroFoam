@@ -26,7 +26,8 @@ EMg
     thermodynamics
     {
         Cp              1400.;
-        Hf              3018.e3;
+        // Hf              3018.e3; // Ward
+        Hf              2278.e3; // Weber
     }
     transport
     {
@@ -35,6 +36,7 @@ EMg
     }
 }
 
+// Energetic Material Product
 EMp
 {
     specie
@@ -53,58 +55,6 @@ EMp
         mu              35.e-6;
     }
 }
-
-// EMg
-// {
-//     specie
-//     {
-//         nMoles          1;
-//         molWeight       34.2;
-//     }
-//     thermodynamics
-//     {
-//         Tlow            200;
-//         Thigh           5000;
-//         Tcommon         1000;
-//         highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
-//                           12414.7
-//                           0.0 );
-//         lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
-//                           12414.7
-//                           0.0 );
-//     }
-//     transport
-//     {
-//         As              1.67212e-06;
-//         Ts              170.672;
-//     }
-// }
-
-// EMp
-// {
-//     specie
-//     {
-//         nMoles          1;
-//         molWeight       34.2;
-//     }
-//     thermodynamics
-//     {
-//         Tlow            200;
-//         Thigh           5000;
-//         Tcommon         1000;
-//         highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
-//                           0.0
-//                           0.0 );
-//         lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
-//                           0.0
-//                           0.0 );
-//     }
-//     transport
-//     {
-//         As              1.67212e-06;
-//         Ts              170.672;
-//     }
-// }
 
 // Energetic Material Solid Placeholder
 EMs
@@ -125,31 +75,6 @@ EMs
         mu              35.e-6;
     }
 }
-// EMs
-// {
-//     specie
-//     {
-//         nMoles          1;
-//         molWeight       34.2;
-//     }
-//     thermodynamics
-//     {
-//         Tlow            200;
-//         Thigh           5000;
-//         Tcommon         1000;
-//         highCpCoeffs    ( 5.75896 0.0 0.0 0.0 0.0
-//                           12414.7
-//                           0.0 );
-//         lowCpCoeffs     ( 5.75896 0.0 0.0 0.0 0.0
-//                           12414.7
-//                           0.0 );
-//     }
-//     transport
-//     {
-//         As              1.67212e-06;
-//         Ts              170.672;
-//     }
-// }
 
 
 // ************************************************************************* //

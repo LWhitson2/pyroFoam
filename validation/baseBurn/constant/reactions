@@ -11,7 +11,8 @@ reactions
     {
         type        irreversiblethirdBodyArrheniusReaction;
         reaction    "EMg = EMp";
-        A           0.05472;
+//        A           0.05472; // Ward
+        A           0.84524; // Weber
         beta        2.0;
         Ta          0.;
         defaultEfficiency    1;

@@ -18,7 +18,7 @@ FoamFile
 
 dimensions      [1 -1 -2 0 0 0 0];
 
-internalField   uniform 5.05e5;
+internalField   uniform 1.01e5;
 
 boundaryField
 {
@@ -30,7 +30,7 @@ boundaryField
     top
     {
         type            fixedValue;
-        value           uniform 5.05e5;
+        value           uniform 1.01e5;
 //         type            waveTransmissive;
 //         value           uniform 1e5;
 //         phi             phi;

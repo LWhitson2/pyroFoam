@@ -15,9 +15,18 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-thermoType hsPsiMixtureThermo<reactingMixture<constGasThermoPhysics>>;
+thermoType
+{
+    type            hePsiThermo;
+    mixture         reactingMixture;
+    transport       const;
+    thermo          hConst;
+    energy          sensibleEnthalpy;
+    equationOfState perfectGas;
+    specie          specie;
+}
 
-inertSpecie N2;
+inertSpecie EMp;
 
 chemistryReader foamChemistryReader;
 

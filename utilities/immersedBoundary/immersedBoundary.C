@@ -946,6 +946,7 @@ Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::fullGasCells() const
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::smallCells() const
 {
     return neg(alpha_ - alphaMin_)*pos(alpha_ - SMALL);
+    // return pos(alpha_ - SMALL);
 }
 
 Foam::tmp<Foam::volScalarField> Foam::immersedBoundary::solidCells() const

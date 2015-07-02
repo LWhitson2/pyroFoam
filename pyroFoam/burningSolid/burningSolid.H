@@ -104,6 +104,9 @@ class burningSolid
         //- Interface temperature (K)
         volScalarField Ti_;
 
+        //- Small Cell Value of he (J/kg)
+        volScalarField heSmall_;
+
         //- Momentum implicit source term
         volScalarField USp_;
 

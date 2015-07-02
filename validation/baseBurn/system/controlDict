@@ -33,7 +33,7 @@ maxDeltaT       1e-6;
 
 writeControl    adjustableRunTime;
 
-writeInterval   1e-4;
+writeInterval   1e-3;
 
 purgeWrite      0;
 
