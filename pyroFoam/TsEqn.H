@@ -2,7 +2,7 @@
     Info << "Entering TsEqn.H" << endl;
     // Calculate corrected thermal conductivity
     const tmp<volScalarField> Cps = solid.Cps();
-    const tmp<volScalarField> alphas = ib.alphasCorr();
+    const tmp<volScalarField> alphas = ib.alphas();
     const tmp<volScalarField> Ks = solid.Ks();
     surfaceScalarField KEff = ib.interpolate(Ks(), "solid")
                             * ib.alphafs()*ib.lapCorr("solid");

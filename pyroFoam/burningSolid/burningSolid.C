@@ -951,10 +951,13 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
 
             if (tmpA > SMALL)
             {
-                scalar tmpLg = (mag((mesh_.Cf()[faceI] - ib_.gasC()[mc])
-                             & mesh_.Sf()[faceI])/mesh_.magSf()[faceI]);
                 scalar tmpLs = (mag((mesh_.Cf()[faceI] - mesh_.C()[sc])
                              & mesh_.Sf()[faceI])/mesh_.magSf()[faceI]);
+                scalar tmpLi = tmpLs*ib_.alpha()[sc];
+                scalar tmpLg = (mag((mesh_.Cf()[faceI] - ib_.gasC()[mc])
+                             & mesh_.Sf()[faceI])/mesh_.magSf()[faceI])
+                             + tmpLi;
+                tmpLs -= tmpLi;
                 scalar tmpTi = 0.;
                 scalar tmpTgSmall = 0.;
 
@@ -990,7 +993,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                                * tmpA*Cs/Vc[sc];
 
                     // Extrapolate gas temperature
-                    tmpTgSmall = tmpTi + (Tg[mc] - tmpTi)*tmpLs/(tmpLs + tmpLg)/2.;
+                    tmpTgSmall = tmpTi + (Tg[mc] - tmpTi)*tmpLi/tmpLg;
                     heSmall_[sc] = mCM_.cellMixture(mc).Hs(gasThermo_.p()[mc], tmpTgSmall);
                     Info << "tmpTgSmall/heSmall: " << tmpTgSmall << ", " << heSmall_[sc] << endl;
                 }
