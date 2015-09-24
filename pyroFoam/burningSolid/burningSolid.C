@@ -561,6 +561,8 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
     // Values to set in the solid region
     tmp<volScalarField> pSolid = (gasThermo_.p() - gasThermo_.p())
                                + gasThermo_.p().weightedAverage(ib_.area());
+
+    tmp<volScalarField> rhogSolid = pSolid()/(Ti_*Rg);
                                
     //TODO: Fix these to do a proper creation rather than this X-X
     tmp<volVectorField> USolid = (burnU_ - burnU_)
@@ -598,7 +600,7 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::fixSmallCells()
     ib_.setScValue<scalar>(ws, TsSu_, TsSp_, Ts_,
                            TsGas, TsrdT, "avg", "solid");
     ib_.setScValue<scalar>(w, rhoSu_, rhoSp_, rhog,
-                           rhoSolid, rdT, "avg", "gas");
+                           rhogSolid, rdT, "avg", "gas");
 
     // Transfer mass and momentum out of small cells
     Info << "Transferring out of small cells" << endl;
@@ -920,6 +922,10 @@ void Foam::burningSolid<GasThermoType,ReactionThermoType>::calcInterfaceTransfer
                 QgSp_[cellI] = Ai[cellI]*Cg/(Cpg()[cellI]*Vc[cellI]);
                 QgSu_[cellI] = mCM_.cellMixture(cellI).Hs(gasThermo_.p()[cellI], Ti_[cellI])
                             * Ai[cellI]*Cg/(Cpg()[cellI]*Vc[cellI]);
+
+                // Explicit gas source term
+                // QgSu_[cellI] = (Ti_[cellI] - Tg[cellI])*Ai[cellI]*Cg/(Vc[cellI]);
+                // QgSp_[cellI] = 0.;
             }
             else
             {
