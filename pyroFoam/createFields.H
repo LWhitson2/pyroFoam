@@ -171,9 +171,6 @@ const volScalarField& rhos = solid.rhos();
 OFstream log(args.path()/"TsAvg.out");
 OFstream logTi(args.path()/"TiAvg.out");
 
-log << "Time" << token::TAB << "Avg. Solid Temp. [K]" << token::TAB
-    << endl;
-
 logTi << "Time" << token::TAB
       << "alpha" << token::TAB
       << "Ts" << token::TAB
@@ -181,19 +178,19 @@ logTi << "Time" << token::TAB
       << "Tg" << token::TAB
       << "p" << token::TAB
       << "EMg" << token::TAB
-      << "Lg" << token::TAB
-      << "Ls" << endl;
+      << "rho" << token::TAB
+      << "U" << endl;
 
 // Conservation Check log
-OFstream logConserve(args.path()/"TimeStepConserve.out");
-logConserve << "Time" << token::TAB
-            << "Mass" << token::TAB
-            << "Momentum" << token::TAB
-            << "Energy" << endl;
+// OFstream logConserve(args.path()/"TimeStepConserve.out");
+// logConserve << "Time" << token::TAB
+//             << "Mass" << token::TAB
+//             << "Momentum" << token::TAB
+//             << "Energy" << endl;
 
 // Overall Conservation log
-OFstream logConserve2(args.path()/"OverallConserve.out");
-logConserve << "Time" << token::TAB
-            << "Mass" << token::TAB
-            << "Momentum" << token::TAB
-            << "Energy" << endl;
+// OFstream logConserve2(args.path()/"OverallConserve.out");
+// logConserve << "Time" << token::TAB
+//             << "Mass" << token::TAB
+//             << "Momentum" << token::TAB
+//             << "Energy" << endl;

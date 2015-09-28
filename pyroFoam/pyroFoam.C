@@ -180,9 +180,6 @@ int main(int argc, char *argv[])
 
         runTime.write();
 
-        log << runTime.value() << token::TAB
-            << Ts.weightedAverage(ib.alphasCorr()).value() << endl;
-
         // Record average Interface Temperature
         {
             dimensionedScalar smallA("dA", dimArea, SMALL);
