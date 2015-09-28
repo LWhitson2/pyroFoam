@@ -1,0 +1,83 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2.1.x                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      thermo.compressibleGas;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Energetic Material Gas Definition
+EMg
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+        // molWeight   36.; // Weber
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              3018.e3; // Ward
+        // Hf              2278.e3; // Weber
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+
+// Energetic Material Product
+EMp
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+        // molWeight   36.; // Weber
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              0.;
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+
+// Energetic Material Solid Placeholder
+EMs
+{
+    specie
+    {
+        nMoles          1.;
+        molWeight       34.2;
+        // molWeight   36.; // Weber
+    }
+    thermodynamics
+    {
+        Cp              1400.;
+        Hf              3018.e3;
+    }
+    transport
+    {
+        Pr              0.7;
+        mu              35.e-6;
+    }
+}
+
+
+// ************************************************************************* //
