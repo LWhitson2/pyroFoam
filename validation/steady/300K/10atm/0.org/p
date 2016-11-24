@@ -30,7 +30,7 @@ boundaryField
     top
     {
         type            fixedValue;
-        value           uniform 6.06e5;
+        value           uniform 10.1e5;
 //         type            waveTransmissive;
 //         value           uniform 1e5;
 //         phi             phi;

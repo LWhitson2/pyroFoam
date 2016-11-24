@@ -40,8 +40,8 @@ WSBCoeffs
     // Qc    Qc    [0 2 -2 0 0 0 0]    154.808e3;
 }
 
-ignTime   ignTime     [0 0 1 0 0 0 0]     2.029e-02;
-ignFlux   ignFlux     [1 0 -3 0 0 0 0]    1.961e+06;
+ignTime   ignTime     [0 0 1 0 0 0 0]     2.e-02;
+ignFlux   ignFlux     [1 0 -3 0 0 0 0]    1.0e+06;
 ignRelax   ignRelax   [0 0 1 0 0 0 0]     0.00;
 
 testPyro  none;
